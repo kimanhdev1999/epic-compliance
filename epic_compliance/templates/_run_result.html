@@ -1,0 +1,9 @@
+{% import "_macros.html" as m %}
+<div class="card" style="margin-top:1.5rem; border-color: var(--accent)">
+  <div class="cat-header" style="margin-top:0">
+    <h2 style="margin:0">Run complete</h2>
+    <span class="mini">{{ view.counts.fail }} failures need attention</span>
+  </div>
+  {% include "_report_body.html" %}
+</div>
+<script>window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });</script>

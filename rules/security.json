@@ -1,0 +1,32 @@
+[
+  {
+    "id": "SEC-001",
+    "category": "security",
+    "source": "ONC (g)(10) §170.315(g)(10)(vi); HIPAA §164.312(e)(1)",
+    "severity": "critical",
+    "evidence_needed": "app_config: transport_encryption, tls_version",
+    "check_type": "llm",
+    "description": "All data in transit must be encrypted with TLS 1.2 or higher",
+    "remediation_hint": "Confirm your FHIR server and app enforce TLS 1.2+ on all endpoints. Disable TLS 1.0 and 1.1."
+  },
+  {
+    "id": "SEC-002",
+    "category": "security",
+    "source": "HIPAA §164.312(a)(2)(i); Epic Showroom requirements",
+    "severity": "high",
+    "evidence_needed": "app_config: audit_logging_enabled, audit_log_retention_days",
+    "check_type": "llm",
+    "description": "Application must implement audit logging for all PHI access events",
+    "remediation_hint": "Enable comprehensive audit logging covering authentication events, PHI reads, and data exports. Retain logs per HIPAA minimum (6 years)."
+  },
+  {
+    "id": "SEC-003",
+    "category": "security",
+    "source": "HIPAA §164.308(b); Epic Showroom listing requirements",
+    "severity": "high",
+    "evidence_needed": "app_config: baa_in_place, covered_entity_relationship",
+    "check_type": "llm",
+    "description": "A Business Associate Agreement (BAA) must be in place with Epic and any PHI-handling subprocessors",
+    "remediation_hint": "Execute a BAA with Epic before accessing production data. Review all third-party services that handle PHI and ensure BAAs exist."
+  }
+]

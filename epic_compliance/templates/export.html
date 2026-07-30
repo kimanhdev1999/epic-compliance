@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Epic Compliance Report — {{ view.run_id[:8] }}</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; line-height: 1.5; }
+  h1 { font-size: 1.6rem; margin: 0 0 0.25rem; }
+  h2 { font-size: 1.15rem; margin: 1.75rem 0 0.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.3rem; }
+  .meta { color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .summary { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0 0.5rem; }
+  .stat { border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.6rem 1.1rem; text-align: center; min-width: 90px; }
+  .stat .n { font-size: 1.5rem; font-weight: 700; }
+  .stat .l { font-size: 0.72rem; text-transform: uppercase; color: #64748b; letter-spacing: 0.04em; }
+  .pass { color: #15803d; } .fail { color: #b91c1c; } .warn { color: #b45309; } .score { color: #1d4ed8; }
+  .finding { border: 1px solid #e2e8f0; border-left: 4px solid #cbd5e1; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 0.6rem; page-break-inside: avoid; }
+  .finding.fail { border-left-color: #b91c1c; }
+  .finding.needs_human { border-left-color: #b45309; }
+  .finding.pass { border-left-color: #15803d; }
+  .fhead { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+  .rid { font-family: monospace; font-size: 0.85rem; color: #64748b; }
+  .badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 0.1rem 0.5rem; border-radius: 999px; }
+  .badge.pass { background: #dcfce7; } .badge.fail { background: #fee2e2; } .badge.needs_human { background: #fef3c7; }
+  .req { font-weight: 600; margin: 0.4rem 0 0.2rem; }
+  .src { color: #64748b; font-size: 0.82rem; }
+  .evidence { font-family: monospace; font-size: 0.8rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 0.5rem; margin: 0.5rem 0; white-space: pre-wrap; }
+  .fix { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 0.5rem 0.7rem; font-size: 0.85rem; }
+  .toolbar { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.6rem 0.9rem; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  @media print { .toolbar { display: none; } body { padding: 0; } }
+</style>
+</head>
+<body>
+  <div class="toolbar">Use your browser's <strong>Print &rarr; Save as PDF</strong> to export this report. <button onclick="window.print()">Print now</button></div>
+  <h1>Epic FHIR ONC (g)(10) Compliance Report</h1>
+  <div class="meta">
+    Run {{ view.run_id }} &middot; {{ run.created_at[:19].replace('T',' ') }} UTC &middot; {{ run.run_mode }} mode<br>
+    Target: {{ run.fhir_base_url }}
+  </div>
+  <div class="summary">
+    {% if view.score is not none %}<div class="stat"><div class="n score">{{ view.score }}%</div><div class="l">Readiness</div></div>{% endif %}
+    <div class="stat"><div class="n pass">{{ view.counts.pass }}</div><div class="l">Pass</div></div>
+    <div class="stat"><div class="n fail">{{ view.counts.fail }}</div><div class="l">Fail</div></div>
+    <div class="stat"><div class="n warn">{{ view.counts.needs_human }}</div><div class="l">Needs human</div></div>
+    <div class="stat"><div class="n">{{ view.total }}</div><div class="l">Total</div></div>
+  </div>
+
+  {% for cat in view.categories %}
+  <h2>{{ cat.label }}</h2>
+  {% for item in cat['items'] %}
+  <div class="finding {{ item.verdict }}">
+    <div class="fhead">
+      <span class="rid">{{ item.rule_id }}</span>
+      <span class="badge {{ item.verdict }}">{{ {'pass':'Pass','fail':'Fail','needs_human':'Needs Human'}[item.verdict] }}</span>
+      <span class="src">severity: {{ item.severity }} &middot; {{ item.check_type }}</span>
+    </div>
+    {% if item.requirement %}<div class="req">{{ item.requirement }}</div>{% endif %}
+    {% if item.source %}<div class="src">{{ item.source }}</div>{% endif %}
+    <div class="evidence">{{ item.evidence }}</div>
+    {% if item.remediation_hint %}<div class="fix"><strong>How to fix:</strong> {{ item.remediation_hint }}</div>{% endif %}
+  </div>
+  {% endfor %}
+  {% endfor %}
+</body>
+</html>

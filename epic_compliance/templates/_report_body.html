@@ -1,0 +1,11 @@
+{% import "_macros.html" as m %}
+<div id="report-body">
+  <div class="actions" style="margin-bottom:1rem">
+    <a class="btn secondary" href="/runs/{{ view.run_id }}/export" download>Download HTML</a>
+    <a class="btn secondary" href="/runs/{{ view.run_id }}/print" target="_blank">Print / PDF</a>
+    <a class="btn secondary" href="/api/runs/{{ view.run_id }}">JSON</a>
+    <span class="muted" style="font-size:0.82rem">Run ID <code class="inline">{{ view.run_id }}</code></span>
+  </div>
+  {{ m.tiles(view) }}
+  {{ m.categories(view) }}
+</div>

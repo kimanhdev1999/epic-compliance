@@ -1,0 +1,52 @@
+[
+  {
+    "id": "FHIR-001",
+    "category": "fhir_conformance",
+    "source": "US Core IG v6.1 Patient profile",
+    "severity": "critical",
+    "evidence_needed": "fhir_resources.Patient",
+    "check_type": "automated",
+    "description": "Patient resource must conform to US Core Patient profile (name, gender, birthDate required)",
+    "remediation_hint": "Ensure Patient resource includes name (family+given), gender, birthDate, and identifier elements per US Core Patient profile."
+  },
+  {
+    "id": "FHIR-002",
+    "category": "fhir_conformance",
+    "source": "US Core IG v6.1 Observation profile",
+    "severity": "high",
+    "evidence_needed": "fhir_resources.Observation",
+    "check_type": "automated",
+    "description": "Observation resource must include status, category, code, and subject",
+    "remediation_hint": "Ensure Observation resources include required elements: status, category (lab/vital-signs), code (LOINC), and subject reference."
+  },
+  {
+    "id": "FHIR-003",
+    "category": "fhir_conformance",
+    "source": "US Core IG v6.1 Condition profile",
+    "severity": "high",
+    "evidence_needed": "fhir_resources.Condition",
+    "check_type": "automated",
+    "description": "Condition resource must include clinicalStatus, verificationStatus, category, code, and subject",
+    "remediation_hint": "Ensure Condition resources include clinicalStatus, verificationStatus, category, code (SNOMED/ICD-10), and subject."
+  },
+  {
+    "id": "FHIR-004",
+    "category": "fhir_conformance",
+    "source": "US Core IG v6.1 §must-support",
+    "severity": "medium",
+    "evidence_needed": "fhir_resources.Patient.meta.profile",
+    "check_type": "automated",
+    "description": "Resources must declare US Core profile in meta.profile",
+    "remediation_hint": "Add the appropriate US Core profile URL to each resource's meta.profile array."
+  },
+  {
+    "id": "FHIR-005",
+    "category": "fhir_conformance",
+    "source": "ONC (g)(10) §170.315(g)(10)(i)",
+    "severity": "critical",
+    "evidence_needed": "fhir_resources.Patient, fhir_resources.Observation, fhir_resources.Condition",
+    "check_type": "automated",
+    "description": "All required USCDI v1 data classes must be accessible via FHIR API",
+    "remediation_hint": "Verify your app exposes Patient, Observation, Condition, MedicationRequest, AllergyIntolerance, Immunization, DiagnosticReport, DocumentReference, Encounter, Procedure resources."
+  }
+]

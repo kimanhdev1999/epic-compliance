@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% set active = "history" %}
+{% block title %}Report {{ view.run_id[:8] }} — Epic Compliance{% endblock %}
+{% block content %}
+<div class="cat-header" style="margin-top:0">
+  <h1 style="margin:0">Compliance Report</h1>
+  <span class="mini">{{ run.created_at[:16].replace('T',' ') }} UTC &middot; {{ run.run_mode }} mode</span>
+</div>
+<p class="subtitle">{{ run.fhir_base_url }}</p>
+{% include "_report_body.html" %}
+{% endblock %}

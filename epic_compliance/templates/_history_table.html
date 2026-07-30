@@ -1,0 +1,30 @@
+<div class="card" id="history-table">
+{% if runs %}
+<table>
+  <thead>
+    <tr><th>When (UTC)</th><th>Mode</th><th>FHIR base</th><th class="nums">Pass</th><th class="nums">Fail</th><th class="nums">Needs human</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for r in runs %}
+    <tr>
+      <td><a href="/runs/{{ r.run_id }}">{{ r.created_at[:19].replace('T',' ') }}</a></td>
+      <td>{{ r.run_mode }}</td>
+      <td class="muted" style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ r.fhir_base_url }}</td>
+      <td class="nums" style="color:var(--pass)">{{ r.pass_count }}</td>
+      <td class="nums" style="color:var(--fail)">{{ r.fail_count }}</td>
+      <td class="nums" style="color:var(--warn)">{{ r.needs_human_count }}</td>
+      <td>
+        <button class="btn danger"
+                hx-delete="/runs/{{ r.run_id }}"
+                hx-confirm="Delete this run permanently?"
+                hx-target="#history-table"
+                hx-swap="outerHTML">Delete</button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No runs saved yet. <a href="/">Start one &rarr;</a></div>
+{% endif %}
+</div>

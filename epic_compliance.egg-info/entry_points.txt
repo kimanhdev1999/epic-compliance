@@ -1,0 +1,2 @@
+[console_scripts]
+epic-compliance = epic_compliance.__main__:main

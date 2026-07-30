@@ -1,0 +1,50 @@
+{% macro tiles(view) %}
+<div class="tiles">
+  {% if view.score is not none %}
+  <div class="tile score"><div class="num">{{ view.score }}%</div><div class="lbl">Readiness</div></div>
+  {% endif %}
+  <div class="tile pass"><div class="num">{{ view.counts.pass }}</div><div class="lbl">Pass</div></div>
+  <div class="tile fail"><div class="num">{{ view.counts.fail }}</div><div class="lbl">Fail</div></div>
+  <div class="tile warn"><div class="num">{{ view.counts.needs_human }}</div><div class="lbl">Needs Human</div></div>
+  <div class="tile"><div class="num">{{ view.total }}</div><div class="lbl">Total Rules</div></div>
+</div>
+{% endmacro %}
+
+{% macro verdict_badge(v) %}
+<span class="badge {{ v }}">{{ {'pass':'Pass','fail':'Fail','needs_human':'Needs Human'}[v] }}</span>
+{% endmacro %}
+
+{% macro finding(item) %}
+<details class="finding v-{{ item.verdict }}">
+  <summary>
+    <span class="chevron">&#9656;</span>
+    <span class="rid">{{ item.rule_id }}</span>
+    <span class="req">{{ item.requirement or item.evidence }}</span>
+    <span class="badge sev-{{ item.severity }}">{{ item.severity }}</span>
+    {{ verdict_badge(item.verdict) }}
+  </summary>
+  <div class="detail">
+    <dl>
+      {% if item.requirement %}<dt>Requirement</dt><dd>{{ item.requirement }}</dd>{% endif %}
+      {% if item.source %}<dt>Source</dt><dd>{{ item.source }}</dd>{% endif %}
+      <dt>Check type</dt><dd><span class="badge type">{{ item.check_type }}</span></dd>
+      {% if item.evidence_needed %}<dt>Evidence needed</dt><dd><code class="inline">{{ item.evidence_needed }}</code></dd>{% endif %}
+      <dt>Evidence / reason</dt><dd class="evidence">{{ item.evidence }}</dd>
+      {% if item.citation %}<dt>LLM citation</dt><dd>{{ item.citation }}</dd>{% endif %}
+    </dl>
+    {% if item.remediation_hint %}
+    <div class="remediation"><strong>How to fix:</strong> {{ item.remediation_hint }}</div>
+    {% endif %}
+  </div>
+</details>
+{% endmacro %}
+
+{% macro categories(view) %}
+{% for cat in view.categories %}
+<div class="cat-header">
+  <h2>{{ cat.label }}</h2>
+  <span class="mini">{{ cat.counts.pass }} pass &middot; {{ cat.counts.fail }} fail &middot; {{ cat.counts.needs_human }} needs human</span>
+</div>
+{% for item in cat['items'] %}{{ finding(item) }}{% endfor %}
+{% endfor %}
+{% endmacro %}

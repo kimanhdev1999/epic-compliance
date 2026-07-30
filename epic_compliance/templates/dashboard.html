@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% set active = "dashboard" %}
+{% block content %}
+<h1>Compliance Dashboard</h1>
+<p class="subtitle">Run automated ONC&nbsp;(g)(10) verification against an Epic FHIR app and see what's wrong, fast.</p>
+
+<div class="grid cols-2">
+  <div class="card">
+    <h2 style="margin-top:0">New run</h2>
+    <form hx-post="/runs" hx-target="#run-result" hx-swap="innerHTML" hx-disabled-elt="this">
+      <div class="row">
+        <label for="run_mode">Run mode</label>
+        <select id="run_mode" name="run_mode">
+          <option value="mock" {{ 'selected' if defaults.run_mode != 'live' }}>mock — offline fixtures, no creds</option>
+          <option value="live" {{ 'selected' if defaults.run_mode == 'live' }}>live — real FHIR endpoint</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="fhir_base_url">FHIR base URL</label>
+        <input type="url" id="fhir_base_url" name="fhir_base_url"
+               value="{{ defaults.fhir_base_url or '' }}"
+               placeholder="https://fhir.epic.com/.../api/FHIR/R4">
+      </div>
+      <div class="row">
+        <label for="oauth_client_id">OAuth client ID</label>
+        <input type="text" id="oauth_client_id" name="oauth_client_id"
+               value="{{ defaults.oauth_client_id or '' }}" placeholder="mock-client-id">
+      </div>
+      <div class="row">
+        <label for="anthropic_api_key">Anthropic API key <span class="muted">(optional — enables live LLM checks)</span></label>
+        <input type="password" id="anthropic_api_key" name="anthropic_api_key"
+               placeholder="{{ 'already set in environment' if defaults.anthropic_api_key == '***set***' else 'sk-ant-...' }}">
+        <div class="hint">Leave blank to use the environment value. Security rules return “needs human” without a key.</div>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn">
+          <span class="htmx-indicator"><span class="spinner"></span></span>
+          Run compliance check
+        </button>
+        <span class="muted htmx-indicator" style="font-size:0.85rem">Running pipeline…</span>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Recent runs</h2>
+    {% if runs %}
+    <table>
+      <thead><tr><th>When</th><th>Mode</th><th class="nums">P/F/H</th><th></th></tr></thead>
+      <tbody>
+        {% for r in runs %}
+        <tr>
+          <td><a href="/runs/{{ r.run_id }}">{{ r.created_at[:16].replace('T',' ') }}</a></td>
+          <td>{{ r.run_mode }}</td>
+          <td class="nums">{{ r.pass_count }}/{{ r.fail_count }}/{{ r.needs_human_count }}</td>
+          <td><a href="/runs/{{ r.run_id }}">view &rarr;</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p style="margin-top:0.75rem"><a href="/runs">All history &rarr;</a></p>
+    {% else %}
+    <div class="empty">No runs yet. Start one on the left.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div id="run-result"></div>
+{% endblock %}

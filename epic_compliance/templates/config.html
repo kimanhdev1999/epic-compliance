@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% set active = "config" %}
+{% block title %}Configuration — Epic Compliance{% endblock %}
+{% block content %}
+<h1>Configuration</h1>
+<p class="subtitle">Defaults used to prefill the run form. Secrets are read from the environment and never displayed.</p>
+
+{% if saved %}
+<div class="card" style="border-color:var(--pass)"><strong style="color:var(--pass)">Saved.</strong> These values will prefill your next run.</div>
+{% endif %}
+
+<div class="card">
+  <form method="post" action="/config">
+    <div class="grid cols-2">
+      <div class="row">
+        <label for="run_mode">Default run mode</label>
+        <select id="run_mode" name="run_mode">
+          <option value="mock" {{ 'selected' if cfg.run_mode != 'live' }}>mock</option>
+          <option value="live" {{ 'selected' if cfg.run_mode == 'live' }}>live</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="oauth_client_id">OAuth client ID</label>
+        <input type="text" id="oauth_client_id" name="oauth_client_id" value="{{ cfg.oauth_client_id or '' }}">
+      </div>
+    </div>
+    <div class="row">
+      <label for="fhir_base_url">FHIR base URL</label>
+      <input type="url" id="fhir_base_url" name="fhir_base_url" value="{{ cfg.fhir_base_url or '' }}">
+    </div>
+    <div class="row">
+      <label for="smart_launch_url">SMART authorize URL</label>
+      <input type="url" id="smart_launch_url" name="smart_launch_url" value="{{ cfg.smart_launch_url or '' }}">
+    </div>
+    <div class="row">
+      <label for="smart_token_url">SMART token URL</label>
+      <input type="url" id="smart_token_url" name="smart_token_url" value="{{ cfg.smart_token_url or '' }}">
+    </div>
+    <div class="grid cols-2">
+      <div class="row">
+        <label for="oauth_redirect_uri">OAuth redirect URI</label>
+        <input type="url" id="oauth_redirect_uri" name="oauth_redirect_uri" value="{{ cfg.oauth_redirect_uri or '' }}">
+      </div>
+      <div class="row">
+        <label for="onc_test_kit_url">ONC test kit URL</label>
+        <input type="url" id="onc_test_kit_url" name="onc_test_kit_url" value="{{ cfg.onc_test_kit_url or '' }}">
+      </div>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn">Save defaults</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Anthropic API key</h2>
+  <p class="muted" style="font-size:0.9rem">
+    Status: {% if cfg.anthropic_api_key == '***set***' %}<span class="badge pass">configured</span> in the environment{% else %}<span class="badge needs_human">not set</span> — LLM security rules return “needs human”{% endif %}.
+    Set <code class="inline">ANTHROPIC_API_KEY</code> in your <code class="inline">.env</code>, or supply a key per-run on the dashboard.
+  </p>
+</div>
+{% endblock %}
