@@ -4,6 +4,8 @@ from __future__ import annotations
 import threading
 import urllib.parse
 import webbrowser
+
+import httpx
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -53,6 +55,60 @@ class _CallbackHandler(BaseHTTPRequestHandler):
         pass
 
 
+#: Epic's `error=N` codes on the authorize redirect, mapped to what to go fix.
+#: Epic does not publish these; meanings inferred from observed behaviour (Day 13).
+_EPIC_AUTHORIZE_ERRORS = {
+    "4": (
+        "Epic rejected the authorization request outright ('Invalid OAuth 2.0 request').\n"
+        "   Observed for every scope set, including a bare `openid`, and for any\n"
+        "   redirect_uri — so this is the app registration, not this request.\n"
+        "   Check at https://fhir.epic.com:\n"
+        "     - app audience is 'Patients' (standalone launch needs a patient-facing app)\n"
+        "     - the R4 APIs you request are individually enabled on the app\n"
+        "     - the app is marked ready for the sandbox / non-prod environment"
+    ),
+}
+
+
+def _preflight_authorize(url: str) -> str | None:
+    """Ask Epic whether it will honour this authorize request, before a human waits.
+
+    Epic answers an invalid request with a 302 to a Hyperspace error page carrying
+    `error=N` instead of rendering a login form. Detecting that here turns a silent
+    180s timeout into an immediate, actionable failure. Returns a message, or None
+    if the request looks acceptable.
+    """
+    try:
+        resp = httpx.get(url, follow_redirects=True, timeout=15)
+    except httpx.HTTPError as exc:  # network trouble is not a conformance verdict
+        return f"could not reach the authorization endpoint: {exc}"
+
+    # Form 1: a redirect chain carrying ?error=N to a Hyperspace error page.
+    for hop in [*resp.history, resp]:
+        location = hop.headers.get("location", "")
+        err = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(location).query)).get("error")
+        if err:
+            detail = _EPIC_AUTHORIZE_ERRORS.get(
+                err, f"Epic returned error={err} on the authorize redirect."
+            )
+            return f"Epic refused the launch before login (error={err}).\n   {detail}"
+
+    # Form 2: HTTP 200 rendering an "OAuth2 Error" page rather than a login form.
+    # Epic serves this for an unrecognised client_id — a made-up UUID is answered
+    # identically, which is how you tell it apart from a misconfigured app.
+    if "<title>OAuth2 Error</title>" in resp.text:
+        return (
+            "Epic served its generic 'OAuth2 Error' page instead of a login form.\n"
+            "   A made-up client_id gets this same response, so Epic does not\n"
+            "   recognise this one. Either the app has not propagated to the sandbox\n"
+            "   yet (newly-registered apps are not live immediately — wait and retry),\n"
+            "   or the client_id is wrong. Confirm you copied the NON-PRODUCTION\n"
+            "   client ID from https://fhir.epic.com."
+        )
+
+    return None
+
+
 @dataclass
 class LaunchDriver:
     """Drives one interactive SMART launch: browser -> redirect -> token."""
@@ -91,6 +147,12 @@ class LaunchDriver:
         # remove this once pkce.py sets aud itself.
         if "aud=" not in url:
             url += "&" + urllib.parse.urlencode({"aud": aud})
+
+        # Fail fast: no point opening a browser and waiting out the timeout if Epic
+        # has already refused the request.
+        refusal = _preflight_authorize(url)
+        if refusal:
+            pytest.fail(refusal)
 
         parsed = urllib.parse.urlparse(redirect_uri)
         server = HTTPServer((parsed.hostname or "localhost", parsed.port or 80), _CallbackHandler)
