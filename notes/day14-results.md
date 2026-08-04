@@ -41,7 +41,7 @@ distinction is the whole point of the probe.
 
 ## Tests
 
-New `tests/test_auth_module.py` (39 tests): state validation table, the live-mode
+New `tests/test_auth_module.py` (44 tests): state validation table, the live-mode
 no-fake-token regression, needs_human degradation on absent evidence, the AUTH-003
 scope-shape table including Epic's real shape, tri-state probe behaviour per rule,
 and token-exchange parsing (`expires_in` as a string, confidential vs public
