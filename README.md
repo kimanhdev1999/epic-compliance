@@ -1,6 +1,8 @@
 # Epic Compliance Tool
 
-Automated **ONC (g)(10) compliance verification for Epic FHIR apps**.
+Automated **ONC (g)(10) compliance verification for Epic FHIR apps** — for teams
+building a third-party app (mobile or web) that needs to integrate with Epic and
+survive Epic's marketplace review.
 
 It connects to a FHIR server (Epic sandbox by default), collects evidence
 (SMART configuration, OAuth token, US Core resources), runs a catalog of
@@ -11,6 +13,39 @@ structured findings report you can browse, export, or consume as JSON.
 Every finding is one of `pass` / `fail` / `needs_human`, with the evidence that
 produced it, a source citation (SMART IG / ONC §), and a remediation hint.
 `needs_human` is a first-class verdict: the tool never guesses.
+
+## Who this is for — worked example
+
+Say you have a **mobile app that photographs a patient's skin and flags possible
+lesions**, and you want it listed on Epic's app marketplace so hospitals can
+install it. Epic will expect your app to talk to their FHIR API the standard
+way: SMART on FHIR launch, OAuth2 + PKCE, US Core–shaped reads, and defensible
+security practices around the PHI you touch.
+
+This tool answers one question: **is your app's Epic integration layer actually
+conformant today, and if not, exactly what is broken?** Point it at the Epic
+sandbox (or a customer's FHIR base URL) with your registered client id, run it,
+and you get a per-requirement verdict instead of a vague "it seems to work."
+
+For the skin app, a run tells you concretely:
+
+- Your app can launch standalone and in-EHR, and PKCE S256 is negotiated correctly (`AUTH-001…005`) — the launch path Epic requires of a mobile client.
+- The patient context handed to your app is real and usable: you get a `patient` id, `openid`/`fhirUser` claims, and at least `patient/*.read` scope, so the photo you capture can be attached to the right person (`AUTH-003`, `AUTH-005`).
+- The clinical data you read back to give the model context — demographics, `Condition`, `Observation` — conforms to US Core and declares its profiles, so your feature won't break on the next customer's Epic build (`FHIR-001…005`).
+- Your PHI posture gets stated and judged, not assumed: TLS 1.2+, audit logging on every PHI access, and a BAA with Epic and every subprocessor that sees an image (`SEC-001…003`). If the image goes to a third-party inference API, that vendor needs a BAA — this is the check teams most often discover too late.
+
+**Just as important, what it does _not_ decide.** It is a conformance and
+evidence tool, not a market-approval oracle:
+
+- It has no opinion on your model. Clinical validity, sensitivity/specificity, bias across skin tones, and whether lesion-flagging makes you an FDA-regulated device (SaMD) are all out of scope.
+- It doesn't audit your app's source, mobile storage, or key handling. The `SEC-*` rules judge the evidence you give them and return `needs_human` when that evidence is thin — by design.
+- It doesn't cover writing results back (e.g. `DocumentReference`/`Media` for the image, or a note into the chart). Today's rules are read-path only.
+- It is not Epic's review. Epic runs its own vendor, security, and business process, and their published requirements are the authority — treat a clean run as evidence you bring to that review, not a substitute for it.
+
+Practical way to use it: run it in mock mode to see the rule set, then run it
+live against the Epic sandbox with your client id before you submit, and keep
+running it in CI so a regression in your launch or scopes fails the build.
+(Caveat: the live token exchange is still stubbed — see the status table below.)
 
 ## What it gives you
 
