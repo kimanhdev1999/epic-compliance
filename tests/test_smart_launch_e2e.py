@@ -86,7 +86,7 @@ def _authz_params(**kw) -> dict[str, str]:
         scopes=REQUESTED_SCOPES,
         pkce=generate_pkce(),
         state="xyz123",
-        **kw,
+        **{"aud": EPIC_FHIR_BASE, **kw},
     )
     return dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
 
@@ -107,15 +107,24 @@ def test_authorization_url_never_leaks_the_verifier():
     assert "code_verifier" not in _authz_params()
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Day 13: build_authorization_url() omits `aud`. Epic rejects the "
-    "launch without it. Fix in epic_compliance/smart/pkce.py, then drop this marker.",
-)
 def test_authorization_url_includes_aud():
     """SMART App Launch requires aud={fhir_base_url}; Epic enforces it."""
     p = _authz_params()
     assert p["aud"].rstrip("/") == EPIC_FHIR_BASE.rstrip("/")
+
+
+def test_aud_cannot_be_omitted():
+    """Day 14: aud is keyword-only and required, so a caller cannot forget it."""
+    with pytest.raises(TypeError):
+        build_authorization_url(
+            authorization_endpoint="https://example.org/authorize",
+            client_id="c",
+            redirect_uri=REDIRECT_URI,
+            scopes=REQUESTED_SCOPES,
+            pkce=generate_pkce(),
+        )
+    with pytest.raises(ValueError):
+        _authz_params(aud="")
 
 
 # ─── (b) live: Epic's real discovery document ────────────────────────────────

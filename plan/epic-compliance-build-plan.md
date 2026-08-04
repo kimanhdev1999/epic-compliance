@@ -45,8 +45,8 @@
 - [ ] **Day 10.** Implement the OAuth 2.0 authorization-code + PKCE flow against the sandbox.
 - [ ] **Day 11.** Validate token response: scopes granted vs requested, `id_token`, expiry.
 - [ ] **Day 12.** Turn each auth check into a structured finding `{rule_id, verdict, evidence}`.
-- [ ] **Day 13.** Test the full SMART launch end-to-end against sandbox. Fix breaks.
-- [ ] **Day 14.** Write tests for the auth module. *Buffer / catch-up.*
+- [x] **Day 13.** Test the full SMART launch end-to-end against sandbox. Fix breaks.
+- [x] **Day 14.** Write tests for the auth module. *Buffer / catch-up.* — also closed the Day 13 gaps (live-mode false pass, `aud`) and added AUTH-006..010. See `notes/day14-results.md`.
 
 ## Week 3 — FHIR conformance via existing validators
 

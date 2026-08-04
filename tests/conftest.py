@@ -141,12 +141,8 @@ class LaunchDriver:
             scopes=scopes,
             pkce=pkce,
             state=state,
+            aud=aud,
         )
-        # `aud` is mandatory for Epic but build_authorization_url() does not yet
-        # emit it (Day 13 fix). Append here so the interactive flow works now;
-        # remove this once pkce.py sets aud itself.
-        if "aud=" not in url:
-            url += "&" + urllib.parse.urlencode({"aud": aud})
 
         # Fail fast: no point opening a browser and waiting out the timeout if Epic
         # has already refused the request.
