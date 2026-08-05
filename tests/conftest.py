@@ -1,9 +1,11 @@
 """Shared pytest fixtures — notably the interactive SMART launch driver."""
 from __future__ import annotations
 
+import os
 import threading
 import urllib.parse
 import webbrowser
+from pathlib import Path
 
 import httpx
 from dataclasses import dataclass, field
@@ -17,6 +19,28 @@ from epic_compliance.smart.pkce import (
     build_authorization_url,
     exchange_code_for_token,
 )
+
+
+# The launch tests read os.environ directly, but the project's credentials live
+# in .env. Load it here (conftest is imported before any test module) so there is
+# ONE place to put the client id. Real environment variables always win.
+_ENV_FILE = Path(__file__).parent.parent / ".env"
+if _ENV_FILE.exists():
+    from dotenv import load_dotenv
+
+    load_dotenv(_ENV_FILE, override=False)
+
+# EPIC_SANDBOX_CLIENT_ID is the explicit test override; OAUTH_CLIENT_ID is the
+# app's own config. Fall back to it so you only fill in one variable.
+if not os.environ.get("EPIC_SANDBOX_CLIENT_ID"):
+    _app_client_id = os.environ.get("OAUTH_CLIENT_ID", "")
+    if _app_client_id and _app_client_id != "mock-client-id":
+        os.environ["EPIC_SANDBOX_CLIENT_ID"] = _app_client_id
+
+if not os.environ.get("EPIC_SANDBOX_REDIRECT_URI"):
+    _redirect = os.environ.get("OAUTH_REDIRECT_URI", "")
+    if _redirect:
+        os.environ["EPIC_SANDBOX_REDIRECT_URI"] = _redirect
 
 
 def pytest_addoption(parser):
@@ -141,12 +165,8 @@ class LaunchDriver:
             scopes=scopes,
             pkce=pkce,
             state=state,
+            aud=aud,
         )
-        # `aud` is mandatory for Epic but build_authorization_url() does not yet
-        # emit it (Day 13 fix). Append here so the interactive flow works now;
-        # remove this once pkce.py sets aud itself.
-        if "aud=" not in url:
-            url += "&" + urllib.parse.urlencode({"aud": aud})
 
         # Fail fast: no point opening a browser and waiting out the timeout if Epic
         # has already refused the request.

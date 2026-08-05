@@ -44,16 +44,83 @@ def _check_auth_002(evidence: dict[str, Any], rule: Rule) -> Finding:
     )
 
 
+def _unavailable(evidence: dict[str, Any], key: str, rule: Rule) -> Finding | None:
+    """Return a needs_human Finding if `key` evidence was never collected.
+
+    A missing token or un-run probe must never be read as a pass. Every check
+    that depends on such evidence calls this first.
+    """
+    blob = evidence.get(key)
+    if isinstance(blob, dict) and "_unavailable" in blob:
+        return Finding(
+            rule_id=rule.id,
+            verdict="needs_human",
+            evidence=f"{key} unavailable: {blob['_unavailable']}",
+            remediation_hint=rule.remediation_hint,
+            severity=rule.severity,
+            category=rule.category,
+            citation="Evidence not collected — rule not evaluated.",
+        )
+    if not blob:
+        return Finding(
+            rule_id=rule.id,
+            verdict="needs_human",
+            evidence=f"{key} missing from collected evidence.",
+            remediation_hint=rule.remediation_hint,
+            severity=rule.severity,
+            category=rule.category,
+            citation="Evidence not collected — rule not evaluated.",
+        )
+    return None
+
+
+def _probe_check(evidence: dict[str, Any], rule: Rule, field: str, label: str) -> Finding:
+    """Judge one tri-state interactive probe result: True / False / not run."""
+    unavailable = _unavailable(evidence, "auth_probe", rule)
+    if unavailable is not None:
+        return unavailable
+
+    result = evidence.get("auth_probe", {}).get(field)
+    if result is None:
+        return Finding(
+            rule_id=rule.id,
+            verdict="needs_human",
+            evidence=f"{label}: probe '{field}' was not run against this server.",
+            remediation_hint=rule.remediation_hint,
+            severity=rule.severity,
+            category=rule.category,
+            citation="Requires an interactive SMART launch — run pytest -m launch.",
+        )
+    return Finding(
+        rule_id=rule.id,
+        verdict="pass" if result else "fail",
+        evidence=f"{label}: {field}={result}",
+        remediation_hint=rule.remediation_hint,
+        severity=rule.severity,
+        category=rule.category,
+    )
+
+
 def _check_auth_003(evidence: dict[str, Any], rule: Rule) -> Finding:
-    """Scopes granted include patient/*.read."""
+    """Scopes granted include patient read access."""
+    unavailable = _unavailable(evidence, "token_response", rule)
+    if unavailable is not None:
+        return unavailable
     token = evidence.get("token_response", {})
     scope_str = token.get("scope", "")
     scopes = scope_str.split()
-    ok = any(s in scopes for s in ["patient/*.read", "patient/*.*"])
+    # Epic grants per-resource scopes (patient/Patient.read) rather than the
+    # wildcard, so accepting only patient/*.read would fail a conformant server.
+    wildcard = [s for s in scopes if s in ("patient/*.read", "patient/*.*")]
+    per_resource = [
+        s for s in scopes
+        if s.startswith("patient/") and s.split(".")[-1] in ("read", "*")
+    ]
+    ok = bool(wildcard or per_resource)
     return Finding(
         rule_id=rule.id,
         verdict="pass" if ok else "fail",
-        evidence=f"granted scopes={scope_str!r}",
+        evidence=f"granted scopes={scope_str!r}; patient read scopes={wildcard or per_resource}",
         remediation_hint=rule.remediation_hint,
         severity=rule.severity,
         category=rule.category,
@@ -78,6 +145,9 @@ def _check_auth_004(evidence: dict[str, Any], rule: Rule) -> Finding:
 
 def _check_auth_005(evidence: dict[str, Any], rule: Rule) -> Finding:
     """Token response includes patient context and id_token."""
+    unavailable = _unavailable(evidence, "token_response", rule)
+    if unavailable is not None:
+        return unavailable
     token = evidence.get("token_response", {})
     has_patient = bool(token.get("patient"))
     has_id_token = bool(token.get("id_token"))
@@ -90,6 +160,42 @@ def _check_auth_005(evidence: dict[str, Any], rule: Rule) -> Finding:
         severity=rule.severity,
         category=rule.category,
     )
+
+
+def _check_auth_006(evidence: dict[str, Any], rule: Rule) -> Finding:
+    """OAuth state is round-tripped and validated (CSRF)."""
+    return _probe_check(evidence, rule, "state_validated", "state round-trip validated")
+
+
+def _check_auth_007(evidence: dict[str, Any], rule: Rule) -> Finding:
+    """PKCE is enforced: a wrong code_verifier is rejected at the token endpoint."""
+    return _probe_check(evidence, rule, "wrong_verifier_rejected", "wrong verifier rejected")
+
+
+def _check_auth_008(evidence: dict[str, Any], rule: Rule) -> Finding:
+    """Authorization code is single-use: a replay is rejected."""
+    return _probe_check(evidence, rule, "code_single_use", "replayed code rejected")
+
+
+def _check_auth_009(evidence: dict[str, Any], rule: Rule) -> Finding:
+    """Token is scoped to its patient: cross-patient reads are refused."""
+    return _probe_check(evidence, rule, "cross_patient_refused", "cross-patient read refused")
+
+
+def _check_auth_010(evidence: dict[str, Any], rule: Rule) -> Finding:
+    """id_token signature is verifiable against the advertised jwks_uri."""
+    sc = evidence.get("smart_configuration", {})
+    jwks_uri = sc.get("raw", {}).get("jwks_uri", "")
+    if not jwks_uri:
+        return Finding(
+            rule_id=rule.id,
+            verdict="fail",
+            evidence="No jwks_uri in .well-known/smart-configuration — id_token signature cannot be verified.",
+            remediation_hint=rule.remediation_hint,
+            severity=rule.severity,
+            category=rule.category,
+        )
+    return _probe_check(evidence, rule, "id_token_verifiable", f"jwks_uri={jwks_uri}")
 
 
 def _check_fhir_001(evidence: dict[str, Any], rule: Rule) -> Finding:
@@ -200,6 +306,11 @@ AUTOMATED_CHECKS = {
     "AUTH-003": _check_auth_003,
     "AUTH-004": _check_auth_004,
     "AUTH-005": _check_auth_005,
+    "AUTH-006": _check_auth_006,
+    "AUTH-007": _check_auth_007,
+    "AUTH-008": _check_auth_008,
+    "AUTH-009": _check_auth_009,
+    "AUTH-010": _check_auth_010,
     "FHIR-001": _check_fhir_001,
     "FHIR-002": _check_fhir_002,
     "FHIR-003": _check_fhir_003,

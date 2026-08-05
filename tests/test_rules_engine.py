@@ -180,7 +180,9 @@ class TestPKCE:
             scopes=["openid", "patient/*.read"],
             pkce=pkce,
             state="abc123",
+            aud="https://example.com/api/FHIR/R4",
         )
+        assert "aud=" in url
         assert "response_type=code" in url
         assert "code_challenge_method=S256" in url
         assert pkce.code_challenge in url

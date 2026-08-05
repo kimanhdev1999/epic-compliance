@@ -37,6 +37,17 @@ class AppConfig(BaseSettings):
         default="http://localhost:8080", alias="ONC_TEST_KIT_URL"
     )
 
+    # --- HL7 FHIR validator (Day 15) ---------------------------------------
+    # auto: HTTP service, then validator_cli.jar, then none (needs_human).
+    validator_mode: Literal["auto", "service", "java", "off"] = Field(
+        default="auto", alias="VALIDATOR_MODE"
+    )
+    validator_service_url: str = Field(
+        default="http://localhost:3500", alias="VALIDATOR_SERVICE_URL"
+    )
+    validator_jar_path: str = Field(default="", alias="VALIDATOR_JAR_PATH")
+    validator_timeout_s: float = Field(default=60.0, alias="VALIDATOR_TIMEOUT_S")
+
 
 _config: AppConfig | None = None
 

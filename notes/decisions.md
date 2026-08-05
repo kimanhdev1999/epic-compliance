@@ -76,3 +76,37 @@ Seams are clearly marked with `# SEAM:` comments in `automated_checks.py` and `A
 
 ### Reasoning
 Building a conformance engine from scratch would consume the entire budget on something that already exists and is maintained by HL7/ONC. Our value is orchestration, the Epic layer, and the LLM evaluator.
+
+---
+
+## ADR-006: Use the HL7 validator HTTP service, not validator_cli.jar
+
+Date: 2026-08-05 (Day 15 — implements the seam ADR-005 reserved)
+
+### Decision
+The default validator backend is `infernocommunity/inferno-resource-validator`
+over HTTP (`docker/fhir-validator.compose.yml`, port 3500). `validator_cli.jar`
+via subprocess stays as a second backend, selectable with `VALIDATOR_MODE=java`.
+`get_validator()` in `auto` mode tries the service, then the jar, then returns a
+`NullValidator`.
+
+### Reasoning
+- No JRE on the dev machine; the jar needs Java 11+. The container needs none.
+- It is the *same* validator image the ONC (g)(10) test kit runs, so our results
+  match the gold reference rather than a differently-configured validator.
+- Keeping the jar backend means CI (or a machine without a container runtime)
+  is not blocked.
+
+### Consequence — the rule that matters
+A validator that cannot be reached returns `available=False`, and
+`ValidationResult.is_valid()` returns **None**, not False and never True. Callers
+must map None to `needs_human`. This is the same invariant as the Day 14 auth
+evidence: absence of proof is not proof of compliance.
+
+### Known API constraints (both found via live 500s)
+- Request must be a `ValidationRequest` envelope; `fileContent` is an escaped
+  JSON string.
+- `validationContext.igs` must include `hl7.fhir.us.core#3.1.1` or profile
+  resolution fails.
+- The validator JVM needs >2 GB; the podman machine must be sized accordingly
+  (`podman machine set --memory 6144`) or the container is OOM-killed.

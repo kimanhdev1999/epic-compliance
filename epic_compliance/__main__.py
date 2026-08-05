@@ -76,10 +76,42 @@ def cmd_run() -> None:
         sys.exit(1)
 
 
+def cmd_validator() -> None:
+    """Report which FHIR validator backend is available, and prove it works."""
+    from .validator import US_CORE_PROFILES, get_validator
+
+    config = get_config()
+    validator = get_validator(config)
+    ok, detail = validator.health()
+
+    console.print(f"\n[bold]FHIR validator[/bold] — mode=[cyan]{config.validator_mode}[/cyan]")
+    console.print(f"backend: [cyan]{validator.name}[/cyan]")
+    console.print(f"status:  {'[green]available[/green]' if ok else '[yellow]unavailable[/yellow]'} — {detail}\n")
+
+    if not ok:
+        console.print(
+            "[dim]Start one with:\n"
+            "  podman compose -f docker/fhir-validator.compose.yml up -d\n"
+            "or set VALIDATOR_JAR_PATH to a validator_cli.jar (needs Java).[/dim]"
+        )
+        sys.exit(1)
+
+    from .fhir.client import MOCK_FHIR_RESOURCES
+
+    patient = MOCK_FHIR_RESOURCES["Patient"]
+    result = validator.validate(patient, US_CORE_PROFILES["Patient"])
+    console.print(f"smoke test: {result.summary()}")
+    for m in result.messages[:10]:
+        style = "red" if m.is_blocking() else "yellow"
+        console.print(f"  [{style}]{m.severity}[/{style}] {m.location or '-'}: {m.message}")
+
+
 def main() -> None:
     args = sys.argv[1:]
     if not args or args[0] == "run":
         cmd_run()
+    elif args[0] == "validator":
+        cmd_validator()
     elif args[0] == "serve":
         import uvicorn
         port = 8000
@@ -90,7 +122,7 @@ def main() -> None:
         uvicorn.run("epic_compliance.api:app", host="0.0.0.0", port=port, reload=False)
     else:
         console.print(f"[red]Unknown command: {args[0]}[/red]")
-        console.print("Usage: python -m epic_compliance [run|serve]")
+        console.print("Usage: python -m epic_compliance [run|serve|validator]")
         sys.exit(1)
 
 

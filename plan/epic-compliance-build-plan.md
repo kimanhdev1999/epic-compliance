@@ -45,12 +45,12 @@
 - [ ] **Day 10.** Implement the OAuth 2.0 authorization-code + PKCE flow against the sandbox.
 - [ ] **Day 11.** Validate token response: scopes granted vs requested, `id_token`, expiry.
 - [ ] **Day 12.** Turn each auth check into a structured finding `{rule_id, verdict, evidence}`.
-- [ ] **Day 13.** Test the full SMART launch end-to-end against sandbox. Fix breaks.
-- [ ] **Day 14.** Write tests for the auth module. *Buffer / catch-up.*
+- [x] **Day 13.** Test the full SMART launch end-to-end against sandbox. Fix breaks.
+- [x] **Day 14.** Write tests for the auth module. *Buffer / catch-up.* — also closed the Day 13 gaps (live-mode false pass, `aud`) and added AUTH-006..010. See `notes/day14-results.md`.
 
 ## Week 3 — FHIR conformance via existing validators
 
-- [ ] **Day 15.** Wire in the HL7 FHIR validator (CLI/library) — don't build your own.
+- [x] **Day 15.** Wire in the HL7 FHIR validator (CLI/library) — don't build your own. — see `notes/day15-results.md` (service wired; end-to-end validate not yet confirmed green)
 - [ ] **Day 16.** Fetch a Patient resource from sandbox, validate against US Core profile.
 - [ ] **Day 17.** Extend to 4–5 core resources (Observation, Condition, etc.).
 - [ ] **Day 18.** Map validator output to your structured findings format.
