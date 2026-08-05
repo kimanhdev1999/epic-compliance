@@ -50,7 +50,7 @@
 
 ## Week 3 — FHIR conformance via existing validators
 
-- [ ] **Day 15.** Wire in the HL7 FHIR validator (CLI/library) — don't build your own.
+- [x] **Day 15.** Wire in the HL7 FHIR validator (CLI/library) — don't build your own. — see `notes/day15-results.md` (service wired; end-to-end validate not yet confirmed green)
 - [ ] **Day 16.** Fetch a Patient resource from sandbox, validate against US Core profile.
 - [ ] **Day 17.** Extend to 4–5 core resources (Observation, Condition, etc.).
 - [ ] **Day 18.** Map validator output to your structured findings format.
