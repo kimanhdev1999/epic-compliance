@@ -17,9 +17,10 @@ from pathlib import Path
 from typing import Any
 
 from .models import Report
+from .paths import user_data_dir
 
 # Where the DB lives. Override with EPIC_COMPLIANCE_DB for tests / custom paths.
-DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "runs.db"
+DEFAULT_DB_PATH = user_data_dir() / "runs.db"
 
 # Config keys we allow to be snapshotted / saved as defaults. Secrets are stored
 # but never rendered back to the browser (the web layer redacts them).

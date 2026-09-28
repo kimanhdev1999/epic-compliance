@@ -112,6 +112,32 @@ the `AUTOMATED_CHECKS` registry; if one is missing the engine emits
 | OAuth token exchange inside the pipeline | **Stub** — uses `MOCK_TOKEN_RESPONSE`; live flow needs a browser redirect |
 | HL7 FHIR Validator, ONC g10 Test Kit | Seams only — not yet wired |
 
+## Build a standalone Mac app
+
+For non-technical users, package the tool as a double-clickable `Epic
+Compliance.app` in a `.dmg` — no Python, pip, or terminal required to run it:
+
+```bash
+scripts/build_macos_app.sh
+```
+
+This creates an isolated build venv, installs the `macapp` extra
+(`pyinstaller` + `rumps`), and produces:
+
+- `dist/Epic Compliance.app` — a menu-bar app (no dock window). Launching it
+  starts the server on `localhost:8000` and opens the dashboard in the
+  default browser; quit from the menu-bar icon.
+- `dist/Epic Compliance-<version>.dmg` — drag-to-Applications installer.
+
+Run-history state lives in `~/Library/Application Support/Epic Compliance/`
+(not inside the read-only app bundle) so it survives app updates.
+
+The build is unsigned/unnotarized, so first launch requires right-click →
+Open (or allowing it under System Settings → Privacy & Security). It ships
+with `RUN_MODE=mock` defaults built in (no `.env` bundled); live-mode
+credentials still need to be set as environment variables before launching
+the app, or hand-configured via the web UI's per-run overrides.
+
 ## Docs
 
 - `docs/architecture.md` — code layout, request flow, and where to add things
