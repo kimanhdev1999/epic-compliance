@@ -141,5 +141,4 @@ the app, or hand-configured via the web UI's per-run overrides.
 ## Docs
 
 - `docs/architecture.md` — code layout, request flow, and where to add things
-- `plan/epic-compliance-build-plan.md` — 8-week build plan (source of truth for next steps)
 - `notes/` — per-day results and ADRs (`notes/decisions.md`)
