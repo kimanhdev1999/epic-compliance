@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/belleasia/BelleGitRepos/HealthcareApp/epic-compliance-tool",
+        "/Users/belleasia/BelleGitRepos/HealthcareApp/onc-certification-g10-test-kit"
+      ]
+    }
+  },
+  "permissions": {
+    "allow": [
+      "Bash(podman compose *)",
+      "Bash(podman ps*)",
+      "Bash(podman compose logs*)",
+      "Bash(find /Users/belleasia/BelleGitRepos/HealthcareApp/**)",
+      "Bash(git status:*)",
+      "Bash(git add *)",
+      "Bash(git commit -m '*)",
+      "Bash(git push *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Read(/Users/belleasia/BelleGitRepos/HealthcareApp/**)"
+    ]
+  }
+}
