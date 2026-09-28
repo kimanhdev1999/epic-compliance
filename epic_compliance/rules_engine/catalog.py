@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel
 
+from ..paths import resource_root
 
-RULES_DIR = Path(__file__).parent.parent.parent / "rules"
+RULES_DIR = resource_root() / "rules"
 
 
 class Rule(BaseModel):
