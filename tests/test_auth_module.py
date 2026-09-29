@@ -25,10 +25,12 @@ from epic_compliance.smart.pkce import (
 )
 
 AUTH_RULES = {r.id: r for r in load_rules() if r.category == "auth"}
+ALL_RULES = {r.id: r for r in load_rules()}
 
 
 def _finding(rule_id: str, evidence: dict):
-    return AUTOMATED_CHECKS[rule_id](evidence, AUTH_RULES[rule_id])
+    rules = AUTH_RULES if rule_id in AUTH_RULES else ALL_RULES
+    return AUTOMATED_CHECKS[rule_id](evidence, rules[rule_id])
 
 
 # ─── state / CSRF ────────────────────────────────────────────────────────────
@@ -63,7 +65,7 @@ def test_live_mode_marks_token_unavailable_instead_of_using_the_mock(monkeypatch
         def __init__(self, **kw):
             self.kw = kw
 
-        def fetch_all_us_core(self):
+        def fetch_all_us_core(self, patient_id="mock-patient-id"):
             return {}
 
     monkeypatch.setattr(pipeline_mod, "FhirClient", _StubClient)
@@ -71,10 +73,11 @@ def test_live_mode_marks_token_unavailable_instead_of_using_the_mock(monkeypatch
     ev = collect_evidence(AppConfig(RUN_MODE="live"))
     assert ev["token_response"] == {"_unavailable": TOKEN_UNAVAILABLE_REASON}
     assert ev["auth_probe"] == {"_unavailable": TOKEN_UNAVAILABLE_REASON}
+    assert ev["write_back"] == {"_unavailable": TOKEN_UNAVAILABLE_REASON}
     assert pkce_mod.MOCK_TOKEN_RESPONSE.access_token not in str(ev)
 
     # and the rules built on it must not report a pass
-    for rule_id in ("AUTH-003", "AUTH-005"):
+    for rule_id in ("AUTH-003", "AUTH-005", "WRITE-001", "WRITE-002", "WRITE-003", "WRITE-004"):
         assert _finding(rule_id, ev).verdict == "needs_human"
 
 

@@ -21,6 +21,11 @@
                value="{{ defaults.fhir_base_url or '' }}"
                placeholder="https://fhir.epic.com/.../api/FHIR/R4">
       </div>
+      <div class="hint">
+        Live mode needs a real access token before token- and write-back-dependent
+        rules can pass or fail. <a href="/launch">Start a live SMART launch</a> first
+        (opens Epic's login, redirects back to /callback), then run the check below.
+      </div>
       <div class="row">
         <label for="oauth_client_id">OAuth client ID</label>
         <input type="text" id="oauth_client_id" name="oauth_client_id"

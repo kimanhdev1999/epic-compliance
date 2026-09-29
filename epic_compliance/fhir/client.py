@@ -121,3 +121,37 @@ class FhirClient:
             except Exception as exc:
                 results[rt] = {"resourceType": rt, "_error": str(exc)}
         return results
+
+    def post_resource(self, resource: dict[str, Any]) -> dict[str, Any]:
+        """POST one resource to the FHIR server, as this app's own client (write-back).
+
+        This app never hosts a FHIR server for others to query (see
+        fhir/writeback.py) — this is the one place it acts as a write client.
+
+        Returns ``{"status_code": int, "resource": dict}`` on any HTTP response
+        (2xx or not — a 403 is a valid, informative result, not an exception).
+        Returns ``{"status_code": None, "_error": str}`` only if the request
+        could not be made at all (network failure). Mock mode fabricates a 201
+        Created response with a synthetic id so the pipeline runs offline.
+        """
+        rt = resource.get("resourceType", "Resource")
+        if self.mock:
+            created = dict(resource)
+            created["id"] = f"mock-{rt.lower()}-created-1"
+            return {"status_code": 201, "resource": created}
+
+        url = f"{self.base_url}/{rt}"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/fhir+json",
+            "Accept": "application/fhir+json",
+        }
+        try:
+            resp = httpx.post(url, json=resource, headers=headers, timeout=15)
+        except (httpx.HTTPError, httpx.TimeoutException) as exc:
+            return {"status_code": None, "_error": str(exc)}
+        try:
+            body = resp.json()
+        except ValueError:
+            body = {"_raw": resp.text[:500]}
+        return {"status_code": resp.status_code, "resource": body}

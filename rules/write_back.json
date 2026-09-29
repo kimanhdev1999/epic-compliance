@@ -1,0 +1,42 @@
+[
+  {
+    "id": "WRITE-001",
+    "category": "write_back",
+    "source": "US Core IG v6.1 DiagnosticReport (Note) profile; ONC (g)(10) §170.315(g)(10)(i)",
+    "severity": "critical",
+    "evidence_needed": "write_back.DiagnosticReport",
+    "check_type": "automated",
+    "description": "App must construct a US Core-conformant DiagnosticReport (status, code, subject, result reference) and successfully POST it to Epic",
+    "remediation_hint": "Ensure the DiagnosticReport includes status, category, code, subject reference, and a result reference to its Observation, and that the POST returns 2xx (not 401/403/422)."
+  },
+  {
+    "id": "WRITE-002",
+    "category": "write_back",
+    "source": "US Core IG v6.1 Observation profile; ONC (g)(10) §170.315(g)(10)(i)",
+    "severity": "critical",
+    "evidence_needed": "write_back.Observation",
+    "check_type": "automated",
+    "description": "App must construct a US Core-conformant Observation for the AI diagnosis finding and successfully POST it to Epic",
+    "remediation_hint": "Ensure the Observation includes status, category, code, and a subject reference, and that the POST returns 2xx."
+  },
+  {
+    "id": "WRITE-003",
+    "category": "write_back",
+    "source": "HL7 FHIR R4 Media resource (no US Core 3.1.1 profile exists for Media)",
+    "severity": "high",
+    "evidence_needed": "write_back.Media",
+    "check_type": "automated",
+    "description": "App must construct a valid Media resource referencing the source photo and successfully POST it to Epic",
+    "remediation_hint": "Ensure the Media resource includes status, subject reference, and content (contentType + url or data), and that the POST returns 2xx."
+  },
+  {
+    "id": "WRITE-004",
+    "category": "write_back",
+    "source": "SMART App Launch IG v2.0 §7 (scopes); ONC (g)(10) §170.315(g)(10)(v)(A)",
+    "severity": "critical",
+    "evidence_needed": "write_back.Observation, write_back.DiagnosticReport, write_back.Media",
+    "check_type": "automated",
+    "description": "Write scopes granted at launch (patient/DiagnosticReport.write, patient/Observation.write, patient/Media.write) must actually be honored, proven by successful writes rather than by inspecting the requested scope string",
+    "remediation_hint": "Request patient/DiagnosticReport.write, patient/Observation.write, and patient/Media.write at launch and confirm Epic's app registration grants them — a 401/403 on any write means the scope was requested but not honored."
+  }
+]
