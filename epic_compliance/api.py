@@ -20,6 +20,7 @@ JSON API (back-compat + additions)
 """
 from __future__ import annotations
 
+import secrets
 from pathlib import Path
 from typing import Any
 
@@ -28,10 +29,12 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import store
+from . import pipeline, store
 from .config import OVERRIDABLE_FIELDS, config_with_overrides, get_config
 from .models import Report
 from .pipeline import run_full_pipeline
+from .smart.discovery import fetch_smart_configuration
+from .smart.pkce import build_authorization_url, exchange_code_for_token, generate_pkce
 from .viewmodel import build_report_view
 
 BASE_DIR = Path(__file__).parent
@@ -41,6 +44,27 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 _last_report: Report | None = None
+
+# Pending live launches, keyed by the random `state` value, holding the PKCE
+# verifier and endpoint info needed to complete the exchange at /callback.
+# In-memory / single-tenant — matches config.py's single-tenant scope; not a
+# session store for multiple concurrent users.
+_pending_launches: dict[str, dict[str, Any]] = {}
+
+#: Scopes requested for a live write-back launch: read scopes so the pipeline
+#: can still fetch US Core resources, plus the write scopes WRITE-004 checks.
+LAUNCH_SCOPES = [
+    "openid",
+    "fhirUser",
+    "launch/patient",
+    "offline_access",
+    "patient/Patient.read",
+    "patient/Observation.read",
+    "patient/Condition.read",
+    "patient/DiagnosticReport.write",
+    "patient/Observation.write",
+    "patient/Media.write",
+]
 
 
 def render(request: Request, name: str, **ctx: Any) -> HTMLResponse:
@@ -182,6 +206,111 @@ def save_config(
         }
     )
     return RedirectResponse(url="/config?saved=true", status_code=303)
+
+
+# --------------------------------------------------------------------------- #
+# Live SMART launch — /launch starts it, /callback completes it.
+#
+# This app is a "direction B" write-back client: it never hosts a FHIR server
+# or authorization server of its own. These two routes are this web app's half
+# of a normal SMART launch — the same role any app plays when Epic redirects
+# a user back to it.
+# --------------------------------------------------------------------------- #
+@app.get("/launch")
+def start_launch(request: Request) -> RedirectResponse:
+    """Begin a live SMART launch: discover Epic's endpoints, then redirect the
+    browser to Epic's authorization endpoint. Completes at GET /callback."""
+    config = get_config()
+    smart_config = fetch_smart_configuration(config.fhir_base_url, mock=False)
+    if not smart_config.authorization_endpoint:
+        raise HTTPException(
+            status_code=502,
+            detail="Could not discover authorization_endpoint from .well-known/smart-configuration.",
+        )
+
+    pkce = generate_pkce()
+    state = secrets.token_urlsafe(24)
+    _pending_launches[state] = {
+        "pkce": pkce,
+        "redirect_uri": config.oauth_redirect_uri,
+        "client_id": config.oauth_client_id,
+        "client_secret": config.oauth_client_secret,
+        "token_endpoint": smart_config.token_endpoint,
+    }
+
+    url = build_authorization_url(
+        authorization_endpoint=smart_config.authorization_endpoint,
+        client_id=config.oauth_client_id,
+        redirect_uri=config.oauth_redirect_uri,
+        scopes=LAUNCH_SCOPES,
+        pkce=pkce,
+        state=state,
+        aud=config.fhir_base_url,
+    )
+    return RedirectResponse(url=url, status_code=302)
+
+
+@app.get("/callback", response_class=HTMLResponse)
+def smart_callback(
+    request: Request,
+    code: str = "",
+    state: str = "",
+    error: str = "",
+    error_description: str = "",
+) -> Any:
+    """Complete the authorization-code + PKCE exchange after Epic redirects here.
+
+    On success, populates pipeline's in-process live-token holder so the next
+    /api/run or "Run compliance check" (with run_mode=live) uses a real token
+    instead of marking token- and write-back-dependent rules needs_human.
+    """
+    if error:
+        return render(
+            request, "_callback_result.html", ok=False,
+            message=f"Epic returned an error: {error} — {error_description}",
+        )
+
+    # Looking the state up by exact dict key already proves the round trip —
+    # an attacker without the state value this app generated cannot land here.
+    pending = _pending_launches.pop(state, None)
+    if pending is None:
+        return render(
+            request, "_callback_result.html", ok=False,
+            message="Unknown or expired launch state. Start a new launch at /launch.",
+        )
+    if not code:
+        return render(
+            request, "_callback_result.html", ok=False,
+            message="Epic's redirect had no authorization code.",
+        )
+
+    try:
+        token = exchange_code_for_token(
+            token_endpoint=pending["token_endpoint"],
+            code=code,
+            client_id=pending["client_id"],
+            redirect_uri=pending["redirect_uri"],
+            code_verifier=pending["pkce"].code_verifier,
+            client_secret=pending["client_secret"],
+        )
+    except Exception as exc:  # token exchange failure is a launch failure, not a 500
+        return render(
+            request, "_callback_result.html", ok=False,
+            message=f"Token exchange failed: {exc}",
+        )
+
+    # A normal launch only proves the state round-trip. AUTH-007..010's other
+    # negative-path probes (wrong verifier, replayed code, cross-patient read,
+    # id_token signature) are deliberate misuse this endpoint never attempts on
+    # purpose — those stay needs_human here and are proven by
+    # tests/test_smart_launch_e2e.py (pytest -m launch) instead.
+    pipeline.set_live_token(token, auth_probe={"state_validated": True})
+
+    return render(
+        request, "_callback_result.html", ok=True,
+        message=f"Live launch complete for patient {token.patient!r}. "
+                "Go to the dashboard and run a live compliance check.",
+    )
 
 
 # --------------------------------------------------------------------------- #

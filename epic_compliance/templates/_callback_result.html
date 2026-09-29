@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}SMART Launch — Epic Compliance{% endblock %}
+{% block content %}
+<h1>SMART launch {{ "complete" if ok else "failed" }}</h1>
+<div class="card" style="border-color: {{ 'var(--accent)' if ok else '#c0392b' }}">
+  <p>{{ message }}</p>
+  <div class="actions">
+    <a class="btn" href="/">Back to dashboard</a>
+    {% if not ok %}<a class="btn" href="/launch">Retry launch</a>{% endif %}
+  </div>
+</div>
+{% endblock %}

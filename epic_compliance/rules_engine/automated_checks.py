@@ -299,6 +299,111 @@ def _check_fhir_005(evidence: dict[str, Any], rule: Rule) -> Finding:
     )
 
 
+def _write_entry(evidence: dict[str, Any], resource_type: str) -> dict[str, Any]:
+    return evidence.get("write_back", {}).get(resource_type, {})
+
+
+def _check_write_resource(evidence: dict[str, Any], rule: Rule, resource_type: str) -> Finding:
+    """Shared logic for WRITE-001/002/003: construct + validate + POST one
+    write-back resource type. Tri-state: pass only if the payload validated
+    clean against US Core AND the POST returned 2xx; needs_human if either the
+    validator or the POST never ran; fail otherwise."""
+    unavailable = _unavailable(evidence, "write_back", rule)
+    if unavailable is not None:
+        return unavailable
+
+    entry = _write_entry(evidence, resource_type)
+    if not entry:
+        return Finding(
+            rule_id=rule.id,
+            verdict="needs_human",
+            evidence=f"No write-back evidence collected for {resource_type}.",
+            remediation_hint=rule.remediation_hint,
+            severity=rule.severity,
+            category=rule.category,
+            citation="Evidence not collected — rule not evaluated.",
+        )
+
+    valid = entry.get("validation_valid")
+    posted = entry.get("posted")
+    status = entry.get("status_code")
+    summary = entry.get("validation_summary", "")
+
+    if valid is None or posted is None:
+        return Finding(
+            rule_id=rule.id,
+            verdict="needs_human",
+            evidence=(
+                f"{resource_type}: validation_valid={valid} ({summary}); "
+                f"posted={posted} (status={status}, error={entry.get('error', '')})"
+            ),
+            remediation_hint=rule.remediation_hint,
+            severity=rule.severity,
+            category=rule.category,
+            citation="Validator or POST result unavailable — cannot judge conformance.",
+        )
+
+    ok = bool(valid) and bool(posted)
+    return Finding(
+        rule_id=rule.id,
+        verdict="pass" if ok else "fail",
+        evidence=f"{resource_type}: validation={summary}; POST status={status}",
+        remediation_hint=rule.remediation_hint,
+        severity=rule.severity,
+        category=rule.category,
+    )
+
+
+def _check_write_001(evidence: dict[str, Any], rule: Rule) -> Finding:
+    """DiagnosticReport write-back: valid US Core payload, POST succeeds."""
+    return _check_write_resource(evidence, rule, "DiagnosticReport")
+
+
+def _check_write_002(evidence: dict[str, Any], rule: Rule) -> Finding:
+    """Observation write-back: valid US Core payload, POST succeeds."""
+    return _check_write_resource(evidence, rule, "Observation")
+
+
+def _check_write_003(evidence: dict[str, Any], rule: Rule) -> Finding:
+    """Media write-back: valid payload, POST succeeds."""
+    return _check_write_resource(evidence, rule, "Media")
+
+
+def _check_write_004(evidence: dict[str, Any], rule: Rule) -> Finding:
+    """Write scopes actually granted — proven by the write attempts succeeding,
+    not by inspecting the requested/granted scope string. A 403/401 on any of
+    the three POSTs means that write scope was not actually honored."""
+    unavailable = _unavailable(evidence, "write_back", rule)
+    if unavailable is not None:
+        return unavailable
+
+    resource_types = ("Observation", "DiagnosticReport", "Media")
+    posted = {rt: _write_entry(evidence, rt).get("posted") for rt in resource_types}
+    status = {rt: _write_entry(evidence, rt).get("status_code") for rt in resource_types}
+
+    if any(v is None for v in posted.values()):
+        return Finding(
+            rule_id=rule.id,
+            verdict="needs_human",
+            evidence=f"One or more write attempts did not complete: status_codes={status}",
+            remediation_hint=rule.remediation_hint,
+            severity=rule.severity,
+            category=rule.category,
+            citation="A write attempt never completed — cannot judge whether the scope was granted.",
+        )
+
+    denied = [rt for rt, ok in posted.items() if not ok and status[rt] in (401, 403)]
+    ok = all(posted.values())
+    return Finding(
+        rule_id=rule.id,
+        verdict="pass" if ok else "fail",
+        evidence=f"write_scopes_effective={ok}; status_codes={status}; denied={denied}",
+        remediation_hint=rule.remediation_hint,
+        severity=rule.severity,
+        category=rule.category,
+    )
+
+
 # Registry: map rule_id -> check function
 AUTOMATED_CHECKS = {
     "AUTH-001": _check_auth_001,
@@ -316,6 +421,10 @@ AUTOMATED_CHECKS = {
     "FHIR-003": _check_fhir_003,
     "FHIR-004": _check_fhir_004,
     "FHIR-005": _check_fhir_005,
+    "WRITE-001": _check_write_001,
+    "WRITE-002": _check_write_002,
+    "WRITE-003": _check_write_003,
+    "WRITE-004": _check_write_004,
     # SEAM: HL7 FHIR Validator wrapping will add rule IDs here (e.g. FHIR-V-*)
     # SEAM: ONC g10 Test Kit invocation will add rule IDs here (e.g. ONC-G10-*)
 }

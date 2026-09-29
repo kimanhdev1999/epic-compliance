@@ -110,3 +110,54 @@ evidence: absence of proof is not proof of compliance.
   resolution fails.
 - The validator JVM needs >2 GB; the podman machine must be sized accordingly
   (`podman machine set --memory 6144`) or the container is OOM-killed.
+
+---
+
+## ADR-007: Write-back only ("direction B") — this app never hosts a FHIR server
+
+Date: 2026-09-29
+
+### Decision
+The app this tool verifies sends a patient photo to its own backend, runs an
+AI diagnosis, then **POSTs** the result into Epic as FHIR resources
+(`Observation`, `DiagnosticReport`, `Media`) using write scopes granted at
+SMART launch. The doctor sees the result natively in Epic's chart. This tool's
+write-back rules (`rules/write_back.json`, `WRITE-001..004`) test exactly that:
+this app acting as an outbound FHIR *client* making POST calls, the same role
+every SMART app already plays for reads.
+
+The alternative ("direction C" — the app hosts its own FHIR API/CapabilityStatement
+for Epic, or anyone, to query) was explicitly rejected and nothing resembling it
+was built: no `CapabilityStatement` route, no SMART Backend Services server-side
+auth, no inbound FHIR endpoint anywhere in `epic_compliance/`.
+
+### Reasoning
+- **Scaling to Epic's App Market.** Direction C means standing up and
+  operating a FHIR server, per customer organization, that Epic (or Epic's
+  proxy layer) must be able to reach and trust. Direction B means this app is
+  a garden-variety SMART client — Epic already knows how to authorize and
+  receive writes from those, at any scale, with no new infrastructure per
+  customer.
+- **Data lives where the doctor already looks.** A push into the patient's
+  actual chart is clinically useful immediately; a second FHIR server the EHR
+  has to be taught to poll is not how any current Epic integration pattern
+  works.
+- **Smaller attack surface.** No inbound authorization server, no server-side
+  scope enforcement, no possibility of a misconfigured CapabilityStatement
+  leaking PHI to an unintended caller. The only new capability this app has is
+  "can construct and POST a well-formed FHIR resource," which is exactly what
+  WRITE-001..004 test.
+
+### Consequences
+- `epic_compliance/fhir/writeback.py` only builds resource *bodies*; it has no
+  route decorators, no server logic.
+- `FhirClient.post_resource()` (epic_compliance/fhir/client.py) is the only
+  new capability added to the FHIR client — an outbound POST, not a listener.
+- WRITE-004 ("write scopes actually granted") is proven the same way the
+  AUTH-006..010 negative-path probes are proven: by the actual attempt
+  succeeding or being refused (401/403), never by reading the requested-scope
+  string back to itself.
+- The validator (`epic_compliance/validator/`) is reused unchanged for
+  outgoing payloads — `get_validator(config).validate(resource, profile)` is
+  called on the constructed Observation/DiagnosticReport/Media before POSTing,
+  same tri-state `is_valid()` semantics as the read path.
