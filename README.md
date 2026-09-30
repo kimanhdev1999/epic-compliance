@@ -33,13 +33,14 @@ For the skin app, a run tells you concretely:
 - The patient context handed to your app is real and usable: you get a `patient` id, `openid`/`fhirUser` claims, and at least `patient/*.read` scope, so the photo you capture can be attached to the right person (`AUTH-003`, `AUTH-005`).
 - The clinical data you read back to give the model context — demographics, `Condition`, `Observation` — conforms to US Core and declares its profiles, so your feature won't break on the next customer's Epic build (`FHIR-001…005`).
 - Your PHI posture gets stated and judged, not assumed: TLS 1.2+, audit logging on every PHI access, and a BAA with Epic and every subprocessor that sees an image (`SEC-001…003`). If the image goes to a third-party inference API, that vendor needs a BAA — this is the check teams most often discover too late.
+- Once your model has a diagnosis, you can write it back into the patient's Epic chart as `Observation`/`DiagnosticReport`/`Media` — the check confirms those POSTs are correctly shaped against US Core and that your write scopes are actually honored, not just requested (`WRITE-001…004`).
 
 **Just as important, what it does _not_ decide.** It is a conformance and
 evidence tool, not a market-approval oracle:
 
 - It has no opinion on your model. Clinical validity, sensitivity/specificity, bias across skin tones, and whether lesion-flagging makes you an FDA-regulated device (SaMD) are all out of scope.
 - It doesn't audit your app's source, mobile storage, or key handling. The `SEC-*` rules judge the evidence you give them and return `needs_human` when that evidence is thin — by design.
-- It doesn't cover writing results back (e.g. `DocumentReference`/`Media` for the image, or a note into the chart). Today's rules are read-path only.
+- It covers the write-back path (posting `Observation`/`DiagnosticReport`/`Media` back into Epic), but it is a client-only check: it verifies your app's outbound POSTs conform and honor scopes. It does not stand up or validate a FHIR server of your own.
 - It is not Epic's review. Epic runs its own vendor, security, and business process, and their published requirements are the authority — treat a clean run as evidence you bring to that review, not a substitute for it.
 
 Practical way to use it: run it in mock mode to see the rule set, then run it
@@ -96,6 +97,7 @@ change needed:
 | `rules/auth.json` | 5 | automated (SMART discovery, PKCE S256, scopes, token shape) |
 | `rules/fhir_resources.json` | 5 | automated (US Core resource / profile conformance) |
 | `rules/security.json` | 3 | llm (narrative security & privacy requirements) |
+| `rules/write_back.json` | 4 | automated (Observation/DiagnosticReport/Media POST, US Core 3.1.1 shape, write-scope enforcement) |
 
 Each rule carries `id, category, source, severity, evidence_needed, check_type,
 description, remediation_hint`. An `automated` rule needs a matching function in
@@ -109,8 +111,9 @@ the `AUTOMATED_CHECKS` registry; if one is missing the engine emits
 | SMART discovery, PKCE (S256), FHIR fetch, automated checks | Real |
 | LLM evaluator (Claude) | Real; mock returns `needs_human` |
 | Web UI, run history, HTML/print export, JSON API | Real |
+| Write-back (`Observation`/`DiagnosticReport`/`Media` POST, `/callback` route) | Real (mock + live client POST); no live sandbox run yet — see `notes/day-writeback-results.md` |
 | OAuth token exchange inside the pipeline | **Stub** — uses `MOCK_TOKEN_RESPONSE`; live flow needs a browser redirect |
-| HL7 FHIR Validator, ONC g10 Test Kit | Seams only — not yet wired |
+| HL7 FHIR Validator, ONC g10 Test Kit | Seams only — not yet wired; WRITE-001/002/003 report `needs_human` until it's running |
 
 ## Build a standalone Mac app
 
