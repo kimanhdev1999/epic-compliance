@@ -1,0 +1,78 @@
+[
+  {
+    "case_id": "sec001-tls13-pass",
+    "rule_id": "SEC-001",
+    "evidence": {"transport_tls_version": "1.3"},
+    "expected_verdict": "pass",
+    "note": "TLS 1.3 clearly satisfies 'TLS 1.2 or higher'."
+  },
+  {
+    "case_id": "sec001-tls12-pass",
+    "rule_id": "SEC-001",
+    "evidence": {"transport_tls_version": "1.2"},
+    "expected_verdict": "pass",
+    "note": "Exactly meets the stated minimum."
+  },
+  {
+    "case_id": "sec001-tls10-fail",
+    "rule_id": "SEC-001",
+    "evidence": {"transport_tls_version": "1.0"},
+    "expected_verdict": "fail",
+    "note": "Below the required minimum."
+  },
+  {
+    "case_id": "sec001-unattested-needs-human",
+    "rule_id": "SEC-001",
+    "evidence": {"_unavailable": "No app_config fields attested"},
+    "expected_verdict": "needs_human",
+    "note": "No TLS version was ever attested — evaluator must not guess pass or fail."
+  },
+  {
+    "case_id": "sec002-logging-enabled-pass",
+    "rule_id": "SEC-002",
+    "evidence": {
+      "audit_logging_enabled": "true",
+      "audit_log_retention_days": "2555"
+    },
+    "expected_verdict": "pass",
+    "note": "2555 days = 7 years, exceeds HIPAA's 6-year minimum."
+  },
+  {
+    "case_id": "sec002-logging-disabled-fail",
+    "rule_id": "SEC-002",
+    "evidence": {"audit_logging_enabled": "false", "audit_log_retention_days": "0"},
+    "expected_verdict": "fail",
+    "note": "Audit logging explicitly off."
+  },
+  {
+    "case_id": "sec002-retention-too-short-fail",
+    "rule_id": "SEC-002",
+    "evidence": {"audit_logging_enabled": "true", "audit_log_retention_days": "90"},
+    "expected_verdict": "fail",
+    "note": "Logging is on but retention (90 days) is far short of the 6-year HIPAA minimum."
+  },
+  {
+    "case_id": "sec003-baa-pass",
+    "rule_id": "SEC-003",
+    "evidence": {
+      "baa_in_place": "true",
+      "covered_entity_relationship": "business_associate"
+    },
+    "expected_verdict": "pass",
+    "note": "BAA executed and relationship is correctly characterized."
+  },
+  {
+    "case_id": "sec003-no-baa-fail",
+    "rule_id": "SEC-003",
+    "evidence": {"baa_in_place": "false", "covered_entity_relationship": "business_associate"},
+    "expected_verdict": "fail",
+    "note": "App handles PHI as a business associate but has no BAA executed."
+  },
+  {
+    "case_id": "sec003-unattested-needs-human",
+    "rule_id": "SEC-003",
+    "evidence": {"_unavailable": "No app_config fields attested"},
+    "expected_verdict": "needs_human",
+    "note": "No BAA status was ever attested."
+  }
+]

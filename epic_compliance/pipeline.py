@@ -167,12 +167,27 @@ def collect_evidence(config: AppConfig) -> dict[str, Any]:
     else:
         write_back = {"_unavailable": TOKEN_UNAVAILABLE_REASON}
 
+    app_config_fields = {
+        "transport_tls_version": config.transport_tls_version,
+        "audit_logging_enabled": config.audit_logging_enabled,
+        "audit_log_retention_days": config.audit_log_retention_days,
+        "baa_in_place": config.baa_in_place,
+        "covered_entity_relationship": config.covered_entity_relationship,
+    }
+    attested = {k: v for k, v in app_config_fields.items() if v}
+    app_config = attested if attested else {
+        "_unavailable": "No app_config fields attested — set TRANSPORT_TLS_VERSION, "
+        "AUDIT_LOGGING_ENABLED, AUDIT_LOG_RETENTION_DAYS, BAA_IN_PLACE, "
+        "COVERED_ENTITY_RELATIONSHIP in .env or the dashboard form."
+    }
+
     return {
         "smart_configuration": smart_config.model_dump(),
         "token_response": token_evidence,
         "auth_probe": auth_probe,
         "fhir_resources": fhir_resources,
         "write_back": write_back,
+        "app_config": app_config,
         "run_mode": config.run_mode,
     }
 

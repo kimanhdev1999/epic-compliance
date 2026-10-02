@@ -161,3 +161,65 @@ auth, no inbound FHIR endpoint anywhere in `epic_compliance/`.
   outgoing payloads — `get_validator(config).validate(resource, profile)` is
   called on the constructed Observation/DiagnosticReport/Media before POSTing,
   same tri-state `is_valid()` semantics as the read path.
+
+---
+
+## ADR-008: Wire SEC-00x LLM rules to real app_config evidence, add an eval harness
+
+Date: 2026-10-02
+
+### Decision
+Found that `SEC-001/002/003` (`rules/security.json`) were structurally dead:
+their `evidence_needed` referenced `app_config` fields (`transport_tls_version`,
+`audit_logging_enabled`, `audit_log_retention_days`, `baa_in_place`,
+`covered_entity_relationship`) that were never collected anywhere —
+`collect_evidence()` had no `app_config` key, and `_build_evidence_for_llm()`
+only pulled `smart_configuration`/`token_response`. Every live call to the LLM
+evaluator for these three rules was therefore sending no real evidence, making
+`needs_human` the only honest outcome regardless of the actual app's posture.
+
+Also found `epic_compliance/rules_engine/llm_evaluator.py` had zero test
+coverage and no way to know whether its verdicts agree with a human — the
+mock/citation/parsing invariants in its own docstring were unverified.
+
+Fixed both:
+- Added the five `app_config` fields to `AppConfig` (env-settable, default `""`
+  = not attested) and to `OVERRIDABLE_FIELDS`; `collect_evidence()` now emits
+  an `app_config` evidence block (`_unavailable` if nothing was attested,
+  never a silent empty dict that could read as "nothing wrong").
+  `_build_evidence_for_llm()` now includes it.
+- `tests/test_llm_evaluator.py` — mock mode, response parsing (direct JSON,
+  JSON embedded in prose, malformed, invalid verdict), and the live path
+  against a stubbed `anthropic` client (never touches the network): citation
+  invariant, missing-citation-forces-needs_human, requirement+evidence are
+  actually sent.
+- `scripts/eval_llm_rules.py` + `tests/fixtures/llm_eval_cases.json` (10 hand-labeled
+  cases across all three SEC rules) — a runnable harness that scores the real
+  LLM's verdicts against expected ones (`needs_human` always counts as a safe
+  non-miss; a confident wrong verdict is the only true miss). `--mock` runs the
+  harness without an API key as a sanity check of the harness itself, not an
+  eval. `tests/test_llm_eval_harness.py` covers the scoring logic with a
+  stubbed `evaluate_with_llm`, so CI never needs `ANTHROPIC_API_KEY`.
+
+### Reasoning
+A compliance tool whose LLM-assisted checks silently never had real input is
+worse than one that's honest about not checking at all — `needs_human` was
+masking a wiring gap, not reflecting a genuine "needs a human" case. Fixing
+the evidence path is what makes `needs_human` → `pass`/`fail` on these rules
+mean something. The eval harness exists because "the LLM evaluator runs
+without crashing" (what the old test suite covered — nothing) is not the same
+claim as "the LLM evaluator agrees with a human reviewer," and only the latter
+is worth anything for a compliance tool.
+
+### Consequences
+- Running with `RUN_MODE=live` and a real `ANTHROPIC_API_KEY` but no
+  `TRANSPORT_TLS_VERSION`/etc. set still correctly yields `needs_human` for
+  SEC-001/002/003 — attestation is opt-in via `.env`, not auto-discovered (no
+  code exists anywhere to introspect a third-party app's actual TLS config or
+  BAA status; that's inherently a human-attested fact).
+- `scripts/eval_llm_rules.py` should be re-run (with a real API key) any time
+  `SEC-00x` wording or the LLM system prompt changes — it's the only thing
+  that would catch a prompt change silently flipping verdicts on known cases.
+- Dashboard form (`epic_compliance/templates/dashboard.html`) was **not**
+  updated to expose the five new fields — they're `.env`-only for now. Adding
+  UI controls for them is a separate, smaller follow-up if wanted.

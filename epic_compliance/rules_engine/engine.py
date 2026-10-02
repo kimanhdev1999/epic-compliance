@@ -15,7 +15,7 @@ def _build_evidence_for_llm(rule: Rule, evidence: dict[str, Any]) -> str:
     # For security rules we summarize available config context
     parts = [f"Rule: {rule.description}", f"Evidence needed: {rule.evidence_needed}"]
     # Include any relevant top-level evidence keys
-    for key in ["smart_configuration", "token_response"]:
+    for key in ["smart_configuration", "token_response", "app_config"]:
         if key in evidence:
             parts.append(f"{key}: {evidence[key]}")
     # Add a note that this is mock/sandbox data when applicable
