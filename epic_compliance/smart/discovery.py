@@ -23,6 +23,7 @@ REQUIRED_CAPABILITIES = [
 class SmartConfiguration(BaseModel):
     authorization_endpoint: str = ""
     token_endpoint: str = ""
+    jwks_uri: str = ""
     capabilities: list[str] = []
     code_challenge_methods_supported: list[str] = []
     scopes_supported: list[str] = []
@@ -34,6 +35,7 @@ class SmartConfiguration(BaseModel):
 MOCK_SMART_CONFIG = SmartConfiguration(
     authorization_endpoint="https://fhir.epic.com/interconnect-fhir-oauth/oauth2/authorize",
     token_endpoint="https://fhir.epic.com/interconnect-fhir-oauth/oauth2/token",
+    jwks_uri="https://fhir.epic.com/interconnect-fhir-oauth/oauth2/jwks",
     capabilities=[
         "launch-ehr",
         "launch-standalone",
@@ -59,7 +61,7 @@ MOCK_SMART_CONFIG = SmartConfiguration(
         "user/*.read",
     ],
     issuer="https://fhir.epic.com/interconnect-fhir-oauth/oauth2",
-    raw={"mock": True},
+    raw={"mock": True, "jwks_uri": "https://fhir.epic.com/interconnect-fhir-oauth/oauth2/jwks"},
 )
 
 
@@ -75,6 +77,7 @@ def fetch_smart_configuration(fhir_base_url: str, mock: bool = False) -> SmartCo
     return SmartConfiguration(
         authorization_endpoint=data.get("authorization_endpoint", ""),
         token_endpoint=data.get("token_endpoint", ""),
+        jwks_uri=data.get("jwks_uri", ""),
         capabilities=data.get("capabilities", []),
         code_challenge_methods_supported=data.get("code_challenge_methods_supported", []),
         scopes_supported=data.get("scopes_supported", []),
