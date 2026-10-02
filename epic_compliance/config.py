@@ -48,6 +48,16 @@ class AppConfig(BaseSettings):
     validator_jar_path: str = Field(default="", alias="VALIDATOR_JAR_PATH")
     validator_timeout_s: float = Field(default=60.0, alias="VALIDATOR_TIMEOUT_S")
 
+    # --- App-under-test config (SEC-00x LLM rules need these, not Epic's) --
+    # These describe the app being compliance-tested, not this tool itself.
+    # Unset (default "") means "not attested" -> the LLM evaluator correctly
+    # sees no evidence and returns needs_human rather than guessing a pass.
+    transport_tls_version: str = Field(default="", alias="TRANSPORT_TLS_VERSION")
+    audit_logging_enabled: str = Field(default="", alias="AUDIT_LOGGING_ENABLED")
+    audit_log_retention_days: str = Field(default="", alias="AUDIT_LOG_RETENTION_DAYS")
+    baa_in_place: str = Field(default="", alias="BAA_IN_PLACE")
+    covered_entity_relationship: str = Field(default="", alias="COVERED_ENTITY_RELATIONSHIP")
+
 
 _config: AppConfig | None = None
 
@@ -71,6 +81,11 @@ OVERRIDABLE_FIELDS = {
     "run_mode",
     "onc_test_kit_url",
     "anthropic_api_key",
+    "transport_tls_version",
+    "audit_logging_enabled",
+    "audit_log_retention_days",
+    "baa_in_place",
+    "covered_entity_relationship",
 }
 
 
