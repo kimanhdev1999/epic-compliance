@@ -122,7 +122,14 @@ def collect_evidence(config: AppConfig) -> dict[str, Any]:
     """
     mock = config.run_mode == "mock"
 
-    smart_config = fetch_smart_configuration(config.fhir_base_url, mock=mock)
+    # A failed discovery is itself the AUTH-001 finding, not a crashed run —
+    # a wrong FHIR_BASE_URL must surface as a fail with a fix hint.
+    try:
+        smart_evidence: dict[str, Any] = fetch_smart_configuration(
+            config.fhir_base_url, mock=mock
+        ).model_dump()
+    except Exception as exc:
+        smart_evidence = {"_error": f"{type(exc).__name__}: {exc}"}
 
     if mock:
         token: TokenResponse | None = MOCK_TOKEN_RESPONSE
@@ -159,7 +166,12 @@ def collect_evidence(config: AppConfig) -> dict[str, Any]:
         access_token=access_token,
         mock=mock,
     )
-    fhir_resources = fhir_client.fetch_all_us_core(patient_id)
+    if token is not None:
+        fhir_resources = fhir_client.fetch_all_us_core(patient_id)
+    else:
+        # Reading with an empty bearer token only yields 401s, which the FHIR
+        # rules would misread as non-conformant data.
+        fhir_resources = {"_unavailable": TOKEN_UNAVAILABLE_REASON}
 
     if token is not None:
         validator = get_validator(config)
@@ -182,7 +194,7 @@ def collect_evidence(config: AppConfig) -> dict[str, Any]:
     }
 
     return {
-        "smart_configuration": smart_config.model_dump(),
+        "smart_configuration": smart_evidence,
         "token_response": token_evidence,
         "auth_probe": auth_probe,
         "fhir_resources": fhir_resources,

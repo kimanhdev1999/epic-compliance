@@ -14,6 +14,9 @@ RULES_DIR = resource_root() / "rules"
 class Rule(BaseModel):
     id: str
     category: str
+    # What a pass actually proves — see SUBJECTS in viewmodel.py. A rule that
+    # only exercises Epic must never read as evidence about the app itself.
+    subject: str = ""
     source: str
     severity: str
     evidence_needed: str

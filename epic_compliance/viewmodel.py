@@ -21,6 +21,31 @@ CATEGORY_LABELS = {
 }
 
 
+#: What each rule's verdict is evidence *about*. key → (badge, explanation).
+SUBJECTS = {
+    "epic_platform": (
+        "Tests Epic",
+        "Checks Epic's own server behaviour or data. Passes for any app pointed at this Epic.",
+    ),
+    "app_registration": (
+        "Tests your Epic registration",
+        "Uses your app's client ID. Proves what the registration grants, not your backend's code.",
+    ),
+    "tool_sample": (
+        "Tests the write path",
+        "This tool sends its own sample resource through your registration. Proves Epic accepts it, not that your app sends valid ones.",
+    ),
+    "tool_launch": (
+        "Tests this tool's login",
+        "Exercises this tool's own SMART login, not your app's.",
+    ),
+    "app_attested": (
+        "Judges your stated answers",
+        "Based on what you entered in the config, not verified against your systems.",
+    ),
+}
+
+
 def _sort_key(item: dict[str, Any]) -> tuple[int, int]:
     return (
         VERDICT_ORDER.get(item["verdict"], 9),
@@ -48,6 +73,9 @@ def build_report_view(report: Report) -> dict[str, Any]:
             "requirement": rule.description if rule else "",
             "source": rule.source if rule else "",
             "evidence_needed": rule.evidence_needed if rule else "",
+            "subject": rule.subject if rule else "",
+            "subject_label": SUBJECTS.get(rule.subject, ("", ""))[0] if rule else "",
+            "subject_detail": SUBJECTS.get(rule.subject, ("", ""))[1] if rule else "",
         }
         categories.setdefault(category, []).append(item)
 

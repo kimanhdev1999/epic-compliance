@@ -2,6 +2,7 @@
   {
     "id": "WRITE-001",
     "category": "write_back",
+    "subject": "tool_sample",
     "source": "US Core IG v6.1 DiagnosticReport (Note) profile; ONC (g)(10) §170.315(g)(10)(i)",
     "severity": "critical",
     "evidence_needed": "write_back.DiagnosticReport",
@@ -12,6 +13,7 @@
   {
     "id": "WRITE-002",
     "category": "write_back",
+    "subject": "tool_sample",
     "source": "US Core IG v6.1 Observation profile; ONC (g)(10) §170.315(g)(10)(i)",
     "severity": "critical",
     "evidence_needed": "write_back.Observation",
@@ -22,6 +24,7 @@
   {
     "id": "WRITE-003",
     "category": "write_back",
+    "subject": "tool_sample",
     "source": "HL7 FHIR R4 Media resource (no US Core 3.1.1 profile exists for Media)",
     "severity": "high",
     "evidence_needed": "write_back.Media",
@@ -32,6 +35,7 @@
   {
     "id": "WRITE-004",
     "category": "write_back",
+    "subject": "app_registration",
     "source": "SMART App Launch IG v2.0 §7 (scopes); ONC (g)(10) §170.315(g)(10)(v)(A)",
     "severity": "critical",
     "evidence_needed": "write_back.Observation, write_back.DiagnosticReport, write_back.Media",

@@ -11,26 +11,60 @@ from __future__ import annotations
 from typing import Any
 
 from ..models import Finding
+from ..smart.discovery import REQUIRED_CAPABILITIES
 from .catalog import Rule
 
 
 def _check_auth_001(evidence: dict[str, Any], rule: Rule) -> Finding:
-    """SMART configuration discoverable."""
+    """SMART configuration discoverable and advertising the required capabilities."""
     sc = evidence.get("smart_configuration", {})
+    if "_error" in sc:
+        return Finding(
+            rule_id=rule.id,
+            verdict="fail",
+            evidence=f"discovery request failed: {sc['_error']}",
+            remediation_hint=rule.remediation_hint,
+            severity=rule.severity,
+            category=rule.category,
+        )
     caps = sc.get("capabilities", [])
-    has_config = bool(caps)
+    missing = [c for c in REQUIRED_CAPABILITIES if c not in caps]
+    ok = bool(caps) and not missing
     return Finding(
         rule_id=rule.id,
-        verdict="pass" if has_config else "fail",
-        evidence=f"capabilities present: {has_config}; count={len(caps)}",
+        verdict="pass" if ok else "fail",
+        evidence=f"capabilities advertised={len(caps)}; missing_required={missing}",
         remediation_hint=rule.remediation_hint,
         severity=rule.severity,
         category=rule.category,
     )
 
 
+def _discovery_failed(evidence: dict[str, Any], rule: Rule) -> Finding | None:
+    """needs_human for discovery-dependent rules when discovery itself failed.
+
+    The failure is reported once, as AUTH-001's fail; every other rule that
+    reads the SMART configuration has nothing to judge.
+    """
+    sc = evidence.get("smart_configuration", {})
+    if "_error" not in sc:
+        return None
+    return Finding(
+        rule_id=rule.id,
+        verdict="needs_human",
+        evidence=f"smart_configuration unavailable: {sc['_error']}",
+        remediation_hint=rule.remediation_hint,
+        severity=rule.severity,
+        category=rule.category,
+        citation="Discovery failed — see AUTH-001. Rule not evaluated.",
+    )
+
+
 def _check_auth_002(evidence: dict[str, Any], rule: Rule) -> Finding:
     """PKCE S256 supported."""
+    failed = _discovery_failed(evidence, rule)
+    if failed is not None:
+        return failed
     sc = evidence.get("smart_configuration", {})
     methods = sc.get("code_challenge_methods_supported", [])
     ok = "S256" in methods
@@ -129,6 +163,9 @@ def _check_auth_003(evidence: dict[str, Any], rule: Rule) -> Finding:
 
 def _check_auth_004(evidence: dict[str, Any], rule: Rule) -> Finding:
     """launch-ehr and launch-standalone capabilities advertised."""
+    failed = _discovery_failed(evidence, rule)
+    if failed is not None:
+        return failed
     sc = evidence.get("smart_configuration", {})
     caps = sc.get("capabilities", [])
     missing = [c for c in ["launch-ehr", "launch-standalone"] if c not in caps]
@@ -184,6 +221,9 @@ def _check_auth_009(evidence: dict[str, Any], rule: Rule) -> Finding:
 
 def _check_auth_010(evidence: dict[str, Any], rule: Rule) -> Finding:
     """id_token signature is verifiable against the advertised jwks_uri."""
+    failed = _discovery_failed(evidence, rule)
+    if failed is not None:
+        return failed
     sc = evidence.get("smart_configuration", {})
     jwks_uri = sc.get("raw", {}).get("jwks_uri", "")
     if not jwks_uri:
@@ -198,9 +238,37 @@ def _check_auth_010(evidence: dict[str, Any], rule: Rule) -> Finding:
     return _probe_check(evidence, rule, "id_token_verifiable", f"jwks_uri={jwks_uri}")
 
 
+def _read_resource(
+    evidence: dict[str, Any], rule: Rule, resource_type: str
+) -> tuple[dict[str, Any], Finding | None]:
+    """Return (resource, None), or ({}, needs_human) when it was never read.
+
+    A resource the tool could not read (no token, HTTP error, empty search)
+    says nothing about its shape. Access itself is judged by FHIR-005.
+    """
+    unavailable = _unavailable(evidence, "fhir_resources", rule)
+    if unavailable is not None:
+        return {}, unavailable
+    res = evidence["fhir_resources"].get(resource_type) or {}
+    if not res or "_error" in res or "_empty" in res:
+        reason = res.get("_error") or ("search returned no entries" if "_empty" in res else "not fetched")
+        return {}, Finding(
+            rule_id=rule.id,
+            verdict="needs_human",
+            evidence=f"{resource_type} not readable: {reason}",
+            remediation_hint=rule.remediation_hint,
+            severity=rule.severity,
+            category=rule.category,
+            citation=f"No {resource_type} to inspect — rule not evaluated (access is judged by FHIR-005).",
+        )
+    return res, None
+
+
 def _check_fhir_001(evidence: dict[str, Any], rule: Rule) -> Finding:
     """Patient: name, gender, birthDate present."""
-    pt = evidence.get("fhir_resources", {}).get("Patient", {})
+    pt, not_read = _read_resource(evidence, rule, "Patient")
+    if not_read is not None:
+        return not_read
     has_name = bool(pt.get("name"))
     has_gender = bool(pt.get("gender"))
     has_dob = bool(pt.get("birthDate"))
@@ -217,7 +285,9 @@ def _check_fhir_001(evidence: dict[str, Any], rule: Rule) -> Finding:
 
 def _check_fhir_002(evidence: dict[str, Any], rule: Rule) -> Finding:
     """Observation: status, category, code, subject present."""
-    obs = evidence.get("fhir_resources", {}).get("Observation", {})
+    obs, not_read = _read_resource(evidence, rule, "Observation")
+    if not_read is not None:
+        return not_read
     checks = {
         "status": bool(obs.get("status")),
         "category": bool(obs.get("category")),
@@ -237,7 +307,9 @@ def _check_fhir_002(evidence: dict[str, Any], rule: Rule) -> Finding:
 
 def _check_fhir_003(evidence: dict[str, Any], rule: Rule) -> Finding:
     """Condition: required elements present."""
-    cond = evidence.get("fhir_resources", {}).get("Condition", {})
+    cond, not_read = _read_resource(evidence, rule, "Condition")
+    if not_read is not None:
+        return not_read
     checks = {
         "clinicalStatus": bool(cond.get("clinicalStatus")),
         "verificationStatus": bool(cond.get("verificationStatus")),
@@ -258,16 +330,26 @@ def _check_fhir_003(evidence: dict[str, Any], rule: Rule) -> Finding:
 
 def _check_fhir_004(evidence: dict[str, Any], rule: Rule) -> Finding:
     """Resources declare meta.profile."""
+    unavailable = _unavailable(evidence, "fhir_resources", rule)
+    if unavailable is not None:
+        return unavailable
     resources = evidence.get("fhir_resources", {})
-    missing_profile: list[str] = []
-    for rt, res in resources.items():
-        if not isinstance(res, dict):
-            continue
-        if "_error" in res or "_empty" in res:
-            continue
-        meta = res.get("meta", {})
-        if not meta.get("profile"):
-            missing_profile.append(rt)
+    readable = {
+        rt: res for rt, res in resources.items()
+        if isinstance(res, dict) and "_error" not in res and "_empty" not in res
+    }
+    if not readable:
+        # Zero inspected resources must not read as "none were missing a profile".
+        return Finding(
+            rule_id=rule.id,
+            verdict="needs_human",
+            evidence="No readable resources to inspect for meta.profile.",
+            remediation_hint=rule.remediation_hint,
+            severity=rule.severity,
+            category=rule.category,
+            citation="Nothing to inspect — rule not evaluated.",
+        )
+    missing_profile = [rt for rt, res in readable.items() if not res.get("meta", {}).get("profile")]
     ok = not missing_profile
     return Finding(
         rule_id=rule.id,
@@ -281,6 +363,9 @@ def _check_fhir_004(evidence: dict[str, Any], rule: Rule) -> Finding:
 
 def _check_fhir_005(evidence: dict[str, Any], rule: Rule) -> Finding:
     """Required USCDI resources accessible."""
+    unavailable = _unavailable(evidence, "fhir_resources", rule)
+    if unavailable is not None:
+        return unavailable
     resources = evidence.get("fhir_resources", {})
     required = ["Patient", "Observation", "Condition", "MedicationRequest", "AllergyIntolerance", "Immunization"]
     missing: list[str] = []
