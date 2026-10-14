@@ -14,12 +14,21 @@ RULES_DIR = resource_root() / "rules"
 class Rule(BaseModel):
     id: str
     category: str
+    # What a pass actually proves — see SUBJECTS in viewmodel.py. A rule that
+    # only exercises Epic must never read as evidence about the app itself.
+    subject: str = ""
     source: str
     severity: str
     evidence_needed: str
     check_type: str  # "automated" | "llm"
     description: str
     remediation_hint: str = ""
+    # Launch profiles the rule applies to (config.launch_profile); empty = all.
+    # A rule that does not apply is not run, rather than reported needs_human.
+    profiles: list[str] = []
+
+    def applies_to(self, launch_profile: str) -> bool:
+        return not self.profiles or launch_profile in self.profiles
 
 
 def load_rules() -> list[Rule]:

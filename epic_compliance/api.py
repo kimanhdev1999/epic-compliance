@@ -32,6 +32,7 @@ from fastapi.templating import Jinja2Templates
 from . import pipeline, store
 from .config import OVERRIDABLE_FIELDS, config_with_overrides, get_config
 from .models import Report
+from .fhir.writeback import CLINICIAN_SCOPES
 from .pipeline import run_full_pipeline
 from .smart.discovery import fetch_smart_configuration
 from .smart.pkce import build_authorization_url, exchange_code_for_token, generate_pkce
@@ -53,6 +54,7 @@ _pending_launches: dict[str, dict[str, Any]] = {}
 
 #: Scopes requested for a live write-back launch: read scopes so the pipeline
 #: can still fetch US Core resources, plus the write scopes WRITE-004 checks.
+#: LAUNCH_PROFILE=clinician_standalone requests CLINICIAN_SCOPES instead.
 LAUNCH_SCOPES = [
     "openid",
     "fhirUser",
@@ -122,12 +124,16 @@ def create_run(
     fhir_base_url: str = Form(""),
     oauth_client_id: str = Form(""),
     anthropic_api_key: str = Form(""),
+    launch_profile: str = Form(""),
+    test_patient_query: str = Form(""),
 ) -> Any:
     overrides = {
         "run_mode": run_mode,
         "fhir_base_url": fhir_base_url,
         "oauth_client_id": oauth_client_id,
         "anthropic_api_key": anthropic_api_key,
+        "launch_profile": launch_profile,
+        "test_patient_query": test_patient_query,
     }
     report, _ = _execute_run(overrides)
     view = build_report_view(report)
@@ -242,7 +248,7 @@ def start_launch(request: Request) -> RedirectResponse:
         authorization_endpoint=smart_config.authorization_endpoint,
         client_id=config.oauth_client_id,
         redirect_uri=config.oauth_redirect_uri,
-        scopes=LAUNCH_SCOPES,
+        scopes=CLINICIAN_SCOPES if config.launch_profile == "clinician_standalone" else LAUNCH_SCOPES,
         pkce=pkce,
         state=state,
         aud=config.fhir_base_url,
@@ -308,8 +314,11 @@ def smart_callback(
 
     return render(
         request, "_callback_result.html", ok=True,
-        message=f"Live launch complete for patient {token.patient!r}. "
-                "Go to the dashboard and run a live compliance check.",
+        message=(
+            # A clinician standalone login has no patient until one is searched for.
+            f"Live launch complete for patient {token.patient!r}. " if token.patient
+            else f"Live launch complete, signed in as {token.fhir_user or 'unknown user'!r}. "
+        ) + "Go to the dashboard and run a live compliance check.",
     )
 
 

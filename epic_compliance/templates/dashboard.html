@@ -16,6 +16,20 @@
         </select>
       </div>
       <div class="row">
+        <label for="launch_profile">Launch profile</label>
+        <select id="launch_profile" name="launch_profile">
+          <option value="patient_launch" {{ 'selected' if defaults.launch_profile != 'clinician_standalone' }}>patient launch — patient chosen at login</option>
+          <option value="clinician_standalone" {{ 'selected' if defaults.launch_profile == 'clinician_standalone' }}>clinician standalone — clinician logs in, then picks the patient</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="test_patient_query">Test patient search <span class="muted">(clinician standalone)</span></label>
+        <input type="text" id="test_patient_query" name="test_patient_query"
+               value="{{ defaults.test_patient_query or '' }}"
+               placeholder="family=Smith&amp;given=Jane&amp;birthdate=1980-01-31">
+        <div class="hint">FHIR query that finds one sandbox test patient. Client type, redirect URI, image resource and encounter rules come from <code class="inline">.env</code>.</div>
+      </div>
+      <div class="row">
         <label for="fhir_base_url">FHIR base URL</label>
         <input type="url" id="fhir_base_url" name="fhir_base_url"
                value="{{ defaults.fhir_base_url or '' }}"

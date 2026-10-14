@@ -33,6 +33,8 @@ CONFIG_KEYS = (
     "run_mode",
     "onc_test_kit_url",
     "anthropic_api_key",
+    "launch_profile",
+    "test_patient_query",
 )
 
 

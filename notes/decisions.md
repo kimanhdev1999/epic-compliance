@@ -223,3 +223,127 @@ is worth anything for a compliance tool.
 - Dashboard form (`epic_compliance/templates/dashboard.html`) was **not**
   updated to expose the five new fields — they're `.env`-only for now. Adding
   UI controls for them is a separate, smaller follow-up if wanted.
+
+---
+
+## ADR-009: Widen scope from "Epic integration works" to "the app is ready to submit"
+
+Date: 2026-10-07
+
+### Decision
+Until now every rule was fed by this tool's own calls to Epic: its own SMART
+login, its own sample write-back resources, and the app team's typed security
+answers. A clean run proved Epic behaves and the app's Epic registration grants
+what it needs. It said nothing about the app's backend. The tool grows four
+capabilities, in this order:
+
+1. **Honest verdicts on what exists today (done in this change).** Every rule
+   now carries a `subject` (`epic_platform`, `app_registration`, `tool_sample`,
+   `tool_launch`, `app_attested`), shown in the report as "What this tests".
+   Evidence the tool never collected no longer produces a verdict: a failed
+   discovery is one AUTH-001 `fail` (AUTH-002/004/010 → `needs_human`) instead
+   of a crashed run, and with no token FHIR reads are skipped and FHIR-001..005
+   say `needs_human` instead of failing on 401s (FHIR-004 previously *passed*
+   with nothing inspected). AUTH-001 now checks the required capability list
+   (adds `context-standalone-patient`, which the ONC g10 kit requires for
+   standalone launch) instead of "list is non-empty".
+2. **Verify mode — read back what the app wrote.** After a real app visit in
+   the Epic sandbox, search Epic by patient + Encounter/time window and judge
+   the app's actual `Encounter`, `DocumentReference` (SOAP note),
+   `DiagnosticReport`/`Observation` (AI results) and `Media` (photos and the
+   visit recording): US Core validity, right patient, all linked to one
+   Encounter. New rules in `rules/app_writes.json`.
+3. **App probes — test the app's own endpoints black-box.** Against the app's
+   **staging** backend only: inspect the authorize redirect it builds (S256,
+   `aud`, random `state`, minimal scopes); send its real callback a forged
+   `state`, missing `code` and replayed code and expect 4xx; read its real TLS
+   version/HSTS, replacing the typed SEC-001 answer. New config
+   `APP_BASE_URL`, `APP_LAUNCH_PATH`, `APP_CALLBACK_PATH`; rules in
+   `rules/app_behavior.json`.
+4. **Submission evidence pack + readiness verdict.** Checklist of what Epic's
+   review asks for (threat model, data-flow diagram, subprocessor inventory,
+   encryption/key management, recent pen test, SOC 2 or equivalent, scope
+   justification); uploaded documents judged for completeness by the LLM
+   evaluator; scope justification and test evidence generated from runs;
+   exported as one bundle. Top-level verdict: blockers / missing evidence /
+   needs human / ready to submit. Rules in `rules/submission.json`. Confirm
+   the checklist against Epic's own vendor documentation before building —
+   the current list comes from third-party guides.
+
+### Decisions taken with the app team (2026-10-07)
+- Probing the app's **staging** backend (forged callbacks, TLS checks) is
+  approved. Never production.
+- The app backend **will** export its Epic request log (JSONL), but not yet.
+  Verify mode ships read-back-only first, which sees only writes Epic
+  accepted; log ingest is added later to catch rejected writes.
+- The visit **recording goes to Epic**, so it gets a write rule (as `Media`,
+  or `DocumentReference` + `Binary` — decide when building step 2).
+
+### Reasoning
+- The question the app team actually has is "will Epic accept us", and the
+  only evidence that answers it is the app's own behaviour and output. Rules
+  that only exercise Epic stay, but labelled so a green "Tests Epic" row is
+  never mistaken for evidence about the app.
+- The tool outputs "ready to submit", never "will be accepted". Epic runs its
+  own security, vendor and business review; this tool assembles evidence for it.
+- Read-back first because it needs no access to the app backend and directly
+  answers the Patients-mode question ("is the whole visit in the chart").
+
+### Consequences
+- `Rule.subject` is required in spirit: `tests/test_no_false_verdicts.py`
+  fails if any rule's subject is not in `viewmodel.SUBJECTS`.
+- `collect_evidence()` no longer raises on discovery errors; callers that
+  relied on the exception (none today) would need to read
+  `smart_configuration["_error"]`.
+- `api.py`'s `/launch` still calls discovery directly. It returns a 502 when
+  the authorization endpoint is empty, but a discovery *exception* (wrong URL,
+  404) still surfaces as an unhandled 500 — not fixed in this change.
+
+## ADR-010: Launch profiles — add clinician standalone alongside patient launch
+
+Date: 2026-10-14
+
+### Decision
+The app's design changed: a standalone mobile app where a clinician signs in
+through Epic, then searches for and confirms the patient, photographs the
+lesion (image write over FHIR, which the organization's build supports), and a
+derm files a consult note. `LAUNCH_PROFILE` selects which flow is tested:
+
+- `patient_launch` (default, unchanged): patient chosen at login, `patient/*`
+  scopes, AI write-back of ADR-007 (WRITE-001..004, AUTH-009).
+- `clinician_standalone`: `user/*` scopes, no `patient` in the token, a
+  Practitioner `fhirUser`. Runs `rules/clinician_workflow.json` (CLIN-001..012)
+  and skips AUTH-009 and WRITE-001..004.
+
+Rules carry an optional `profiles` list; a rule outside the active profile is
+not run (not reported needs_human). AUTH-003 and AUTH-005 read
+`evidence["launch_profile"]` and judge `user/*` scopes and a Practitioner
+fhirUser under the clinician profile.
+
+New config: `LAUNCH_PROFILE`, `TEST_PATIENT_QUERY`, `IMAGE_WRITE_RESOURCE`
+(Media | DocumentReference), `ENCOUNTER_REQUIRED`, `APP_CLIENT_TYPE`,
+`APP_REDIRECT_URI`. `/launch` requests `CLINICIAN_SCOPES` under the clinician
+profile (no `launch/patient`; no `offline_access` for a public client).
+
+### Reasoning
+- Under the old rules a correct clinician app would *fail* AUTH-005 (no
+  patient in the token) and AUTH-003 (no `patient/*` scopes), and WRITE-001/002
+  tested resources this design does not write.
+- Wrong-patient photos are the main risk the design names. CLIN-007 judges
+  what Epic *stored* (read back by id), not what was sent: every write must
+  reference the confirmed patient and the selected Encounter.
+- CLIN-001 treats a search matching several patients as needs_human, not a
+  pass: only an unambiguous (identifier/MRN) lookup proves the search step.
+- Write ids are taken from the response body or, failing that, the
+  `Location` header — Epic often answers a create with an empty body.
+
+### Consequences / limits
+- CLIN-005..010 are `tool_sample`: this tool performs the flow through the
+  app's registration. They prove Epic accepts it, not that the app's own code
+  confirms the right patient. Reading back the app's real writes is still
+  ADR-009 step 2.
+- The Epic sandbox may not support image writes the way the organization's
+  build does; CLIN-005 in the sandbox is not proof for their environment.
+  Repeat the run against their non-production environment before go-live.
+- CLIN-011/012 are attested (from config), not probed. Probing the app's real
+  redirect handling is ADR-009 step 3.

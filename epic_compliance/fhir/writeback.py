@@ -13,6 +13,7 @@ any other SMART app. Do not add server-side FHIR routes here.
 """
 from __future__ import annotations
 
+import base64
 from typing import Any
 
 #: Scopes this write-back flow needs at SMART launch, on top of whatever read
@@ -112,3 +113,120 @@ def build_media(
         "subject": {"reference": f"Patient/{patient_id}"},
         "content": content,
     }
+
+
+# --------------------------------------------------------------------------- #
+# clinician_standalone (ADR-010): the clinician photographs a patient they
+# searched for and confirmed, then the derm files a consult note. Same rule as
+# above: these are bodies this app POSTs to Epic, never served by it.
+# --------------------------------------------------------------------------- #
+
+#: Scopes a clinician standalone login requests. user/* because no patient is
+#: selected at login; no launch/patient, and no offline_access because a
+#: public (mobile) client is not given refresh tokens for it.
+CLINICIAN_SCOPES = [
+    "openid",
+    "fhirUser",
+    "user/Patient.read",
+    "user/Practitioner.read",
+    "user/Encounter.read",
+    "user/Media.read",
+    "user/Media.write",
+    "user/Binary.read",
+    "user/Condition.read",
+    "user/MedicationRequest.read",
+    "user/AllergyIntolerance.read",
+    "user/DocumentReference.read",
+    "user/DocumentReference.write",
+]
+
+US_CORE_DOCREF = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-documentreference"
+
+#: A 1x1 JPEG — a real image so Binary read-back has bytes to return.
+SAMPLE_JPEG_B64 = (
+    "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////"
+    "////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAA"
+    "AAAAAAAAAAAAAP/aAAgBAQABPxA="
+)
+
+_CLINICAL_NOTE_CATEGORY = [{
+    "coding": [{
+        "system": "http://hl7.org/fhir/us/core/CodeSystem/us-core-documentreference-category",
+        "code": "clinical-note",
+        "display": "Clinical Note",
+    }]
+}]
+
+
+def _context(encounter_id: str) -> dict[str, Any]:
+    return {"encounter": [{"reference": f"Encounter/{encounter_id}"}]} if encounter_id else {}
+
+
+def build_clinical_photo(
+    resource_type: str,
+    patient_id: str,
+    *,
+    encounter_id: str = "",
+    practitioner_ref: str = "",
+    data_b64: str = SAMPLE_JPEG_B64,
+) -> dict[str, Any]:
+    """The clinician's photo, as whichever resource the organization's build
+    files images as (IMAGE_WRITE_RESOURCE): Media, or DocumentReference."""
+    attachment = {"contentType": "image/jpeg", "data": data_b64, "title": "Clinical photo"}
+    if resource_type == "Media":
+        media: dict[str, Any] = {
+            "resourceType": "Media",
+            "status": "completed",
+            "type": {"coding": [{
+                "system": "http://terminology.hl7.org/CodeSystem/media-type",
+                "code": "image", "display": "Image",
+            }]},
+            "subject": {"reference": f"Patient/{patient_id}"},
+            "content": attachment,
+        }
+        if encounter_id:
+            media["encounter"] = {"reference": f"Encounter/{encounter_id}"}
+        if practitioner_ref:
+            media["operator"] = {"reference": practitioner_ref}
+        return media
+
+    doc: dict[str, Any] = {
+        "resourceType": "DocumentReference",
+        "status": "current",
+        "type": {"coding": [{"system": "http://loinc.org", "code": "72170-4", "display": "Photographic image"}]},
+        "category": _CLINICAL_NOTE_CATEGORY,
+        "subject": {"reference": f"Patient/{patient_id}"},
+        "content": [{"attachment": attachment}],
+    }
+    if practitioner_ref:
+        doc["author"] = [{"reference": practitioner_ref}]
+    if encounter_id:
+        doc["context"] = _context(encounter_id)
+    return doc
+
+
+def build_consult_note(
+    patient_id: str,
+    *,
+    encounter_id: str = "",
+    practitioner_ref: str = "",
+    text: str = "Dermatology e-consult: compliance-tool sample note. Not clinical content.",
+) -> dict[str, Any]:
+    """The derm's assessment, as a Clinical Notes DocumentReference."""
+    doc: dict[str, Any] = {
+        "resourceType": "DocumentReference",
+        "status": "current",
+        "docStatus": "final",
+        "type": {"coding": [{"system": "http://loinc.org", "code": "11488-4", "display": "Consult note"}]},
+        "category": _CLINICAL_NOTE_CATEGORY,
+        "subject": {"reference": f"Patient/{patient_id}"},
+        "content": [{"attachment": {
+            "contentType": "text/plain",
+            "data": base64.b64encode(text.encode()).decode("ascii"),
+        }}],
+    }
+    if practitioner_ref:
+        doc["author"] = [{"reference": practitioner_ref}]
+    if encounter_id:
+        doc["context"] = _context(encounter_id)
+    return doc
