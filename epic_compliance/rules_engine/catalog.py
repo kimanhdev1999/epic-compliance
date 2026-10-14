@@ -23,6 +23,12 @@ class Rule(BaseModel):
     check_type: str  # "automated" | "llm"
     description: str
     remediation_hint: str = ""
+    # Launch profiles the rule applies to (config.launch_profile); empty = all.
+    # A rule that does not apply is not run, rather than reported needs_human.
+    profiles: list[str] = []
+
+    def applies_to(self, launch_profile: str) -> bool:
+        return not self.profiles or launch_profile in self.profiles
 
 
 def load_rules() -> list[Rule]:

@@ -70,6 +70,9 @@ class TokenResponse:
     id_token: str = ""
     refresh_token: str = ""
     raw: dict = None  # type: ignore[assignment]
+    #: Who signed in, e.g. "Practitioner/abc" — the id_token's fhirUser claim
+    #: (or the token response's own fhirUser field, which Epic also sends).
+    fhir_user: str = ""
 
     def __post_init__(self) -> None:
         if self.raw is None:
@@ -103,16 +106,37 @@ def exchange_code_for_token(
     resp = httpx.post(token_endpoint, data=data, timeout=15)
     resp.raise_for_status()
     raw = resp.json()
+    id_token = raw.get("id_token", "")
     return TokenResponse(
         access_token=raw.get("access_token", ""),
         token_type=raw.get("token_type", "Bearer"),
         expires_in=int(raw.get("expires_in", 3600)),
         scope=raw.get("scope", ""),
         patient=raw.get("patient", ""),
-        id_token=raw.get("id_token", ""),
+        id_token=id_token,
         refresh_token=raw.get("refresh_token", ""),
         raw=raw,
+        fhir_user=raw.get("fhirUser", "") or id_token_claims(id_token).get("fhirUser", ""),
     )
+
+
+def id_token_claims(id_token: str) -> dict:
+    """Decode the id_token payload WITHOUT verifying its signature.
+
+    Only used to read who signed in (fhirUser). Whether the token is genuine
+    is AUTH-010's job; nothing here treats these claims as proof.
+    """
+    import json
+
+    parts = id_token.split(".")
+    if len(parts) != 3:
+        return {}
+    payload = parts[1] + "=" * (-len(parts[1]) % 4)
+    try:
+        claims = json.loads(base64.urlsafe_b64decode(payload))
+    except (ValueError, UnicodeDecodeError):
+        return {}
+    return claims if isinstance(claims, dict) else {}
 
 
 def validate_state(sent_state: str, returned_state: str) -> bool:
@@ -149,4 +173,22 @@ MOCK_TOKEN_RESPONSE = TokenResponse(
     id_token="mock-id-token",
     refresh_token="mock-refresh-token",
     raw={"mock": True},
+)
+
+
+# clinician_standalone: the clinician signed in with no patient selected, so
+# the token carries user/* scopes, a fhirUser, and no `patient` field.
+MOCK_CLINICIAN_TOKEN_RESPONSE = TokenResponse(
+    access_token="mock-clinician-access-token",
+    token_type="Bearer",
+    expires_in=3600,
+    scope=(
+        "openid fhirUser user/Patient.read user/Practitioner.read user/Encounter.read "
+        "user/Media.read user/Media.write user/Binary.read user/Condition.read "
+        "user/MedicationRequest.read user/AllergyIntolerance.read "
+        "user/DocumentReference.read user/DocumentReference.write"
+    ),
+    id_token="mock-id-token",
+    raw={"mock": True},
+    fhir_user="Practitioner/mock-practitioner-id",
 )

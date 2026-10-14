@@ -298,3 +298,52 @@ capabilities, in this order:
 - `api.py`'s `/launch` still calls discovery directly. It returns a 502 when
   the authorization endpoint is empty, but a discovery *exception* (wrong URL,
   404) still surfaces as an unhandled 500 — not fixed in this change.
+
+## ADR-010: Launch profiles — add clinician standalone alongside patient launch
+
+Date: 2026-10-14
+
+### Decision
+The app's design changed: a standalone mobile app where a clinician signs in
+through Epic, then searches for and confirms the patient, photographs the
+lesion (image write over FHIR, which the organization's build supports), and a
+derm files a consult note. `LAUNCH_PROFILE` selects which flow is tested:
+
+- `patient_launch` (default, unchanged): patient chosen at login, `patient/*`
+  scopes, AI write-back of ADR-007 (WRITE-001..004, AUTH-009).
+- `clinician_standalone`: `user/*` scopes, no `patient` in the token, a
+  Practitioner `fhirUser`. Runs `rules/clinician_workflow.json` (CLIN-001..012)
+  and skips AUTH-009 and WRITE-001..004.
+
+Rules carry an optional `profiles` list; a rule outside the active profile is
+not run (not reported needs_human). AUTH-003 and AUTH-005 read
+`evidence["launch_profile"]` and judge `user/*` scopes and a Practitioner
+fhirUser under the clinician profile.
+
+New config: `LAUNCH_PROFILE`, `TEST_PATIENT_QUERY`, `IMAGE_WRITE_RESOURCE`
+(Media | DocumentReference), `ENCOUNTER_REQUIRED`, `APP_CLIENT_TYPE`,
+`APP_REDIRECT_URI`. `/launch` requests `CLINICIAN_SCOPES` under the clinician
+profile (no `launch/patient`; no `offline_access` for a public client).
+
+### Reasoning
+- Under the old rules a correct clinician app would *fail* AUTH-005 (no
+  patient in the token) and AUTH-003 (no `patient/*` scopes), and WRITE-001/002
+  tested resources this design does not write.
+- Wrong-patient photos are the main risk the design names. CLIN-007 judges
+  what Epic *stored* (read back by id), not what was sent: every write must
+  reference the confirmed patient and the selected Encounter.
+- CLIN-001 treats a search matching several patients as needs_human, not a
+  pass: only an unambiguous (identifier/MRN) lookup proves the search step.
+- Write ids are taken from the response body or, failing that, the
+  `Location` header — Epic often answers a create with an empty body.
+
+### Consequences / limits
+- CLIN-005..010 are `tool_sample`: this tool performs the flow through the
+  app's registration. They prove Epic accepts it, not that the app's own code
+  confirms the right patient. Reading back the app's real writes is still
+  ADR-009 step 2.
+- The Epic sandbox may not support image writes the way the organization's
+  build does; CLIN-005 in the sandbox is not proof for their environment.
+  Repeat the run against their non-production environment before go-live.
+- CLIN-011/012 are attested (from config), not probed. Probing the app's real
+  redirect handling is ADR-009 step 3.

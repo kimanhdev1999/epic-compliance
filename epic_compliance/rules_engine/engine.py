@@ -23,9 +23,14 @@ def _build_evidence_for_llm(rule: Rule, evidence: dict[str, Any]) -> str:
     return "\n".join(str(p) for p in parts)
 
 
-def run_pipeline(evidence: dict[str, Any], api_key: str = "", mock_llm: bool = True) -> Report:
-    """Run all rules against evidence, return a Report with all findings."""
-    rules = load_rules()
+def run_pipeline(
+    evidence: dict[str, Any],
+    api_key: str = "",
+    mock_llm: bool = True,
+    launch_profile: str = "patient_launch",
+) -> Report:
+    """Run the rules that apply to ``launch_profile``, return a Report."""
+    rules = [r for r in load_rules() if r.applies_to(launch_profile)]
     findings: list[Finding] = []
     run_id = str(uuid.uuid4())
 

@@ -18,6 +18,7 @@ CATEGORY_LABELS = {
     "auth": "Authorization & SMART",
     "fhir": "FHIR / US Core Conformance",
     "security": "Security & Privacy",
+    "clinician_workflow": "Clinician Workflow (standalone)",
 }
 
 

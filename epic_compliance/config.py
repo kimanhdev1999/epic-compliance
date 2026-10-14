@@ -48,6 +48,34 @@ class AppConfig(BaseSettings):
     validator_jar_path: str = Field(default="", alias="VALIDATOR_JAR_PATH")
     validator_timeout_s: float = Field(default=60.0, alias="VALIDATOR_TIMEOUT_S")
 
+    # --- Launch profile (ADR-010) ------------------------------------------
+    # patient_launch: patient-context token (patient/* scopes, `patient` in
+    #   the token response) and the AI write-back of ADR-007.
+    # clinician_standalone: a clinician signs in through Epic with no patient
+    #   selected (user/* scopes), then searches for and confirms the patient.
+    #   Runs rules/clinician_workflow.json instead of the patient-only rules.
+    launch_profile: Literal["patient_launch", "clinician_standalone"] = Field(
+        default="patient_launch", alias="LAUNCH_PROFILE"
+    )
+    # Search used to find the sandbox test patient, as a FHIR query string,
+    # e.g. "family=Smith&given=Jane&birthdate=1980-01-31", or an identifier
+    # search in the form Epic's Patient.Search docs give for MRNs. Take the
+    # test patient from Epic's sandbox test-data page. Blank -> needs_human.
+    test_patient_query: str = Field(default="", alias="TEST_PATIENT_QUERY")
+    # Resource the organization's Epic build files clinical photos as.
+    image_write_resource: Literal["Media", "DocumentReference"] = Field(
+        default="Media", alias="IMAGE_WRITE_RESOURCE"
+    )
+    # True when the organization requires photos and notes to be filed
+    # against an Encounter; a patient with no encounter then fails CLIN-004.
+    encounter_required: bool = Field(default=False, alias="ENCOUNTER_REQUIRED")
+    # How the app under test is registered with Epic, and where Epic sends
+    # the clinician back after login. Blank = not attested -> needs_human.
+    app_client_type: Literal["", "public", "confidential"] = Field(
+        default="", alias="APP_CLIENT_TYPE"
+    )
+    app_redirect_uri: str = Field(default="", alias="APP_REDIRECT_URI")
+
     # --- App-under-test config (SEC-00x LLM rules need these, not Epic's) --
     # These describe the app being compliance-tested, not this tool itself.
     # Unset (default "") means "not attested" -> the LLM evaluator correctly
@@ -86,6 +114,12 @@ OVERRIDABLE_FIELDS = {
     "audit_log_retention_days",
     "baa_in_place",
     "covered_entity_relationship",
+    "launch_profile",
+    "test_patient_query",
+    "image_write_resource",
+    "encounter_required",
+    "app_client_type",
+    "app_redirect_uri",
 }
 
 
@@ -101,4 +135,7 @@ def config_with_overrides(overrides: dict[str, str]) -> AppConfig:
         for k, v in overrides.items()
         if k in OVERRIDABLE_FIELDS and v not in (None, "")
     }
+    # model_copy skips validation, so a form's "false" would stay a truthy str.
+    if "encounter_required" in clean:
+        clean["encounter_required"] = str(clean["encounter_required"]).lower() in ("1", "true", "yes", "on")
     return base.model_copy(update=clean)

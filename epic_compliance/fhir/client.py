@@ -126,11 +126,96 @@ MOCK_FHIR_RESOURCES: dict[str, Any] = {
 }
 
 
+# clinician_standalone: the signed-in clinician (fhirUser) and an image the
+# mock Media/Binary can point at.
+MOCK_FHIR_RESOURCES["Practitioner"] = {
+    "resourceType": "Practitioner",
+    "id": "mock-practitioner-id",
+    "meta": {"profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-practitioner"]},
+    "identifier": [{"system": "http://hl7.org/fhir/sid/us-npi", "value": "1234567893"}],
+    "name": [{"family": "Derm", "given": ["Dana"], "prefix": ["Dr."]}],
+}
+
+
+def _references(resource: dict[str, Any], patient_id: str) -> bool:
+    """Whether a resource's subject/patient points at ``patient_id``."""
+    ref = (resource.get("subject") or resource.get("patient") or {}).get("reference", "")
+    return ref.split("/")[-1] == patient_id
+
+
 class FhirClient:
     def __init__(self, base_url: str, access_token: str, mock: bool = False) -> None:
         self.base_url = base_url.rstrip("/")
         self.access_token = access_token
         self.mock = mock
+        # Mock mode keeps what was POSTed so read-back and search see it,
+        # the way a real server would.
+        self._mock_created: dict[str, dict[str, Any]] = {}
+
+    def _headers(self) -> dict[str, str]:
+        return {"Authorization": f"Bearer {self.access_token}", "Accept": "application/fhir+json"}
+
+    def search(self, resource_type: str, params: dict[str, str]) -> dict[str, Any]:
+        """Search, returning ``{"status_code", "entries": [resource, ...]}``.
+
+        Like post_resource, a non-2xx is a result rather than an exception;
+        ``{"status_code": None, "_error"}`` means the request never completed.
+        """
+        if self.mock:
+            return {"status_code": 200, "entries": self._mock_search(resource_type, params)}
+        url = f"{self.base_url}/{resource_type}"
+        try:
+            resp = httpx.get(url, params=params, headers=self._headers(), timeout=15)
+        except (httpx.HTTPError, httpx.TimeoutException) as exc:
+            return {"status_code": None, "_error": str(exc), "entries": []}
+        if resp.status_code >= 300:
+            return {"status_code": resp.status_code, "_error": resp.text[:500], "entries": []}
+        entries = [
+            e.get("resource", {})
+            for e in resp.json().get("entry", [])
+            # Epic adds OperationOutcome entries (search.mode=outcome) to bundles.
+            if e.get("search", {}).get("mode", "match") == "match"
+        ]
+        return {"status_code": resp.status_code, "entries": entries}
+
+    def read(self, resource_type: str, resource_id: str) -> dict[str, Any]:
+        """Read one resource by id: ``{"status_code", "resource"}``."""
+        if self.mock:
+            created = self._mock_created.get(f"{resource_type}/{resource_id}")
+            fixture = MOCK_FHIR_RESOURCES.get(resource_type, {})
+            if created is None and fixture.get("id") == resource_id:
+                created = fixture
+            if created is None:
+                return {"status_code": 404, "_error": "not found", "resource": {}}
+            return {"status_code": 200, "resource": created}
+        url = f"{self.base_url}/{resource_type}/{resource_id}"
+        try:
+            resp = httpx.get(url, headers=self._headers(), timeout=15)
+        except (httpx.HTTPError, httpx.TimeoutException) as exc:
+            return {"status_code": None, "_error": str(exc), "resource": {}}
+        if resp.status_code >= 300:
+            return {"status_code": resp.status_code, "_error": resp.text[:500], "resource": {}}
+        try:
+            body = resp.json()
+        except ValueError:
+            # Binary can come back as the raw bytes rather than a FHIR Binary.
+            body = {"resourceType": resource_type, "_raw_bytes": len(resp.content),
+                    "contentType": resp.headers.get("content-type", "")}
+        return {"status_code": resp.status_code, "resource": body}
+
+    def _mock_search(self, resource_type: str, params: dict[str, str]) -> list[dict[str, Any]]:
+        patient_id = params.get("patient") or params.get("subject", "")
+        patient_id = patient_id.split("/")[-1]
+        if resource_type == "Patient":
+            return [MOCK_FHIR_RESOURCES["Patient"]]
+        found = [
+            r for key, r in self._mock_created.items()
+            if key.startswith(f"{resource_type}/") and (not patient_id or _references(r, patient_id))
+        ]
+        fixture = MOCK_FHIR_RESOURCES.get(resource_type)
+        if fixture and (not patient_id or _references(fixture, patient_id)):
+            found.append(fixture)
+        return found
 
     def fetch_resource(self, resource_type: str, patient_id: str = "mock-patient-id") -> dict[str, Any]:
         """Fetch a single resource (or return mock fixture)."""
@@ -178,7 +263,9 @@ class FhirClient:
         rt = resource.get("resourceType", "Resource")
         if self.mock:
             created = dict(resource)
-            created["id"] = f"mock-{rt.lower()}-created-1"
+            n = 1 + sum(1 for k in self._mock_created if k.startswith(f"{rt}/"))
+            created["id"] = f"mock-{rt.lower()}-created-{n}"
+            self._mock_created[f"{rt}/{created['id']}"] = created
             return {"status_code": 201, "resource": created}
 
         url = f"{self.base_url}/{rt}"
@@ -195,4 +282,7 @@ class FhirClient:
             body = resp.json()
         except ValueError:
             body = {"_raw": resp.text[:500]}
-        return {"status_code": resp.status_code, "resource": body}
+        # Epic often answers a create with an empty body and the new id only
+        # in Location ({base}/{type}/{id}/_history/{v}).
+        return {"status_code": resp.status_code, "resource": body,
+                "location": resp.headers.get("Location", "")}
