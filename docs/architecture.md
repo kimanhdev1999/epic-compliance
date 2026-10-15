@@ -21,6 +21,7 @@ api.py       ─┘        run_pipeline() (rules engine)             └──�
 |---|---|
 | `config.py` | `AppConfig` (pydantic-settings) from env/`.env`; `config_with_overrides()` applies the safe per-run subset from the web form |
 | `models.py` | The only shared domain types: `Finding` and `Report` (+ `Report.summary()`) |
+| `assessment.py` | Intake answers → test plan: which rules apply (and why) + config overrides (ADR-011) |
 | `pipeline.py` | Orchestrator: evidence collection, then the rules engine. The one place that knows the whole flow |
 | `smart/discovery.py` | Fetch + parse `.well-known/smart-configuration` (or return the mock fixture) |
 | `smart/pkce.py` | PKCE S256 generation, authorization-URL builder, token exchange, `MOCK_TOKEN_RESPONSE` |

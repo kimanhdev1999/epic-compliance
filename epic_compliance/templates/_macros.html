@@ -11,11 +11,11 @@
 {% endmacro %}
 
 {% macro verdict_badge(v) %}
-<span class="badge {{ v }}">{{ {'pass':'Pass','fail':'Fail','needs_human':'Needs Human'}[v] }}</span>
+<span class="badge {{ v }}">{{ {'pass':'Passed','fail':'Failed','needs_human':'Needs review'}[v] }}</span>
 {% endmacro %}
 
 {% macro finding(item) %}
-<details class="finding v-{{ item.verdict }}">
+<details class="finding v-{{ item.verdict }}" id="f-{{ item.rule_id }}" data-verdict="{{ item.verdict }}">
   <summary>
     <span class="chevron">&#9656;</span>
     <span class="rid">{{ item.rule_id }}</span>
@@ -43,10 +43,22 @@
 
 {% macro categories(view) %}
 {% for cat in view.categories %}
+<div class="cat-block">
 <div class="cat-header">
-  <h2>{{ cat.label }}</h2>
-  <span class="mini">{{ cat.counts.pass }} pass &middot; {{ cat.counts.fail }} fail &middot; {{ cat.counts.needs_human }} needs human</span>
+  <h3>{{ cat.label }}</h3>
+  <span class="mini">{{ cat.counts.fail }} failed &middot; {{ cat.counts.needs_human }} need review &middot; {{ cat.counts.pass }} passed</span>
 </div>
 {% for item in cat['items'] %}{{ finding(item) }}{% endfor %}
+</div>
 {% endfor %}
+{% endmacro %}
+
+{% macro stepper(current) %}
+<ol class="stepper">
+  {% for label in ["Describe your app", "Review test plan", "Fix findings"] %}
+  <li class="{{ 'done' if loop.index < current else ('current' if loop.index == current) }}">
+    <span class="dot">{{ '&#10003;'|safe if loop.index < current else loop.index }}</span>{{ label }}
+  </li>
+  {% endfor %}
+</ol>
 {% endmacro %}

@@ -1,11 +1,37 @@
 {% extends "base.html" %}
+{% import "_macros.html" as m %}
 {% set active = "history" %}
-{% block title %}Report {{ view.run_id[:8] }} — Epic Compliance{% endblock %}
+{% set intake = assessment.intake if assessment else none %}
+{% block title %}{{ intake.app_name if intake and intake.app_name else "Report " ~ view.run_id[:8] }} — Epic Readiness{% endblock %}
 {% block content %}
+{% if assessment %}{{ m.stepper(3) }}{% endif %}
 <div class="cat-header" style="margin-top:0">
-  <h1 style="margin:0">Compliance Report</h1>
-  <span class="mini">{{ run.created_at[:16].replace('T',' ') }} UTC &middot; {{ run.run_mode }} mode</span>
+  <h1 style="margin:0">{{ intake.app_name ~ " — " if intake and intake.app_name }}Epic readiness report</h1>
 </div>
-<p class="subtitle">{{ run.fhir_base_url }}</p>
+<p class="subtitle">
+  {% if intake %}{{ labels.users[intake.users] }} &middot; {{ labels.platform[intake.platform] }}{% if intake.health_system %} &middot; {{ intake.health_system }}{% endif %} &middot; {% endif %}
+  {{ "Demo data" if run.run_mode == 'mock' else "Live: " ~ run.fhir_base_url }} &middot; {{ run.created_at[:16].replace('T',' ') }} UTC
+</p>
 {% include "_report_body.html" %}
+
+{% if assessment %}
+<h2>Assessment scope</h2>
+<div class="card">
+  <dl class="scope">
+    <dt>Signs in</dt><dd>{{ labels.users[intake.users] }}</dd>
+    <dt>App type</dt><dd>{{ labels.platform[intake.platform] }}</dd>
+    <dt>Patient data</dt><dd>{{ [("Reads the chart", intake.reads_chart), ("Saves images", intake.saves_images), ("Writes notes / results", intake.writes_back), ("Sends PHI to a third-party AI / cloud", intake.third_party_ai)]|selectattr(1)|map(attribute=0)|join(", ") or "None selected" }}</dd>
+    <dt>Checks run</dt><dd>{{ assessment.included|length }} of {{ assessment.included|length + assessment.excluded|length }}</dd>
+  </dl>
+  {% if assessment.excluded %}
+  <details class="skipped-inline">
+    <summary>{{ assessment.excluded|length }} checks skipped as not applicable</summary>
+    {% for c in assessment.excluded %}
+    <div class="plan-item muted"><span class="rid">{{ c.rule_id }}</span><div class="body"><div>{{ c.description }}</div><div class="why">{{ c.reason }}</div></div></div>
+    {% endfor %}
+  </details>
+  {% endif %}
+  <div class="actions" style="margin-top:1rem"><a class="btn secondary" href="/">Re-run with changed answers</a></div>
+</div>
+{% endif %}
 {% endblock %}

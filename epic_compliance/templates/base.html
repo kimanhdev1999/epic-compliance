@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Epic Compliance Tool{% endblock %}</title>
+  <title>{% block title %}Epic Readiness{% endblock %}</title>
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/htmx.min.js" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">Epic&nbsp;<span>Compliance</span></div>
+    <a class="brand" href="/">Epic&nbsp;<span>Readiness</span></a>
     <nav>
-      <a href="/" class="{{ 'active' if active == 'dashboard' }}">Dashboard</a>
-      <a href="/runs" class="{{ 'active' if active == 'history' }}">History</a>
-      <a href="/config" class="{{ 'active' if active == 'config' }}">Config</a>
+      <a href="/" class="{{ 'active' if active == 'assess' }}">New assessment</a>
+      <a href="/runs" class="{{ 'active' if active == 'history' }}">Assessments</a>
+      <a href="/config" class="{{ 'active' if active == 'config' }}">Settings</a>
     </nav>
   </header>
   <main>

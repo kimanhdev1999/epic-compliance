@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% set active = "assess" %}
+{% block title %}Test plan — Epic Readiness{% endblock %}
+{% block content %}
+{{ m.stepper(2) }}
+<h1>Test plan{% if intake.app_name %} for {{ intake.app_name }}{% endif %}</h1>
+<p class="subtitle">
+  {{ plan.included|length }} checks selected for {{ {"mobile": "a native mobile app", "web_browser": "a browser-only web app", "web_server": "a web app with its own backend"}[intake.platform] }}
+  used by {{ intake.users }}{% if intake.health_system %} at {{ intake.health_system }}{% endif %}.
+  {{ plan.excluded|length }} checks don't apply and are skipped.
+</p>
+
+<div class="grid cols-3 plan-summary">
+  {% for sec in plan.sections() %}
+  <a class="card stat-card" href="#sec-{{ sec.key }}">
+    <div class="num">{{ sec.checks|length }}</div><div class="lbl">{{ sec.label }}</div>
+  </a>
+  {% endfor %}
+</div>
+
+{% if intake.run_mode == 'live' and not live_token %}
+<div class="callout warn">
+  <strong>Sign in to the Epic sandbox first.</strong> Checks that need a real access token will come back
+  <em>Needs review</em> until you do. <a href="/launch">Start SMART sign-in &rarr;</a>
+  <div class="hint">Uses the client ID from <code class="inline">.env</code>. When it finishes, come back and generate the plan again.</div>
+</div>
+{% elif intake.run_mode == 'mock' %}
+<div class="callout">
+  <strong>Demo data run.</strong> This proves the plan and shows you what the report will look like. Run it against the Epic sandbox with your client ID before you take it to {{ intake.health_system or "the health system" }}.
+</div>
+{% endif %}
+
+{% for sec in plan.sections() %}
+<div class="cat-header" id="sec-{{ sec.key }}"><h2>{{ sec.label }}</h2><span class="mini">{{ sec.checks|length }} checks</span></div>
+<div class="card plan-list">
+  {% for c in sec.checks %}
+  <div class="plan-item">
+    <span class="rid">{{ c.rule.id }}</span>
+    <div class="body">
+      <div>{{ c.rule.description }}</div>
+      <div class="why">Why: {{ c.reason }}</div>
+    </div>
+    <span class="badge sev-{{ c.rule.severity }}">{{ c.rule.severity }}</span>
+    <span class="badge type">{{ "AI review" if c.rule.check_type == 'llm' else "Automated" }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+
+{% if plan.excluded %}
+<details class="card skipped">
+  <summary>{{ plan.excluded|length }} checks skipped for this app</summary>
+  {% for c in plan.excluded %}
+  <div class="plan-item muted">
+    <span class="rid">{{ c.rule.id }}</span>
+    <div class="body"><div>{{ c.rule.description }}</div><div class="why">{{ c.reason }}</div></div>
+  </div>
+  {% endfor %}
+</details>
+{% endif %}
+
+<form method="post" action="/assess/run" class="actions sticky-actions" onsubmit="this.querySelector('button').disabled=true; this.querySelector('.running').hidden=false;">
+  {% for k, v in intake.model_dump().items() %}
+    {% if v is sameas true %}<input type="hidden" name="{{ k }}" value="on">
+    {% elif v is not sameas false %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}
+  {% endfor %}
+  <a class="btn secondary" href="/">&larr; Edit answers</a>
+  <button type="submit" class="btn big">Run {{ plan.included|length }} checks</button>
+  <span class="running muted" hidden><span class="spinner dark"></span> Running checks…</span>
+</form>
+{% endblock %}

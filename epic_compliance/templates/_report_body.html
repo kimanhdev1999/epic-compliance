@@ -1,11 +1,84 @@
 {% import "_macros.html" as m %}
 <div id="report-body">
-  <div class="actions" style="margin-bottom:1rem">
+  <div class="overview">
+    <div class="card ring-card">
+      {% if view.score is not none %}
+      <div class="ring" style="--p: {{ view.score }}"><span>{{ view.score }}<small>%</small></span></div>
+      <div class="lbl">Readiness<br><span class="muted">passed of decided checks</span></div>
+      {% else %}
+      <div class="ring empty-ring"><span>—</span></div>
+      <div class="lbl">Readiness<br><span class="muted">nothing decided yet</span></div>
+      {% endif %}
+    </div>
+    <div class="card overview-stats">
+      <div class="stat-line fail"><span class="num">{{ view.counts.fail }}</span> failed
+        {% if view.blocking %}<span class="badge sev-critical">{{ view.blocking }} blocking go-live</span>{% endif %}</div>
+      <div class="sev-bar">
+        {% for sev, n in view.failed_by_severity.items() %}{% if n %}<span class="seg sev-{{ sev }}" style="flex: {{ n }}">{{ n }} {{ sev }}</span>{% endif %}{% endfor %}
+        {% if not view.counts.fail %}<span class="seg none">No failures</span>{% endif %}
+      </div>
+      <div class="stat-line warn"><span class="num">{{ view.counts.needs_human }}</span> need your review</div>
+      <div class="stat-line pass"><span class="num">{{ view.counts.pass }}</span> passed <span class="muted">of {{ view.total }} checks</span></div>
+    </div>
+  </div>
+
+  {% if view.failed %}
+  <h2>Fix these first</h2>
+  <div class="card priority">
+    {% for it in view.failed %}
+    <a class="pri-item" href="#f-{{ it.rule_id }}" onclick="document.getElementById('f-{{ it.rule_id }}').open = true">
+      <span class="badge sev-{{ it.severity }}">{{ it.severity }}</span>
+      <span class="rid">{{ it.rule_id }}</span>
+      <span class="body"><strong>{{ it.requirement }}</strong><span class="fix">{{ it.remediation_hint }}</span></span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if view.review %}
+  <h2>Needs your review</h2>
+  <p class="muted" style="margin-top:-0.4rem">We couldn't decide these from the evidence available. Answer the question, connect the missing service, or check by hand. We won't guess.</p>
+  <div class="card priority">
+    {% for it in view.review %}
+    <a class="pri-item" href="#f-{{ it.rule_id }}" onclick="document.getElementById('f-{{ it.rule_id }}').open = true">
+      <span class="badge sev-{{ it.severity }}">{{ it.severity }}</span>
+      <span class="rid">{{ it.rule_id }}</span>
+      <span class="body"><strong>{{ it.requirement }}</strong><span class="fix">{{ it.evidence|truncate(160) }}</span></span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="cat-header findings-head">
+    <h2>All findings</h2>
+    <div class="filters" role="tablist">
+      <button type="button" class="active" data-filter="all">All {{ view.total }}</button>
+      <button type="button" data-filter="fail">Failed {{ view.counts.fail }}</button>
+      <button type="button" data-filter="needs_human">Needs review {{ view.counts.needs_human }}</button>
+      <button type="button" data-filter="pass">Passed {{ view.counts.pass }}</button>
+    </div>
+  </div>
+  {{ m.categories(view) }}
+
+  <div class="actions export-bar">
     <a class="btn secondary" href="/runs/{{ view.run_id }}/export" download>Download HTML</a>
     <a class="btn secondary" href="/runs/{{ view.run_id }}/print" target="_blank">Print / PDF</a>
     <a class="btn secondary" href="/api/runs/{{ view.run_id }}">JSON</a>
     <span class="muted" style="font-size:0.82rem">Run ID <code class="inline">{{ view.run_id }}</code></span>
   </div>
-  {{ m.tiles(view) }}
-  {{ m.categories(view) }}
 </div>
+<script>
+(function () {
+  var root = document.getElementById('report-body');
+  root.querySelectorAll('.filters button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var f = b.dataset.filter;
+      root.querySelectorAll('.filters button').forEach(function (x) { x.classList.toggle('active', x === b); });
+      root.querySelectorAll('.finding').forEach(function (el) { el.hidden = f !== 'all' && el.dataset.verdict !== f; });
+      root.querySelectorAll('.cat-block').forEach(function (blk) {
+        blk.hidden = !blk.querySelector('.finding:not([hidden])');
+      });
+    });
+  });
+})();
+</script>

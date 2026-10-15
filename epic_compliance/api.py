@@ -1,8 +1,10 @@
 """FastAPI web application — server-rendered UI (HTMX) + JSON API.
 
 Pages
-  GET  /                      dashboard: run form + recent runs
-  POST /runs                  trigger a pipeline run (HTMX → result partial)
+  GET  /                      step 1 of an assessment: describe your app
+  POST /assess/plan           step 2: the test plan generated from those answers
+  POST /assess/run            step 3: run the plan, redirect to its report
+  POST /runs                  ad-hoc run with raw config (HTMX → result partial)
   GET  /runs                  run history
   GET  /runs/{id}             saved report detail
   DELETE /runs/{id}           delete a run (HTMX → refreshed table)
@@ -30,6 +32,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from . import pipeline, store
+from .assessment import BAA_LABELS, PLATFORM_LABELS, USERS_LABELS, Intake, build_plan
 from .config import OVERRIDABLE_FIELDS, config_with_overrides, get_config
 from .models import Report
 from .fhir.writeback import CLINICIAN_SCOPES
@@ -82,12 +85,22 @@ def _startup() -> None:
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
-def _execute_run(overrides: dict[str, str]) -> tuple[Report, dict[str, Any]]:
-    """Run the pipeline with per-run overrides, persist it, return (report, cfg)."""
+def _execute_run(
+    overrides: dict[str, str],
+    rule_ids: set[str] | None = None,
+    assessment: dict[str, Any] | None = None,
+) -> tuple[Report, dict[str, Any]]:
+    """Run the pipeline with per-run overrides, persist it, return (report, cfg).
+
+    ``rule_ids``/``assessment`` come from an assessment plan: the checks to run,
+    and the intake + scope stored with the run so its report can show them.
+    """
     global _last_report
     config = config_with_overrides(overrides)
-    report = run_full_pipeline(config)
+    report = run_full_pipeline(config, rule_ids=rule_ids)
     snapshot = config.model_dump()
+    if assessment is not None:
+        snapshot["assessment"] = assessment
     store.save_run(report, snapshot)
     # Remember non-secret choices to prefill the next form.
     store.save_config_defaults(snapshot)
@@ -105,16 +118,43 @@ def _load_run_or_404(run_id: str) -> dict[str, Any]:
 # --------------------------------------------------------------------------- #
 # Pages
 # --------------------------------------------------------------------------- #
+def _intake_labels() -> dict[str, Any]:
+    return {"users": USERS_LABELS, "platform": PLATFORM_LABELS, "baa": BAA_LABELS}
+
+
 @app.get("/", response_class=HTMLResponse)
-def dashboard(request: Request) -> Any:
-    defaults = store.get_config_defaults()
-    if not defaults:
-        # Seed from environment config so the form isn't blank on first run.
-        cfg = get_config().model_dump()
-        defaults = {k: cfg.get(k, "") for k in OVERRIDABLE_FIELDS}
-        if cfg.get("anthropic_api_key"):
-            defaults["anthropic_api_key"] = "***set***"
-    return render(request, "dashboard.html", defaults=defaults, runs=store.list_runs(limit=8))
+def assess_start(request: Request) -> Any:
+    """Step 1: describe your app. Prefilled with the last answers given."""
+    saved = store.get_last_intake()
+    intake = Intake.model_validate({k: v for k, v in saved.items() if k in Intake.model_fields})
+    if not intake.fhir_base_url:
+        intake.fhir_base_url = get_config().fhir_base_url
+    return render(
+        request, "assess.html",
+        intake=intake, labels=_intake_labels(), runs=store.list_runs(limit=5),
+    )
+
+
+@app.post("/assess/plan", response_class=HTMLResponse)
+async def assess_plan(request: Request) -> Any:
+    """Step 2: show the checks this app needs, and why, before anything runs."""
+    intake = Intake.from_form(dict(await request.form()))
+    store.save_last_intake(intake.model_dump())
+    plan = build_plan(intake)
+    return render(
+        request, "plan.html",
+        intake=intake, plan=plan, labels=_intake_labels(),
+        live_token=pipeline.get_live_token() is not None,
+    )
+
+
+@app.post("/assess/run")
+async def assess_run(request: Request) -> RedirectResponse:
+    """Step 3: run exactly the planned checks, then show the report."""
+    intake = Intake.from_form(dict(await request.form()))
+    plan = build_plan(intake)
+    report, _ = _execute_run(plan.config_overrides(), plan.rule_ids, plan.to_dict())
+    return RedirectResponse(url=f"/runs/{report.run_id}", status_code=303)
 
 
 @app.post("/runs", response_class=HTMLResponse)
@@ -149,7 +189,10 @@ def history(request: Request) -> Any:
 def report_detail(request: Request, run_id: str) -> Any:
     run = _load_run_or_404(run_id)
     view = build_report_view(run["report"])
-    return render(request, "report.html", view=view, run=run)
+    return render(
+        request, "report.html", view=view, run=run,
+        assessment=run["config"].get("assessment"), labels=_intake_labels(),
+    )
 
 
 @app.delete("/runs/{run_id}", response_class=HTMLResponse)
@@ -318,7 +361,7 @@ def smart_callback(
             # A clinician standalone login has no patient until one is searched for.
             f"Live launch complete for patient {token.patient!r}. " if token.patient
             else f"Live launch complete, signed in as {token.fhir_user or 'unknown user'!r}. "
-        ) + "Go to the dashboard and run a live compliance check.",
+        ) + "Go back to your test plan and run the assessment.",
     )
 
 

@@ -127,12 +127,19 @@ def list_runs(limit: int = 100) -> list[dict[str, Any]]:
         rows = conn.execute(
             """
             SELECT run_id, created_at, run_mode, fhir_base_url,
-                   pass_count, fail_count, needs_human_count
+                   pass_count, fail_count, needs_human_count, config_json
             FROM runs ORDER BY created_at DESC LIMIT ?
             """,
             (limit,),
         ).fetchall()
-    return [dict(r) for r in rows]
+    out = []
+    for r in rows:
+        data = dict(r)
+        intake = (json.loads(data.pop("config_json")).get("assessment") or {}).get("intake") or {}
+        data["app_name"] = intake.get("app_name", "")
+        data["health_system"] = intake.get("health_system", "")
+        out.append(data)
+    return out
 
 
 def get_run(run_id: str) -> dict[str, Any] | None:
@@ -178,4 +185,22 @@ def get_config_defaults() -> dict[str, str]:
     init_db()
     with _connect() as conn:
         rows = conn.execute("SELECT key, value FROM settings").fetchall()
-    return {r["key"]: r["value"] for r in rows}
+    return {r["key"]: r["value"] for r in rows if r["key"] != "last_intake"}
+
+
+def save_last_intake(intake: dict[str, Any]) -> None:
+    """Remember the last assessment answers so the intake form can prefill."""
+    init_db()
+    with _connect() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+            ("last_intake", json.dumps(intake)),
+        )
+        conn.commit()
+
+
+def get_last_intake() -> dict[str, Any]:
+    init_db()
+    with _connect() as conn:
+        row = conn.execute("SELECT value FROM settings WHERE key = 'last_intake'").fetchone()
+    return json.loads(row["value"]) if row else {}

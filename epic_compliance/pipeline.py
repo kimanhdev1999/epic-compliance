@@ -430,13 +430,17 @@ def collect_evidence(config: AppConfig) -> dict[str, Any]:
     }
 
 
-def run_full_pipeline(config: AppConfig) -> Report:
-    """Run the complete pipeline: evidence collection + validation."""
+def run_full_pipeline(config: AppConfig, rule_ids: set[str] | None = None) -> Report:
+    """Run the complete pipeline: evidence collection + validation.
+
+    ``rule_ids`` limits validation to an assessment plan's checks.
+    """
     evidence = collect_evidence(config)
     mock_llm = not bool(config.anthropic_api_key) or config.run_mode == "mock"
     return run_pipeline(
         evidence=evidence,
         launch_profile=config.launch_profile,
+        rule_ids=rule_ids,
         api_key=config.anthropic_api_key,
         mock_llm=mock_llm,
     )
