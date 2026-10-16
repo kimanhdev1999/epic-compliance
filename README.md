@@ -43,20 +43,25 @@ Modeled on cloud and AI security-audit tools (AWS Security Hub, Prowler, and
 the like): you describe what you're running, the tool decides what to check,
 and the result is a triaged list of what to fix.
 
-1. **Describe your app** — who signs in (clinicians or patients), mobile vs.
-   web, what it does with patient data (reads the chart, saves photos, writes
-   notes/results back, sends PHI to a third-party AI), your security posture
-   (TLS, audit logging, BAA), and where to test (demo data or the Epic
-   sandbox).
+1. **Describe your app** — in a chat, in your own words. The tool asks
+   follow-up questions until it knows who signs in (clinicians or patients),
+   what kind of app it is (mobile, browser-only, web with a backend), what it
+   does with patient data (reads the chart, saves photos, writes notes/results
+   back, sends PHI to a third-party AI), and your security posture (TLS, audit
+   logging, BAA — "not sure" is fine). It then shows what it understood for
+   you to confirm or correct. With `ANTHROPIC_API_KEY` set, Claude runs the
+   conversation; without one, a keyword parser with scripted follow-ups does,
+   so it works offline too.
 2. **Review the test plan** — the checks your answers call for, each with
-   *why* it's included, plus the checks skipped as not applicable. Nothing has
-   run yet.
+   *why* it's included, plus the checks skipped as not applicable — and pick
+   where to test (demo data or the Epic sandbox). Nothing has run yet.
 3. **Fix findings** — a readiness score, failures by severity, a
    **Fix these first** list with the remediation for each, a **Needs your
    review** list for anything the evidence can't decide, and every finding
    filterable by status. Export as HTML, PDF or JSON for the health system.
 
-The plan logic lives in `epic_compliance/assessment.py` (`SELECTORS` maps each
+The chat lives in `epic_compliance/intake_chat.py`; the plan logic in
+`epic_compliance/assessment.py` (`SELECTORS` maps each
 rule to the answers that pull it in).
 
 ## Who this is for — worked example
@@ -65,9 +70,10 @@ Say you're building **DermScan**, a mobile app a dermatologist at
 **Advocate Health** uses to photograph a lesion, file the photo in the
 patient's chart, and get an AI read of it.
 
-Answer the intake: *clinicians*, *native mobile*, *reads the chart*,
-*saves photos*, *sends PHI to a third-party AI*. The plan comes back with
-27 checks, including:
+Tell the chat: *"A mobile app dermatologists at Advocate Health use to
+photograph a lesion, save the photo to the chart and get an AI read."* It
+picks up clinicians, mobile, photos and a third-party AI, asks about your
+security setup, and the plan comes back with checks including:
 
 - **Sign-in** — Epic's SMART endpoints, PKCE S256, state handling, code replay, id_token signature (`AUTH-*`). Your app must be a public client with a deep-link redirect, because a phone can't keep a secret (`CLIN-011`, `CLIN-012`).
 - **Right patient, every time** — the clinician signs in with no patient, searches, and confirms one; the search must match exactly one patient and show enough to confirm them (`CLIN-001`, `CLIN-002`). Everything written must land on that patient (`CLIN-007`).

@@ -378,3 +378,20 @@ shows its own scope.
   for `/launch` from `.env`, not the form.
 - "I'm not sure" answers are left blank on purpose, so SEC-* stay needs_human.
 - The CLI still runs every rule for the configured profile (no intake).
+
+### Amendment (2026-10-16): the intake is a chat, not a form
+The user asked for step 1 to be a single chat box: describe the app in words,
+and the tool asks follow-ups for anything unclear. `intake_chat.py` covers four
+topics (who signs in, app type, patient-data use, security posture) and offers
+the plan only when all are settled, after showing "Here's what I understood".
+
+- With `ANTHROPIC_API_KEY`, Claude (`LLM_MODEL`, ADR-004) returns structured
+  updates via `output_config.format` (JSON schema); the server, not the model,
+  decides when the intake is complete. Any API failure falls back to the
+  offline keyword parser for that turn.
+- Without a key, the keyword parser + scripted questions keep mock mode fully
+  offline. It is deliberately simple; the confirmation card is the guard
+  against a misread.
+- Chat state round-trips through the page as JSON (single-tenant, no session
+  store). "Where to test" moved to the plan page, since it doesn't change
+  which checks apply.

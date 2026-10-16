@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% set active = "assess" %}
+{% block title %}New assessment — Epic Readiness{% endblock %}
+{% block content %}
+<div class="chat-page">
+  {{ m.stepper(1) }}
+  <h1>Describe your app</h1>
+  <p class="subtitle">Tell us what you're building in your own words. We'll ask a few follow-up questions, then generate the Epic integration checks your app needs.</p>
+  {% include "_chat.html" %}
+</div>
+
+{% if runs %}
+<h2>Recent assessments</h2>
+{% include "_history_table.html" %}
+{% endif %}
+
+<script>
+(function () {
+  function scrollLog() {
+    var log = document.querySelector('#chat .chat-log');
+    if (log) log.scrollTop = log.scrollHeight;
+  }
+  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  // Show the user's message and a typing indicator while Claude / the parser answers.
+  document.addEventListener('htmx:beforeRequest', function (e) {
+    var form = e.detail.elt;
+    if (form.id !== 'chat-form') return;
+    var box = form.querySelector('textarea');
+    var text = box.value.trim();
+    if (!text) { e.preventDefault(); return; }
+    var log = document.querySelector('#chat .chat-log');
+    log.insertAdjacentHTML('beforeend',
+      '<div class="msg user"><div class="bubble">' + esc(text) + '</div></div>' +
+      '<div class="msg assistant typing"><div class="bubble"><span></span><span></span><span></span></div></div>');
+    document.querySelectorAll('#chat .chips button').forEach(function (b) { b.disabled = true; });
+    scrollLog();
+  });
+  document.addEventListener('htmx:afterSwap', function (e) {
+    if (e.detail.target.id !== 'chat') return;
+    scrollLog();
+    var box = document.querySelector('#chat-form textarea');
+    if (box) box.focus();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.target.matches('#chat-form textarea') && e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      e.target.form.requestSubmit();
+    }
+  });
+  document.addEventListener('click', function (e) {
+    var chip = e.target.closest('#chat .chips button');
+    if (!chip) return;
+    var form = document.getElementById('chat-form');
+    form.querySelector('textarea').value = chip.dataset.reply;
+    form.requestSubmit();
+  });
+  document.addEventListener('DOMContentLoaded', scrollLog);
+})();
+</script>
+{% endblock %}

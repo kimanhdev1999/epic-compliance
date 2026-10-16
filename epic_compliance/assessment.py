@@ -19,11 +19,18 @@ from pydantic import BaseModel
 from .rules_engine.catalog import Rule, load_rules
 
 
+#: Where/how to run, chosen on the plan page rather than in the chat.
+RUN_FIELDS = ("run_mode", "fhir_base_url", "oauth_client_id", "app_redirect_uri",
+              "test_patient_query", "encounter_required")
+
+
 class Intake(BaseModel):
     """What the user told us about the app under assessment."""
 
     app_name: str = ""
     health_system: str = ""
+    # The user's own words, from the first chat message.
+    description: str = ""
     # Who signs in: clinicians pick the patient after login, patients are the patient.
     users: Literal["clinicians", "patients"] = "clinicians"
     platform: Literal["mobile", "web_browser", "web_server"] = "mobile"
