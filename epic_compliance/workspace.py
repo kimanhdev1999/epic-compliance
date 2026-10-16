@@ -1,9 +1,8 @@
 """Workspace view — the app's standing compliance posture (ADR-012).
 
-The UI follows the trust-management pattern Vanta, Drata and Secureframe share:
-a workspace for one app, *frameworks* with a readiness percentage, *tests*
-mapped to those frameworks with a status, *integrations* that unlock tests,
-and a getting-started checklist. This module turns the latest saved run (plus
+The UI is a compliance workspace for one app: *frameworks* with a readiness
+percentage, *tests* mapped to those frameworks with a status, *integrations*
+that unlock tests, and a getting-started checklist. This module turns the latest saved run (plus
 the assessment scope stored with it) into that view.
 
 A test is one catalog rule. Its status comes from the latest run:
@@ -11,7 +10,7 @@ A test is one catalog rule. Its status comes from the latest run:
   not_applicable                    — left out of this app's plan (with why)
   not_run                           — no run yet
 A rule maps to every framework its ``source`` citation names, so one test can
-count toward ONC (g)(10) and HIPAA at the same time, as controls do in Vanta.
+count toward ONC (g)(10) and HIPAA at the same time.
 """
 from __future__ import annotations
 
@@ -125,7 +124,7 @@ def _progress(tests: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "counts": counts,
         "in_scope": in_scope,
-        # Like Vanta: only passing tests count as done; "needs review" is not done.
+        # Only passing tests count as done; "needs review" is not done.
         "percent": round(100 * counts["passing"] / in_scope) if in_scope else None,
     }
 

@@ -1,6 +1,6 @@
 """FastAPI web application — server-rendered UI (HTMX) + JSON API.
 
-Pages (workspace shell modeled on Vanta-style trust management, ADR-012)
+Pages (workspace shell, ADR-012)
   GET  /                      Home: getting-started checklist, framework readiness, needs attention
   GET  /frameworks            readiness per framework (ONC (g)(10), SMART, US Core, Epic, HIPAA, safety)
   GET  /frameworks/{key}      one framework and its tests
@@ -265,7 +265,7 @@ def assess_start(request: Request) -> Any:
 
 @app.post("/assess/rerun")
 def assess_rerun(next: str = Form("/")) -> RedirectResponse:
-    """Re-run the current app's plan (last intake), like Vanta's "Run tests now"."""
+    """Re-run the current app's plan (last intake) and return to the page."""
     last = store.get_last_intake()
     if not last:
         return RedirectResponse(url="/assess", status_code=303)

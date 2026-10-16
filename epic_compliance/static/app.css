@@ -1,6 +1,5 @@
-/* Epic Readiness — workspace UI modeled on trust-management tools (Vanta,
-   Drata, Secureframe): left sidebar, Home checklist, framework progress,
-   tests table with a detail drawer. Light by default, follows dark mode. */
+/* Epic Readiness — workspace UI: left sidebar, Home checklist, framework
+   progress, tests table with a detail drawer. Light by default, follows dark mode. */
 
 :root {
   --bg: #f6f6f9;

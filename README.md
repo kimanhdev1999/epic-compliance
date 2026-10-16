@@ -39,10 +39,9 @@ team — each one runs it slightly differently.
 
 ## The flow
 
-The web UI follows the trust-management pattern that Vanta, Drata and
-Secureframe share: one workspace for your app, **frameworks** with a readiness
-percentage, **tests** mapped to those frameworks, **integrations** that turn
-tests into real results, and a **Get started** checklist on Home.
+The web UI is a compliance workspace for your app: **frameworks** with a
+readiness percentage, **tests** mapped to those frameworks, **integrations**
+that turn tests into real results, and a **Get started** checklist on Home.
 
 **Onboarding (once per app):**
 
@@ -71,7 +70,7 @@ tests into real results, and a **Get started** checklist on Home.
 | **Reports** | Every run as a shareable readiness report (HTML, print/PDF, JSON) |
 
 **Re-run tests** (on Home, Frameworks and Tests) runs your saved plan again,
-the way Vanta's monitoring re-checks tests. Readiness counts only passing tests
+so you can track progress as you fix things. Readiness counts only passing tests
 in scope, so a test waiting on review isn't counted as done.
 
 The chat lives in `epic_compliance/intake_chat.py`; the plan logic in
