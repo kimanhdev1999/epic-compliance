@@ -32,6 +32,7 @@ api.py       ─┘        run_pipeline() (rules engine)             └──�
 | `rules_engine/engine.py` | Iterate rules, dispatch by `check_type`, aggregate into a `Report` |
 | `store.py` | SQLite (stdlib `sqlite3`): run history, config defaults, secret redaction |
 | `viewmodel.py` | `Report` → sorted, grouped, template-ready dict. Keeps logic out of Jinja |
+| `workspace.py` | Latest run + plan → workspace: frameworks, test statuses, Home checklist (ADR-012) |
 | `api.py` | FastAPI routes: HTML pages (HTMX) + JSON API |
 | `templates/`, `static/` | Jinja templates and CSS/HTMX asset |
 

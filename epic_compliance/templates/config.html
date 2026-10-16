@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% set active = "config" %}
-{% block title %}Configuration — Epic Compliance{% endblock %}
+{% block title %}Settings — Epic Readiness{% endblock %}
 {% block content %}
-<h1>Configuration</h1>
-<p class="subtitle">Defaults used to prefill the run form. Secrets are read from the environment and never displayed.</p>
+<h1>Settings</h1>
+<p class="subtitle">Connection defaults used to prefill each test run. Secrets are read from the environment and never displayed.</p>
 
 {% if saved %}
 <div class="card" style="border-color:var(--pass)"><strong style="color:var(--pass)">Saved.</strong> These values will prefill your next run.</div>

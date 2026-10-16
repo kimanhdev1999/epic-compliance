@@ -1,0 +1,221 @@
+"""Workspace view — the app's standing compliance posture (ADR-012).
+
+The UI follows the trust-management pattern Vanta, Drata and Secureframe share:
+a workspace for one app, *frameworks* with a readiness percentage, *tests*
+mapped to those frameworks with a status, *integrations* that unlock tests,
+and a getting-started checklist. This module turns the latest saved run (plus
+the assessment scope stored with it) into that view.
+
+A test is one catalog rule. Its status comes from the latest run:
+  passing / failing / needs_review  — the run's verdict
+  not_applicable                    — left out of this app's plan (with why)
+  not_run                           — no run yet
+A rule maps to every framework its ``source`` citation names, so one test can
+count toward ONC (g)(10) and HIPAA at the same time, as controls do in Vanta.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Callable
+
+from .rules_engine.catalog import Rule, load_rules
+from .viewmodel import CATEGORY_LABELS, SEVERITY_ORDER, SUBJECTS
+
+STATUS_FROM_VERDICT = {"pass": "passing", "fail": "failing", "needs_human": "needs_review"}
+STATUS_LABELS = {
+    "failing": "Failing",
+    "needs_review": "Needs review",
+    "passing": "Passing",
+    "not_applicable": "Not applicable",
+    "not_run": "Not run",
+}
+STATUS_ORDER = {s: i for i, s in enumerate(STATUS_LABELS)}
+
+
+@dataclass(frozen=True)
+class Framework:
+    key: str
+    name: str
+    summary: str
+    matches: Callable[[str], bool]
+
+
+def _cites(*needles: str) -> Callable[[str], bool]:
+    return lambda source: any(n in source for n in needles)
+
+
+FRAMEWORKS: list[Framework] = [
+    Framework("onc_g10", "ONC (g)(10)",
+              "The certified standardized API criterion Epic's FHIR API is built to. "
+              "Apps are expected to work with what it guarantees.",
+              _cites("ONC")),
+    Framework("smart", "SMART App Launch",
+              "How your app signs in to Epic: OAuth 2.0, PKCE, scopes and identity tokens.",
+              _cites("SMART", "RFC", "OAuth", "OpenID")),
+    Framework("us_core", "US Core / FHIR R4",
+              "The shape of the patient data you read and write.",
+              _cites("US Core", "HL7 FHIR")),
+    Framework("epic", "Epic requirements",
+              "The Epic on FHIR APIs your app uses, and what Epic and its customers ask for in app review.",
+              _cites("Epic")),
+    Framework("hipaa", "HIPAA Security Rule",
+              "Encryption, audit logging and BAAs. Every health-system security review asks for these.",
+              _cites("HIPAA")),
+    Framework("patient_safety", "Patient safety",
+              "Wrong-patient guards: two identifiers before anything is saved to the chart.",
+              _cites("Joint Commission", "wrong-patient")),
+]
+FRAMEWORKS_BY_KEY = {f.key: f for f in FRAMEWORKS}
+
+
+def frameworks_for(rule: Rule) -> list[str]:
+    return [f.key for f in FRAMEWORKS if f.matches(rule.source)]
+
+
+# --------------------------------------------------------------------------- #
+# Tests
+# --------------------------------------------------------------------------- #
+def build_tests(run: dict[str, Any] | None) -> list[dict[str, Any]]:
+    """Every catalog rule as a test, with its status in ``run`` (latest run)."""
+    findings = {f.rule_id: f for f in run["report"].findings} if run else {}
+    assessment = (run or {}).get("config", {}).get("assessment") or {}
+    in_scope = {c["rule_id"]: c["reason"] for c in assessment.get("included", [])}
+    out_of_scope = {c["rule_id"]: c["reason"] for c in assessment.get("excluded", [])}
+
+    tests = []
+    for rule in load_rules():
+        f = findings.get(rule.id)
+        if f is not None:
+            status = STATUS_FROM_VERDICT[f.verdict]
+        elif run is None:
+            status = "not_run"
+        else:
+            status = "not_applicable"
+        subject = SUBJECTS.get(rule.subject, ("", ""))
+        tests.append({
+            "id": rule.id,
+            "title": rule.description,
+            "status": status,
+            "status_label": STATUS_LABELS[status],
+            "severity": rule.severity,
+            "category": rule.category,
+            "category_label": CATEGORY_LABELS.get(rule.category, rule.category.replace("_", " ").title()),
+            "type_label": "AI review" if rule.check_type == "llm" else "Automated",
+            "frameworks": frameworks_for(rule),
+            "source": rule.source,
+            "subject": rule.subject,
+            "subject_label": subject[0],
+            "subject_detail": subject[1],
+            "evidence": f.evidence if f else "",
+            "citation": f.citation if f else "",
+            "remediation": (f.remediation_hint if f else "") or rule.remediation_hint,
+            # Why it is (or isn't) part of this app's assessment.
+            "reason": in_scope.get(rule.id) or out_of_scope.get(rule.id)
+                      or ("" if f or run is None else "Not part of this assessment."),
+        })
+    tests.sort(key=lambda t: (STATUS_ORDER[t["status"]], SEVERITY_ORDER.get(t["severity"], 9), t["id"]))
+    return tests
+
+
+def _progress(tests: list[dict[str, Any]]) -> dict[str, Any]:
+    counts = {s: 0 for s in STATUS_LABELS}
+    for t in tests:
+        counts[t["status"]] += 1
+    in_scope = counts["passing"] + counts["failing"] + counts["needs_review"]
+    return {
+        "counts": counts,
+        "in_scope": in_scope,
+        # Like Vanta: only passing tests count as done; "needs review" is not done.
+        "percent": round(100 * counts["passing"] / in_scope) if in_scope else None,
+    }
+
+
+def build_frameworks(tests: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    out = []
+    for fw in FRAMEWORKS:
+        fw_tests = [t for t in tests if fw.key in t["frameworks"]]
+        out.append({"key": fw.key, "name": fw.name, "summary": fw.summary,
+                    "tests": fw_tests, **_progress(fw_tests)})
+    return out
+
+
+# --------------------------------------------------------------------------- #
+# Workspace (Home)
+# --------------------------------------------------------------------------- #
+def build_workspace(
+    run: dict[str, Any] | None,
+    *,
+    intake: dict[str, Any],
+    integrations: dict[str, dict[str, Any]],
+    history: list[dict[str, Any]],
+) -> dict[str, Any]:
+    tests = build_tests(run)
+    progress = _progress(tests)
+    counts = progress["counts"]
+    attention = [t for t in tests if t["status"] in ("failing", "needs_review")]
+
+    checklist = [
+        {"title": "Describe your app",
+         "detail": "Tell the assistant what you're building. It works out which tests apply.",
+         "done": bool(intake), "href": "/assess", "cta": "Start"},
+        {"title": "Run your first assessment",
+         "detail": "Review the generated test plan and run it on demo data.",
+         "done": run is not None, "href": "/assess", "cta": "Run"},
+        {"title": "Connect the Epic sandbox",
+         "detail": "Add your non-production client ID from fhir.epic.com to test real sign-in and data.",
+         "done": integrations["epic"]["status"] != "not_connected", "href": "/integrations", "cta": "Connect"},
+        {"title": "Connect Claude for AI-reviewed tests",
+         "detail": "Lets the security and BAA tests judge your answers instead of waiting for review.",
+         "done": integrations["claude"]["status"] != "not_connected", "href": "/integrations", "cta": "Connect"},
+        {"title": "Fix failing tests",
+         "detail": "Each failing test shows how to fix it.",
+         "done": run is not None and counts["failing"] == 0, "href": "/tests?status=failing", "cta": "Review"},
+        {"title": "Resolve tests that need review",
+         "detail": "Answer the open question, connect the missing service, or confirm by hand.",
+         "done": run is not None and counts["needs_review"] == 0, "href": "/tests?status=needs_review", "cta": "Review"},
+    ]
+    if run is not None:
+        checklist.append({
+            "title": "Share the readiness report with the health system",
+            "detail": "Send it to the health system's Epic team with your security questionnaire.",
+            "done": False, "href": f"/runs/{run['run_id']}", "cta": "Open report",
+        })
+
+    return {
+        "run": run,
+        "intake": intake,
+        "tests": tests,
+        "frameworks": build_frameworks(tests),
+        "attention": attention,
+        "checklist": checklist,
+        "checklist_done": sum(1 for c in checklist if c["done"]),
+        "trend": _trend(history, intake.get("app_name", "")),
+        **progress,
+    }
+
+
+def _trend(history: list[dict[str, Any]], app_name: str) -> list[dict[str, Any]]:
+    """Readiness of this app's recent runs, oldest first, for the Home chart."""
+    points = []
+    for r in history:
+        if app_name and r.get("app_name") != app_name:
+            continue
+        total = r["pass_count"] + r["fail_count"] + r["needs_human_count"]
+        points.append({
+            "run_id": r["run_id"],
+            "when": r["created_at"][:16].replace("T", " "),
+            "percent": round(100 * r["pass_count"] / total) if total else 0,
+            "fail": r["fail_count"],
+        })
+    return list(reversed(points[:12]))
+
+
+def history_of_test(runs: list[dict[str, Any]], rule_id: str) -> list[dict[str, Any]]:
+    """Status of one test across recent full runs, newest first."""
+    out = []
+    for run in runs:
+        f = next((f for f in run["report"].findings if f.rule_id == rule_id), None)
+        status = STATUS_FROM_VERDICT[f.verdict] if f else "not_applicable"
+        out.append({"run_id": run["run_id"], "when": run["created_at"][:16].replace("T", " "),
+                    "status": status, "status_label": STATUS_LABELS[status]})
+    return out

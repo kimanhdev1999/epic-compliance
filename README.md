@@ -39,9 +39,12 @@ team — each one runs it slightly differently.
 
 ## The flow
 
-Modeled on cloud and AI security-audit tools (AWS Security Hub, Prowler, and
-the like): you describe what you're running, the tool decides what to check,
-and the result is a triaged list of what to fix.
+The web UI follows the trust-management pattern that Vanta, Drata and
+Secureframe share: one workspace for your app, **frameworks** with a readiness
+percentage, **tests** mapped to those frameworks, **integrations** that turn
+tests into real results, and a **Get started** checklist on Home.
+
+**Onboarding (once per app):**
 
 1. **Describe your app** — in a chat, in your own words. The tool asks
    follow-up questions until it knows who signs in (clinicians or patients),
@@ -52,17 +55,29 @@ and the result is a triaged list of what to fix.
    you to confirm or correct. With `ANTHROPIC_API_KEY` set, Claude runs the
    conversation; without one, a keyword parser with scripted follow-ups does,
    so it works offline too.
-2. **Review the test plan** — the checks your answers call for, each with
-   *why* it's included, plus the checks skipped as not applicable — and pick
-   where to test (demo data or the Epic sandbox). Nothing has run yet.
-3. **Fix findings** — a readiness score, failures by severity, a
-   **Fix these first** list with the remediation for each, a **Needs your
-   review** list for anything the evidence can't decide, and every finding
-   filterable by status. Export as HTML, PDF or JSON for the health system.
+2. **Review the test plan** — the tests your answers call for, each with
+   *why* it's included, plus the tests that don't apply, and pick where to
+   test (demo data or the Epic sandbox). Nothing has run yet.
+3. **See results** — the run lands in the workspace.
+
+**The workspace (day to day):**
+
+| Page | What it shows |
+|---|---|
+| **Home** | Get-started checklist (describe → run → connect Epic → connect Claude → fix failing → resolve reviews → share), overall readiness, readiness per framework, **Needs attention**, readiness over time, integration status |
+| **Frameworks** | ONC (g)(10), SMART App Launch, US Core / FHIR R4, Epic requirements, HIPAA Security Rule, Patient safety. Each test counts toward every framework its source cites, so SEC-001 counts for both ONC and HIPAA |
+| **Tests** | Every test, with status **Failing / Needs review / Passing / Not applicable**. Filter by status, framework or category, or search. Click a test to open a side panel with the result, how to fix it, why it's in scope, and its history across runs |
+| **Integrations** | Epic sandbox, Claude, HL7 FHIR validator, ONC test kit: whether each is connected, and which tests it unlocks |
+| **Reports** | Every run as a shareable readiness report (HTML, print/PDF, JSON) |
+
+**Re-run tests** (on Home, Frameworks and Tests) runs your saved plan again,
+the way Vanta's monitoring re-checks tests. Readiness counts only passing tests
+in scope, so a test waiting on review isn't counted as done.
 
 The chat lives in `epic_compliance/intake_chat.py`; the plan logic in
 `epic_compliance/assessment.py` (`SELECTORS` maps each
-rule to the answers that pull it in).
+rule to the answers that pull it in); frameworks and test statuses in
+`epic_compliance/workspace.py`.
 
 ## Who this is for — worked example
 
@@ -101,7 +116,7 @@ the status table below.)
 
 ## What it gives you
 
-- **Web UI** — the describe → plan → fix flow above, assessment history, standalone HTML export, printable/PDF report. FastAPI + Jinja + HTMX.
+- **Web UI** — the workspace above: chat onboarding, Home, Frameworks, Tests, Integrations, Reports (HTML export, printable/PDF). FastAPI + Jinja + HTMX.
 - **CLI** — `python -m epic_compliance run` runs every rule for the configured launch profile, prints a colored findings table, and exits non-zero on failures (CI-friendly).
 - **JSON API** — `/api/run`, `/api/runs`, `/api/runs/{id}` for integration.
 - **Demo (mock) mode** — the whole pipeline runs offline against fixtures, with no credentials and no API key. This is the default.
@@ -113,7 +128,7 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 cp .env.example .env          # optional; defaults work in mock mode
 
-python -m epic_compliance serve   # web UI at http://localhost:8000 — start an assessment
+python -m epic_compliance serve   # web UI at http://localhost:8000 — Home, then "Describe your app"
 python -m epic_compliance run     # CLI run (mock)
 pytest -v                         # tests
 ```

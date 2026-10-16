@@ -1,0 +1,73 @@
+{% import "_macros.html" as m %}
+<div class="drawer-head">
+  <div>
+    <div class="muted small"><code>{{ t.id }}</code> &middot; {{ t.category_label }}</div>
+    <h2>{{ t.title }}</h2>
+    <div class="drawer-meta">
+      {{ m.status_pill(t.status, t.status_label) }}
+      <span class="badge sev-{{ t.severity }}">{{ t.severity }}</span>
+      <span class="badge type">{{ t.type_label }}</span>
+    </div>
+  </div>
+  <a class="icon-btn" href="/tests" data-close-drawer aria-label="Close">{{ m.icon("x") }}</a>
+</div>
+<div class="drawer-body">
+  {% if t.status == "failing" and t.remediation %}
+  <section class="fix-box">
+    <h3>How to fix</h3>
+    <p>{{ t.remediation }}</p>
+  </section>
+  {% endif %}
+
+  {% if t.evidence %}
+  <section>
+    <h3>{{ "Why it needs review" if t.status == "needs_review" else "Result" }}</h3>
+    <pre class="evidence">{{ t.evidence }}</pre>
+    {% if t.citation %}<p class="muted small">AI citation: {{ t.citation }}</p>{% endif %}
+  </section>
+  {% endif %}
+
+  {% if t.reason %}
+  <section>
+    <h3>{{ "Why it's not applicable" if t.status == "not_applicable" else "Why it's in scope" }}</h3>
+    <p>{{ t.reason }}</p>
+  </section>
+  {% endif %}
+
+  {% if t.subject_detail %}
+  <section>
+    <h3>What this test checks</h3>
+    <p><span class="badge subject subject-{{ t.subject }}">{{ t.subject_label }}</span> {{ t.subject_detail }}</p>
+  </section>
+  {% endif %}
+
+  {% if t.status != "failing" and t.remediation %}
+  <section>
+    <h3>Remediation guidance</h3>
+    <p>{{ t.remediation }}</p>
+  </section>
+  {% endif %}
+
+  <section>
+    <h3>Frameworks</h3>
+    <div class="chips">{% for k in t.frameworks %}<a class="chip" href="/frameworks/{{ k }}">{{ fw_names[k] }}</a>{% endfor %}</div>
+    <p class="muted small">Source: {{ t.source }}</p>
+  </section>
+
+  {% if history %}
+  <section>
+    <h3>History</h3>
+    <ul class="history">
+      {% for h in history %}
+      <li><a href="/runs/{{ h.run_id }}">{{ h.when }} UTC</a>{{ m.status_pill(h.status, h.status_label) }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</div>
+{% if w.run %}
+<div class="drawer-foot">
+  {{ m.rerun_button("/tests", cls="btn") }}
+  {% if t.status == "needs_review" %}<a class="btn secondary" href="/assess">Answer in chat</a>{% endif %}
+</div>
+{% endif %}
