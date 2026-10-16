@@ -347,3 +347,51 @@ profile (no `launch/patient`; no `offline_access` for a public client).
   Repeat the run against their non-production environment before go-live.
 - CLIN-011/012 are attested (from config), not probed. Probing the app's real
   redirect handling is ADR-009 step 3.
+
+## ADR-011: Assessment flow — describe the app, generate the plan, then run
+
+### Decision
+The web UI is now a three-step assessment, modeled on cloud/AI security-audit
+tools: **describe your app** (intake questionnaire) → **review test plan**
+(the checks the answers call for, each with a reason, plus the skipped ones)
+→ **fix findings** (readiness score, failures by severity, "Fix these first",
+"Needs your review", filterable findings). The raw run form is gone from the
+UI; `POST /runs`, the CLI and the JSON API are unchanged.
+
+`epic_compliance/assessment.py` maps answers to rules (`SELECTORS`: rule id →
+included + reason) and to config overrides (launch profile, client type,
+attested security answers). The engine gained an optional `rule_ids` filter;
+the intake and plan are stored with the run (`config.assessment`) so a report
+shows its own scope.
+
+### Reasoning
+- The user's goal is getting one app live at one health system (Advocate),
+  not a marketplace listing. Asking about the app first means the report only
+  contains checks that matter to it, and says why each is there.
+- Showing the plan before running keeps the tool honest: what will be judged,
+  and how (automated probe vs. AI review of stated answers), is visible up front.
+- A rule with no selector is included by default, so adding a rule file never
+  silently drops a check; a test keeps `SELECTORS` in step with the catalog.
+
+### Consequences / limits
+- The intake chooses the launch profile; live runs still take the client ID
+  for `/launch` from `.env`, not the form.
+- "I'm not sure" answers are left blank on purpose, so SEC-* stay needs_human.
+- The CLI still runs every rule for the configured profile (no intake).
+
+### Amendment (2026-10-16): the intake is a chat, not a form
+The user asked for step 1 to be a single chat box: describe the app in words,
+and the tool asks follow-ups for anything unclear. `intake_chat.py` covers four
+topics (who signs in, app type, patient-data use, security posture) and offers
+the plan only when all are settled, after showing "Here's what I understood".
+
+- With `ANTHROPIC_API_KEY`, Claude (`LLM_MODEL`, ADR-004) returns structured
+  updates via `output_config.format` (JSON schema); the server, not the model,
+  decides when the intake is complete. Any API failure falls back to the
+  offline keyword parser for that turn.
+- Without a key, the keyword parser + scripted questions keep mock mode fully
+  offline. It is deliberately simple; the confirmation card is the guard
+  against a misread.
+- Chat state round-trips through the page as JSON (single-tenant, no session
+  store). "Where to test" moved to the plan page, since it doesn't change
+  which checks apply.

@@ -16,10 +16,13 @@ VERDICT_ORDER = {"fail": 0, "needs_human": 1, "pass": 2}
 
 CATEGORY_LABELS = {
     "auth": "Authorization & SMART",
-    "fhir": "FHIR / US Core Conformance",
+    "fhir_conformance": "FHIR / US Core Conformance",
     "security": "Security & Privacy",
     "clinician_workflow": "Clinician Workflow (standalone)",
+    "write_back": "Writing to the Chart",
 }
+
+VERDICT_LABELS = {"pass": "Passed", "fail": "Failed", "needs_human": "Needs review"}
 
 
 #: What each rule's verdict is evidence *about*. key → (badge, explanation).
@@ -101,12 +104,25 @@ def build_report_view(report: Report) -> dict[str, Any]:
     decided = counts["pass"] + counts["fail"]
     score = round(100 * counts["pass"] / decided) if decided else None
 
+    all_items = [it for cat in cat_views for it in cat["items"]]
+    by_severity = lambda its: sorted(its, key=lambda it: SEVERITY_ORDER.get(it["severity"], 9))
+    failed = by_severity([it for it in all_items if it["verdict"] == "fail"])
+    review = by_severity([it for it in all_items if it["verdict"] == "needs_human"])
+    failed_by_severity = {s: 0 for s in SEVERITY_ORDER}
+    for it in failed:
+        failed_by_severity[it["severity"]] = failed_by_severity.get(it["severity"], 0) + 1
+
     return {
         "run_id": report.run_id,
         "counts": counts,
         "total": total,
         "score": score,
         "categories": cat_views,
+        # Report-page triage: what blocks go-live first, then what a person must confirm.
+        "failed": failed,
+        "review": review,
+        "failed_by_severity": failed_by_severity,
+        "blocking": sum(1 for it in failed if it["severity"] in ("critical", "high")),
     }
 
 

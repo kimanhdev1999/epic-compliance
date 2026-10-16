@@ -5,7 +5,7 @@
 <div class="card" style="border-color: {{ 'var(--accent)' if ok else '#c0392b' }}">
   <p>{{ message }}</p>
   <div class="actions">
-    <a class="btn" href="/">Back to dashboard</a>
+    <a class="btn" href="/">Back to assessment</a>
     {% if not ok %}<a class="btn" href="/launch">Retry launch</a>{% endif %}
   </div>
 </div>

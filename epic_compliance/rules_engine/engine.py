@@ -28,9 +28,16 @@ def run_pipeline(
     api_key: str = "",
     mock_llm: bool = True,
     launch_profile: str = "patient_launch",
+    rule_ids: set[str] | None = None,
 ) -> Report:
-    """Run the rules that apply to ``launch_profile``, return a Report."""
-    rules = [r for r in load_rules() if r.applies_to(launch_profile)]
+    """Run the rules that apply to ``launch_profile``, return a Report.
+
+    ``rule_ids`` narrows the run to an assessment plan's checks; None runs all.
+    """
+    rules = [
+        r for r in load_rules()
+        if r.applies_to(launch_profile) and (rule_ids is None or r.id in rule_ids)
+    ]
     findings: list[Finding] = []
     run_id = str(uuid.uuid4())
 

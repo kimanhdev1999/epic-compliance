@@ -1,59 +1,110 @@
 # Epic Compliance Tool
 
-Automated **ONC (g)(10) compliance verification for Epic FHIR apps** — for teams
-building a third-party app (mobile or web) that needs to integrate with Epic and
-survive Epic's marketplace review.
+**Get your app integrated with Epic faster.** Describe your app, get the exact
+set of Epic integration checks it needs, and see what is blocking go-live —
+ONC (g)(10), SMART on FHIR, US Core, and the security questions a health
+system's review will ask — before you sit down with their Epic team.
 
-It connects to a FHIR server (Epic sandbox by default), collects evidence
-(SMART configuration, OAuth token, US Core resources), runs a catalog of
-compliance rules against that evidence — deterministic checks plus
-LLM-assisted checks for narrative/security requirements — and produces a
-structured findings report you can browse, export, or consume as JSON.
+It connects to a FHIR server (the Epic sandbox, or offline demo data), collects
+evidence (SMART configuration, OAuth token, US Core resources, the resources
+your app writes), runs the checks that apply to your app — deterministic
+probes plus LLM-assisted review of your security answers — and produces a
+prioritized findings report you can browse, export, or consume as JSON.
 
-Every finding is one of `pass` / `fail` / `needs_human`, with the evidence that
-produced it, a source citation (SMART IG / ONC §), and a remediation hint.
-`needs_human` is a first-class verdict: the tool never guesses.
+Every finding is one of `pass` / `fail` / `needs_human` ("needs review"), with
+the evidence behind it, a source citation (SMART IG / ONC §), and how to fix
+it. `needs_human` is a first-class verdict: the tool never guesses.
+
+## How getting into Epic actually works
+
+You do **not** need a public marketplace listing to go live with one health
+system. Epic's App Orchard is gone (renamed App Market in 2021, closed
+December 2022); its successor, **Epic Showroom**, is optional and only adds
+visibility. For an app used by a single health system the path is:
+
+1. **Register the app** at fhir.epic.com (open.epic). Free; you get
+   non-production and production client IDs and the public sandbox.
+2. **The health system activates it.** Their Epic analysts enable your client
+   ID in their Epic instance and approve the scopes it requests. This — not a
+   marketplace — is what turns you on.
+3. **Pass their review.** Security / vendor-risk questionnaire, a BAA, and a
+   contract.
+4. *(Optional, later)* a Showroom **Connection Hub** listing once you're live,
+   or **Vendor Services** if you need APIs beyond standard FHIR.
+
+This tool targets steps 1–3: prove your integration works against the Epic
+sandbox, then bring the report to the health system's Epic and security teams
+as evidence. Confirm the activation steps with that health system's Epic
+team — each one runs it slightly differently.
+
+## The flow
+
+Modeled on cloud and AI security-audit tools (AWS Security Hub, Prowler, and
+the like): you describe what you're running, the tool decides what to check,
+and the result is a triaged list of what to fix.
+
+1. **Describe your app** — in a chat, in your own words. The tool asks
+   follow-up questions until it knows who signs in (clinicians or patients),
+   what kind of app it is (mobile, browser-only, web with a backend), what it
+   does with patient data (reads the chart, saves photos, writes notes/results
+   back, sends PHI to a third-party AI), and your security posture (TLS, audit
+   logging, BAA — "not sure" is fine). It then shows what it understood for
+   you to confirm or correct. With `ANTHROPIC_API_KEY` set, Claude runs the
+   conversation; without one, a keyword parser with scripted follow-ups does,
+   so it works offline too.
+2. **Review the test plan** — the checks your answers call for, each with
+   *why* it's included, plus the checks skipped as not applicable — and pick
+   where to test (demo data or the Epic sandbox). Nothing has run yet.
+3. **Fix findings** — a readiness score, failures by severity, a
+   **Fix these first** list with the remediation for each, a **Needs your
+   review** list for anything the evidence can't decide, and every finding
+   filterable by status. Export as HTML, PDF or JSON for the health system.
+
+The chat lives in `epic_compliance/intake_chat.py`; the plan logic in
+`epic_compliance/assessment.py` (`SELECTORS` maps each
+rule to the answers that pull it in).
 
 ## Who this is for — worked example
 
-Say you have a **mobile app that photographs a patient's skin and flags possible
-lesions**, and you want it listed on Epic's app marketplace so hospitals can
-install it. Epic will expect your app to talk to their FHIR API the standard
-way: SMART on FHIR launch, OAuth2 + PKCE, US Core–shaped reads, and defensible
-security practices around the PHI you touch.
+Say you're building **DermScan**, a mobile app a dermatologist at
+**Advocate Health** uses to photograph a lesion, file the photo in the
+patient's chart, and get an AI read of it.
 
-This tool answers one question: **is your app's Epic integration layer actually
-conformant today, and if not, exactly what is broken?** Point it at the Epic
-sandbox (or a customer's FHIR base URL) with your registered client id, run it,
-and you get a per-requirement verdict instead of a vague "it seems to work."
+Tell the chat: *"A mobile app dermatologists at Advocate Health use to
+photograph a lesion, save the photo to the chart and get an AI read."* It
+picks up clinicians, mobile, photos and a third-party AI, asks about your
+security setup, and the plan comes back with checks including:
 
-For the skin app, a run tells you concretely:
+- **Sign-in** — Epic's SMART endpoints, PKCE S256, state handling, code replay, id_token signature (`AUTH-*`). Your app must be a public client with a deep-link redirect, because a phone can't keep a secret (`CLIN-011`, `CLIN-012`).
+- **Right patient, every time** — the clinician signs in with no patient, searches, and confirms one; the search must match exactly one patient and show enough to confirm them (`CLIN-001`, `CLIN-002`). Everything written must land on that patient (`CLIN-007`).
+- **The photo** — it must validate, be accepted by Epic, and read back so the care team can open it (`CLIN-005`, `CLIN-006`).
+- **Chart reads** — problems, meds and allergies are allowed, and US Core data is shaped the way your parser expects (`CLIN-008`, `FHIR-*`).
+- **Security** — TLS 1.2+, audit logging of PHI access, and a BAA with Advocate *and* the AI vendor that sees the image (`SEC-*`). That last one is the check teams most often discover too late.
 
-- Your app can launch standalone and in-EHR, and PKCE S256 is negotiated correctly (`AUTH-001…005`) — the launch path Epic requires of a mobile client.
-- The patient context handed to your app is real and usable: you get a `patient` id, `openid`/`fhirUser` claims, and at least `patient/*.read` scope, so the photo you capture can be attached to the right person (`AUTH-003`, `AUTH-005`).
-- The clinical data you read back to give the model context — demographics, `Condition`, `Observation` — conforms to US Core and declares its profiles, so your feature won't break on the next customer's Epic build (`FHIR-001…005`).
-- Your PHI posture gets stated and judged, not assumed: TLS 1.2+, audit logging on every PHI access, and a BAA with Epic and every subprocessor that sees an image (`SEC-001…003`). If the image goes to a third-party inference API, that vendor needs a BAA — this is the check teams most often discover too late.
-- Once your model has a diagnosis, you can write it back into the patient's Epic chart as `Observation`/`DiagnosticReport`/`Media` — the check confirms those POSTs are correctly shaped against US Core and that your write scopes are actually honored, not just requested (`WRITE-001…004`).
+Write-back checks for notes, and the patient-app checks (`WRITE-*`,
+`AUTH-009`), are skipped — they don't apply to this app — and the report says
+so.
 
-**Just as important, what it does _not_ decide.** It is a conformance and
-evidence tool, not a market-approval oracle:
+**What it does _not_ decide.** It is a conformance and evidence tool, not an
+approval oracle:
 
-- It has no opinion on your model. Clinical validity, sensitivity/specificity, bias across skin tones, and whether lesion-flagging makes you an FDA-regulated device (SaMD) are all out of scope.
-- It doesn't audit your app's source, mobile storage, or key handling. The `SEC-*` rules judge the evidence you give them and return `needs_human` when that evidence is thin — by design.
-- It covers the write-back path (posting `Observation`/`DiagnosticReport`/`Media` back into Epic), but it is a client-only check: it verifies your app's outbound POSTs conform and honor scopes. It does not stand up or validate a FHIR server of your own.
-- It is not Epic's review. Epic runs its own vendor, security, and business process, and their published requirements are the authority — treat a clean run as evidence you bring to that review, not a substitute for it.
+- It has no opinion on your model: clinical validity, bias across skin tones, and whether you're an FDA-regulated device (SaMD) are out of scope.
+- It doesn't audit your source code, mobile storage or key handling. `SEC-*` rules judge the answers you give and return `needs_human` when they're thin.
+- It is a client-side check: it verifies the requests your registration can make. It does not host or validate a FHIR server of your own.
+- It is not the health system's review. Their Epic, security and vendor-risk teams decide; a clean run is evidence you bring to that conversation.
 
-Practical way to use it: run it in mock mode to see the rule set, then run it
-live against the Epic sandbox with your client id before you submit, and keep
-running it in CI so a regression in your launch or scopes fails the build.
-(Caveat: the live token exchange is still stubbed — see the status table below.)
+Practical way to use it: run it on demo data to see your plan, run it against
+the Epic sandbox with your non-production client ID before you meet the health
+system, and keep running the CLI in CI so a regression in your login or scopes
+fails the build. (Caveat: the in-pipeline token exchange is still stubbed — see
+the status table below.)
 
 ## What it gives you
 
-- **CLI** — `python -m epic_compliance run`, prints a colored findings table, exits non-zero on failures (CI-friendly).
-- **Web UI** — FastAPI + Jinja + HTMX: run form, run history, report detail, standalone HTML export, printable/PDF report.
+- **Web UI** — the describe → plan → fix flow above, assessment history, standalone HTML export, printable/PDF report. FastAPI + Jinja + HTMX.
+- **CLI** — `python -m epic_compliance run` runs every rule for the configured launch profile, prints a colored findings table, and exits non-zero on failures (CI-friendly).
 - **JSON API** — `/api/run`, `/api/runs`, `/api/runs/{id}` for integration.
-- **Mock mode** — the whole pipeline runs offline against fixtures, with no credentials and no API key. This is the default.
+- **Demo (mock) mode** — the whole pipeline runs offline against fixtures, with no credentials and no API key. This is the default.
 
 ## Quick start
 
@@ -62,8 +113,8 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 cp .env.example .env          # optional; defaults work in mock mode
 
+python -m epic_compliance serve   # web UI at http://localhost:8000 — start an assessment
 python -m epic_compliance run     # CLI run (mock)
-python -m epic_compliance serve   # web UI at http://localhost:8000
 pytest -v                         # tests
 ```
 
@@ -97,10 +148,14 @@ change needed:
 | `rules/auth.json` | 5 | automated (SMART discovery, PKCE S256, scopes, token shape) |
 | `rules/fhir_resources.json` | 5 | automated (US Core resource / profile conformance) |
 | `rules/security.json` | 3 | llm (narrative security & privacy requirements) |
+| `rules/clinician_workflow.json` | 12 | automated + attested (clinician standalone: patient search/confirm, photo and note write-back, public-client registration) |
 | `rules/write_back.json` | 4 | automated (Observation/DiagnosticReport/Media POST, US Core 3.1.1 shape, write-scope enforcement) |
 
 Each rule carries `id, category, source, severity, evidence_needed, check_type,
-description, remediation_hint`. An `automated` rule needs a matching function in
+description, remediation_hint` (plus optional `subject` and `profiles`). To
+have the web flow pick a new rule up only for the right apps, add it to
+`SELECTORS` in `epic_compliance/assessment.py`; a rule with no selector is
+included in every plan. An `automated` rule needs a matching function in
 the `AUTOMATED_CHECKS` registry; if one is missing the engine emits
 `needs_human` rather than failing the run.
 
