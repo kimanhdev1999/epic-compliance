@@ -1,7 +1,14 @@
 """FastAPI web application — server-rendered UI (HTMX) + JSON API.
 
-Pages
-  GET  /                      step 1 of an assessment: describe your app in a chat
+Pages (workspace shell, ADR-012)
+  GET  /                      Home: getting-started checklist, framework readiness, needs attention
+  GET  /frameworks            readiness per framework (ONC (g)(10), SMART, US Core, Epic, HIPAA, safety)
+  GET  /frameworks/{key}      one framework and its tests
+  GET  /tests                 every test with its status; filter by status / framework / category
+  GET  /tests/{rule_id}       test detail (HTMX → side drawer, or full page)
+  GET  /integrations          Epic sandbox, Claude, FHIR validator, ONC test kit — what each unlocks
+  POST /assess/rerun          re-run the current app's plan, back to where you were
+  GET  /assess                step 1 of an assessment: describe your app in a chat
   POST /assess/chat           one chat turn (HTMX → chat partial)
   POST /assess/resume         back to the chat from the plan, conversation intact
   POST /assess/plan           step 2: the test plan generated from those answers
@@ -42,7 +49,9 @@ from .fhir.writeback import CLINICIAN_SCOPES
 from .pipeline import run_full_pipeline
 from .smart.discovery import fetch_smart_configuration
 from .smart.pkce import build_authorization_url, exchange_code_for_token, generate_pkce
+from .rules_engine.catalog import load_rules
 from .viewmodel import build_report_view
+from . import workspace as ws
 
 BASE_DIR = Path(__file__).parent
 
@@ -77,7 +86,19 @@ LAUNCH_SCOPES = [
 
 def render(request: Request, name: str, **ctx: Any) -> HTMLResponse:
     """Render a template using the current Starlette signature (request first)."""
-    return templates.TemplateResponse(request, name, {"request": request, **ctx})
+    return templates.TemplateResponse(request, name, {"request": request, "nav": _nav(), **ctx})
+
+
+def _nav() -> dict[str, Any]:
+    """Sidebar context on every page: which app this workspace is, and its open counts."""
+    intake = store.get_last_intake()
+    latest = store.list_runs(limit=1)
+    return {
+        "app_name": intake.get("app_name") or "Your app",
+        "health_system": intake.get("health_system", ""),
+        "failing": latest[0]["fail_count"] if latest else 0,
+        "review": latest[0]["needs_human_count"] if latest else 0,
+    }
 
 
 @app.on_event("startup")
@@ -129,13 +150,129 @@ def _render_chat(request: Request, state: ChatState, partial: bool = False) -> H
     ctx = {"state": state, "summary": summary(state.intake) if state.ready else []}
     if partial:
         return render(request, "_chat.html", **ctx)
-    return render(request, "chat.html", runs=store.list_runs(limit=5), **ctx)
+    return render(request, "chat.html", active="assess", **ctx)
+
+
+def _integrations() -> dict[str, dict[str, Any]]:
+    """Each external service: status, and which tests it turns into real results."""
+    cfg = get_config()
+    defaults = store.get_config_defaults()
+    client_id = defaults.get("oauth_client_id") or cfg.oauth_client_id
+    rules = load_rules()
+    if pipeline.get_live_token() is not None:
+        epic = "connected"
+    elif client_id and client_id != "mock-client-id":
+        epic = "configured"
+    else:
+        epic = "not_connected"
+    validator = "configured" if cfg.validator_mode != "off" and (
+        cfg.validator_jar_path or cfg.validator_mode == "service") else "not_connected"
+    return {
+        "epic": {
+            "name": "Epic sandbox", "vendor": "fhir.epic.com", "status": epic,
+            "what": "Real SMART sign-in and real FHIR calls with your non-production client ID, "
+                    "instead of sample responses.",
+            "detail": f"Client ID {client_id}" if epic != "not_connected" else "No client ID yet",
+            "unlocks": [r.id for r in rules if r.subject in ("app_registration", "tool_launch", "tool_sample")],
+            "actions": [("Sign in with SMART", "/launch"), ("Edit connection", "/config")],
+        },
+        "claude": {
+            "name": "Claude", "vendor": "Anthropic API", "status": "connected" if cfg.anthropic_api_key else "not_connected",
+            "what": "Judges your security answers (TLS, audit logging, BAAs) against HIPAA and Epic's review "
+                    "criteria, and runs the describe-your-app chat.",
+            "detail": "ANTHROPIC_API_KEY is set" if cfg.anthropic_api_key else "Set ANTHROPIC_API_KEY in .env",
+            "unlocks": [r.id for r in rules if r.check_type == "llm"],
+            "actions": [],
+        },
+        "validator": {
+            "name": "HL7 FHIR validator", "vendor": "validator_cli.jar or validator service", "status": validator,
+            "what": "Validates the resources your app writes against US Core before Epic sees them.",
+            "detail": cfg.validator_jar_path or (cfg.validator_service_url if validator != "not_connected"
+                                                 else "Set VALIDATOR_JAR_PATH or VALIDATOR_MODE=service"),
+            "unlocks": [r.id for r in rules if r.subject == "tool_sample" and r.category == "write_back"],
+            "actions": [],
+        },
+        "onc": {
+            "name": "ONC (g)(10) test kit", "vendor": "Inferno", "status": "configured" if cfg.onc_test_kit_url else "not_connected",
+            "what": "The official certification test kit, for the full (g)(10) suite beyond these checks.",
+            "detail": cfg.onc_test_kit_url or "Set ONC_TEST_KIT_URL",
+            "unlocks": [],
+            "actions": [("Open test kit", cfg.onc_test_kit_url)] if cfg.onc_test_kit_url else [],
+        },
+    }
+
+
+def _workspace() -> dict[str, Any]:
+    return ws.build_workspace(
+        store.latest_run(), intake=store.get_last_intake(),
+        integrations=_integrations(), history=store.list_runs(limit=30),
+    )
 
 
 @app.get("/", response_class=HTMLResponse)
+def home(request: Request) -> Any:
+    """Home: what to do next, readiness per framework, and the tests needing attention."""
+    return render(request, "home.html", active="home", w=_workspace(), integrations=_integrations())
+
+
+@app.get("/frameworks", response_class=HTMLResponse)
+def frameworks(request: Request) -> Any:
+    return render(request, "frameworks.html", active="frameworks", w=_workspace())
+
+
+@app.get("/frameworks/{key}", response_class=HTMLResponse)
+def framework_detail(request: Request, key: str) -> Any:
+    w = _workspace()
+    fw = next((f for f in w["frameworks"] if f["key"] == key), None)
+    if fw is None:
+        raise HTTPException(status_code=404, detail=f"No framework {key}")
+    return render(request, "framework.html", active="frameworks", w=w, fw=fw)
+
+
+@app.get("/tests", response_class=HTMLResponse)
+def tests_page(request: Request, status: str = "", framework: str = "", category: str = "", q: str = "") -> Any:
+    w = _workspace()
+    categories = sorted({(t["category"], t["category_label"]) for t in w["tests"]}, key=lambda c: c[1])
+    return render(
+        request, "tests.html", active="tests", w=w, frameworks=ws.FRAMEWORKS, categories=categories,
+        status_labels=ws.STATUS_LABELS, filters={"status": status, "framework": framework, "category": category, "q": q},
+    )
+
+
+@app.get("/tests/{rule_id}", response_class=HTMLResponse)
+def test_detail(request: Request, rule_id: str) -> Any:
+    w = _workspace()
+    test = next((t for t in w["tests"] if t["id"] == rule_id), None)
+    if test is None:
+        raise HTTPException(status_code=404, detail=f"No test {rule_id}")
+    ctx = {"t": test, "w": w, "fw_names": {f.key: f.name for f in ws.FRAMEWORKS},
+           "history": ws.history_of_test(store.recent_runs(limit=8), rule_id)}
+    if request.headers.get("HX-Request"):
+        return render(request, "_test_drawer.html", **ctx)
+    return render(request, "test.html", active="tests", **ctx)
+
+
+@app.get("/integrations", response_class=HTMLResponse)
+def integrations_page(request: Request) -> Any:
+    return render(request, "integrations.html", active="integrations", integrations=_integrations())
+
+
+@app.get("/assess", response_class=HTMLResponse)
 def assess_start(request: Request) -> Any:
     """Step 1: describe your app in your own words; the tool asks follow-ups."""
     return _render_chat(request, ChatState.start())
+
+
+@app.post("/assess/rerun")
+def assess_rerun(next: str = Form("/")) -> RedirectResponse:
+    """Re-run the current app's plan (last intake) and return to the page."""
+    last = store.get_last_intake()
+    if not last:
+        return RedirectResponse(url="/assess", status_code=303)
+    plan = build_plan(Intake.model_validate(last))
+    _execute_run(plan.config_overrides(), plan.rule_ids, plan.to_dict())
+    safe_next = next if next.startswith("/") and not next.startswith("//") else "/"
+    return RedirectResponse(url=safe_next, status_code=303)
 
 
 @app.post("/assess/chat", response_class=HTMLResponse)
@@ -166,7 +303,7 @@ async def assess_plan(request: Request) -> Any:
         intake.fhir_base_url = get_config().fhir_base_url
     plan = build_plan(intake)
     return render(
-        request, "plan.html",
+        request, "plan.html", active="assess",
         intake=intake, plan=plan, labels=_intake_labels(), chat_state=form.get("state", ""),
         run_fields=RUN_FIELDS, live_token=pipeline.get_live_token() is not None,
     )
@@ -207,7 +344,7 @@ def create_run(
 
 @app.get("/runs", response_class=HTMLResponse)
 def history(request: Request) -> Any:
-    return render(request, "history.html", runs=store.list_runs())
+    return render(request, "history.html", active="history", runs=store.list_runs())
 
 
 @app.get("/runs/{run_id}", response_class=HTMLResponse)
@@ -215,7 +352,7 @@ def report_detail(request: Request, run_id: str) -> Any:
     run = _load_run_or_404(run_id)
     view = build_report_view(run["report"])
     return render(
-        request, "report.html", view=view, run=run,
+        request, "report.html", active="history", view=view, run=run,
         assessment=run["config"].get("assessment"), labels=_intake_labels(),
     )
 
@@ -255,7 +392,7 @@ def config_page(request: Request, saved: bool = False) -> Any:
     cfg.update({k: v for k, v in defaults.items() if v})
     if get_config().anthropic_api_key:
         cfg["anthropic_api_key"] = "***set***"
-    return render(request, "config.html", cfg=cfg, saved=saved)
+    return render(request, "config.html", active="config", cfg=cfg, saved=saved)
 
 
 @app.post("/config")

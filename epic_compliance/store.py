@@ -157,6 +157,17 @@ def get_run(run_id: str) -> dict[str, Any] | None:
     return data
 
 
+def recent_runs(limit: int = 10) -> list[dict[str, Any]]:
+    """The newest ``limit`` runs with their full Report and config, newest first."""
+    return [run for r in list_runs(limit=limit) if (run := get_run(r["run_id"])) is not None]
+
+
+def latest_run() -> dict[str, Any] | None:
+    """The newest run with its Report and config — the workspace's current state."""
+    runs = recent_runs(limit=1)
+    return runs[0] if runs else None
+
+
 def delete_run(run_id: str) -> bool:
     """Delete a run. Returns True if a row was removed."""
     init_db()

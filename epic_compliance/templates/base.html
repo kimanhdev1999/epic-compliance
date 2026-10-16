@@ -6,18 +6,77 @@
   <title>{% block title %}Epic Readiness{% endblock %}</title>
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/htmx.min.js" defer></script>
+  {% block head %}{% endblock %}
 </head>
-<body>
-  <header class="topbar">
-    <a class="brand" href="/">Epic&nbsp;<span>Readiness</span></a>
-    <nav>
-      <a href="/" class="{{ 'active' if active == 'assess' }}">New assessment</a>
-      <a href="/runs" class="{{ 'active' if active == 'history' }}">Assessments</a>
-      <a href="/config" class="{{ 'active' if active == 'config' }}">Settings</a>
+<body class="{% block body_class %}{% endblock %}">
+{% import "_macros.html" as ui %}
+<div class="shell" id="shell">
+  <aside class="sidebar" aria-label="Main">
+    <a class="sb-brand" href="/">
+      <span class="logo" aria-hidden="true">{{ ui.icon("shield") }}</span>
+      Epic Readiness
+    </a>
+    <a class="workspace" href="/assess" title="Describe your app again">
+      <span class="ws-avatar" aria-hidden="true">{{ (nav.app_name if nav else "A")[:1]|upper }}</span>
+      <span class="ws-text">
+        <strong>{{ nav.app_name if nav else "Your app" }}</strong>
+        <small>{{ nav.health_system if nav and nav.health_system else "Epic integration" }}</small>
+      </span>
+    </a>
+    <nav class="sb-nav">
+      {% for key, label, href, icon in [
+        ("home", "Home", "/", "home"),
+        ("frameworks", "Frameworks", "/frameworks", "layers"),
+        ("tests", "Tests", "/tests", "check"),
+        ("integrations", "Integrations", "/integrations", "plug"),
+        ("history", "Reports", "/runs", "file"),
+      ] %}
+      <a href="{{ href }}" class="{{ 'active' if active == key }}">
+        {{ ui.icon(icon) }}<span>{{ label }}</span>
+        {% if key == "tests" and nav and nav.failing %}<span class="count fail" title="Failing tests">{{ nav.failing }}</span>{% endif %}
+      </a>
+      {% endfor %}
     </nav>
-  </header>
-  <main>
-    {% block content %}{% endblock %}
-  </main>
+    <div class="sb-foot">
+      <a href="/assess" class="{{ 'active' if active == 'assess' }}">{{ ui.icon("chat") }}<span>Describe your app</span></a>
+      <a href="/config" class="{{ 'active' if active == 'config' }}">{{ ui.icon("gear") }}<span>Settings</span></a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="mobile-bar">
+      <button type="button" class="icon-btn" data-toggle-sidebar aria-label="Open menu">{{ ui.icon("menu") }}</button>
+      <span>Epic Readiness</span>
+    </header>
+    <main class="{% block main_class %}{% endblock %}">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <div class="scrim" data-toggle-sidebar></div>
+</div>
+
+<div class="drawer" id="drawer" hidden>
+  <div class="drawer-scrim" data-close-drawer></div>
+  <aside class="drawer-panel" id="drawer-panel" role="dialog" aria-modal="true" aria-label="Test details"></aside>
+</div>
+
+<script>
+(function () {
+  var drawer = document.getElementById('drawer');
+  function closeDrawer() { drawer.hidden = true; document.body.classList.remove('no-scroll'); }
+  document.addEventListener('htmx:afterSwap', function (e) {
+    if (e.detail.target.id !== 'drawer-panel') return;
+    drawer.hidden = false;
+    document.body.classList.add('no-scroll');
+    var close = drawer.querySelector('[data-close-drawer]');
+    if (close) close.focus();
+  });
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-close-drawer]')) { e.preventDefault(); closeDrawer(); return; }
+    if (e.target.closest('[data-toggle-sidebar]')) document.getElementById('shell').classList.toggle('sb-open');
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !drawer.hidden) closeDrawer(); });
+})();
+</script>
 </body>
 </html>

@@ -395,3 +395,50 @@ the plan only when all are settled, after showing "Here's what I understood".
 - Chat state round-trips through the page as JSON (single-tenant, no session
   store). "Where to test" moved to the plan page, since it doesn't change
   which checks apply.
+
+## ADR-012: Compliance workspace UI
+
+### Decision
+The web UI becomes a workspace for one app, following the common layout of
+compliance-automation tools:
+
+- A left sidebar: Home, Frameworks, Tests, Integrations, Reports, and at the
+  bottom Describe your app (the ADR-011 chat) and Settings.
+- **Home**: a Get-started checklist, overall readiness, progress per framework,
+  Needs attention (failing, then needs-review tests), readiness over time,
+  integration status.
+- **Frameworks**: ONC (g)(10), SMART App Launch, US Core / FHIR R4, Epic
+  requirements, HIPAA Security Rule, Patient safety. A rule maps to every
+  framework its `source` cites (`workspace.FRAMEWORKS`), so one test can count
+  toward several.
+- **Tests**: every catalog rule with a status — Failing / Needs review /
+  Passing / Not applicable (left out of the plan, with the plan's reason) /
+  Not run. Filters and search run client-side. A row opens a detail drawer
+  (HTMX partial) with the result, how to fix it, why it's in scope, and its
+  history; without HTMX the same URL is a full page.
+- **Integrations**: Epic sandbox, Claude, HL7 FHIR validator, ONC test kit,
+  each with a status and the tests it unlocks.
+- **Re-run tests** (`POST /assess/rerun`) re-runs the saved plan, standing in
+  for continuous monitoring.
+
+### Reasoning
+The user asked for the most common UI pattern for compliance tools. The
+leading compliance-automation products have converged on the same
+structure, so following it makes the tool familiar to anyone who has gone
+through SOC 2 or a HIPAA review. It also fits the job better than a one-off
+report: getting into a health system takes weeks of fixing and re-testing, and
+the workspace shows progress across those runs.
+
+### Consequences / limits
+- The workspace is the latest run plus the last intake. It's single-tenant
+  with one app at a time, like the rest of the tool (`config.py`).
+- Framework mapping is by citation text (`_cites`).
+  `tests/test_workspace.py` fails if a new rule maps to no framework.
+- Readiness counts only passing tests in scope, so it reads lower
+  than the report's "passed of decided" score, which leaves needs-review out.
+- Not built yet: test owners and due dates, evidence uploads for
+  needs-review tests, policies, and a Trust Center page. These need storage
+  beyond run history.
+- `/` is now Home; the chat moved to `/assess`.
+- The light theme (dark-mode aware) replaces the dark GitHub-style theme.
+

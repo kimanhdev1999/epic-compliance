@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Frameworks — Epic Readiness{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Frameworks</h1>
+    <p class="subtitle">The standards an Epic integration is reviewed against. One test can count toward several frameworks.</p>
+  </div>
+  {% if w.run %}<div class="actions">{{ m.rerun_button("/frameworks") }}</div>{% endif %}
+</div>
+
+<div class="fw-list">
+  {% for fw in w.frameworks %}
+  <a class="card fw-row" href="/frameworks/{{ fw.key }}">
+    <div class="fw-ring">
+      <div class="ring sm" style="--p: {{ fw.percent or 0 }}"><span>{{ fw.percent ~ "%" if fw.percent is not none else "—" }}</span></div>
+    </div>
+    <div class="fw-main">
+      <strong>{{ fw.name }}</strong>
+      <p class="muted small">{{ fw.summary }}</p>
+      {{ m.progress(fw) }}
+    </div>
+    <dl class="fw-stats">
+      <div><dt>Passing</dt><dd class="t-pass">{{ fw.counts.passing }}</dd></div>
+      <div><dt>Failing</dt><dd class="t-fail">{{ fw.counts.failing }}</dd></div>
+      <div><dt>Review</dt><dd class="t-warn">{{ fw.counts.needs_review }}</dd></div>
+      <div><dt>N/A</dt><dd class="muted">{{ fw.counts.not_applicable }}</dd></div>
+    </dl>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

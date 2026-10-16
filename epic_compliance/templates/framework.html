@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ fw.name }} — Epic Readiness{% endblock %}
+{% block content %}
+<nav class="crumbs small"><a href="/frameworks">Frameworks</a> / {{ fw.name }}</nav>
+<div class="page-head">
+  <div>
+    <h1>{{ fw.name }}</h1>
+    <p class="subtitle">{{ fw.summary }}</p>
+  </div>
+  {% if w.run %}<div class="actions">{{ m.rerun_button("/frameworks/" ~ fw.key) }}</div>{% endif %}
+</div>
+
+<div class="card fw-summary">
+  <div class="ring" style="--p: {{ fw.percent or 0 }}"><span>{{ fw.percent if fw.percent is not none else "—" }}{% if fw.percent is not none %}<small>%</small>{% endif %}</span></div>
+  <div class="fw-summary-body">
+    <strong>{{ fw.counts.passing }} of {{ fw.in_scope }} in-scope tests passing</strong>
+    {{ m.progress(fw, "thick") }}
+    <ul class="legend inline">
+      <li><i class="dot passing"></i>Passing <b>{{ fw.counts.passing }}</b></li>
+      <li><i class="dot failing"></i>Failing <b>{{ fw.counts.failing }}</b></li>
+      <li><i class="dot needs_review"></i>Needs review <b>{{ fw.counts.needs_review }}</b></li>
+      <li><i class="dot not_applicable"></i>Not applicable <b>{{ fw.counts.not_applicable }}</b></li>
+    </ul>
+  </div>
+</div>
+
+{% set fw_names = {} %}{% for f in w.frameworks %}{% set _ = fw_names.update({f.key: f.name}) %}{% endfor %}
+{% for cat_label, group in fw.tests|groupby("category_label") %}
+<div class="section-head"><h2>{{ cat_label }}</h2><span class="muted small">{{ group|length }} tests</span></div>
+<div class="card flush">{{ m.tests_table(group, fw_names) }}</div>
+{% else %}
+<div class="card empty">No tests map to this framework.</div>
+{% endfor %}
+{% endblock %}

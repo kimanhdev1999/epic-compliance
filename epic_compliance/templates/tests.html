@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Tests — Epic Readiness{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Tests</h1>
+    <p class="subtitle">
+      {% if w.run %}Results from {{ w.run.created_at[:16].replace('T', ' ') }} UTC on {{ "demo data" if w.run.run_mode == 'mock' else "the Epic sandbox" }}. Select a test to see the evidence and how to fix it.
+      {% else %}Nothing has run yet. <a href="/assess">Describe your app</a> to build a test plan.{% endif %}
+    </p>
+  </div>
+  {% if w.run %}<div class="actions">{{ m.rerun_button("/tests") }}</div>{% endif %}
+</div>
+
+{% set fw_names = {} %}{% for f in frameworks %}{% set _ = fw_names.update({f.key: f.name}) %}{% endfor %}
+<div id="tests-view">
+  <div class="tabs" role="tablist">
+    <button type="button" data-status="" class="{{ 'active' if not filters.status }}">All <b>{{ w.tests|length }}</b></button>
+    {% for key, label in status_labels.items() if w.counts[key] %}
+    <button type="button" data-status="{{ key }}" class="{{ 'active' if filters.status == key }}">{{ label }} <b>{{ w.counts[key] }}</b></button>
+    {% endfor %}
+  </div>
+  <div class="toolbar">
+    <label class="search">{{ m.icon("search") }}<input type="search" name="q" value="{{ filters.q }}" placeholder="Search tests" aria-label="Search tests"></label>
+    <select name="framework" aria-label="Framework">
+      <option value="">All frameworks</option>
+      {% for f in frameworks %}<option value="{{ f.key }}" {{ 'selected' if filters.framework == f.key }}>{{ f.name }}</option>{% endfor %}
+    </select>
+    <select name="category" aria-label="Category">
+      <option value="">All categories</option>
+      {% for key, label in categories %}<option value="{{ key }}" {{ 'selected' if filters.category == key }}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="card flush">{{ m.tests_table(w.tests, fw_names) }}</div>
+</div>
+<script>
+(function () {
+  var root = document.getElementById('tests-view');
+  var f = { status: {{ filters.status|tojson }}, framework: {{ filters.framework|tojson }}, category: {{ filters.category|tojson }}, q: {{ filters.q|tojson }} };
+  function apply() {
+    var shown = 0;
+    root.querySelectorAll('.t-row[data-status]').forEach(function (row) {
+      var ok = (!f.status || row.dataset.status === f.status)
+        && (!f.framework || row.dataset.frameworks.indexOf(' ' + f.framework + ' ') !== -1)
+        && (!f.category || row.dataset.category === f.category)
+        && (!f.q || row.dataset.text.indexOf(f.q.toLowerCase()) !== -1);
+      row.hidden = !ok; if (ok) shown++;
+    });
+    root.querySelector('.t-empty').hidden = shown > 0;
+    var params = new URLSearchParams();
+    Object.keys(f).forEach(function (k) { if (f[k]) params.set(k, f[k]); });
+    history.replaceState(null, '', '/tests' + (params.toString() ? '?' + params : ''));
+  }
+  root.querySelectorAll('.tabs button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      f.status = b.dataset.status;
+      root.querySelectorAll('.tabs button').forEach(function (x) { x.classList.toggle('active', x === b); });
+      apply();
+    });
+  });
+  root.querySelectorAll('.toolbar select, .toolbar input').forEach(function (el) {
+    el.addEventListener('input', function () { f[el.name] = el.value; apply(); });
+  });
+  apply();
+})();
+</script>
+{% endblock %}

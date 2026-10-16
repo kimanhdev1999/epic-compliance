@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ t.id }} — Epic Readiness{% endblock %}
+{% block content %}
+<nav class="crumbs small"><a href="/tests">Tests</a> / {{ t.id }}</nav>
+<div class="card drawer-page">{% include "_test_drawer.html" %}</div>
+{% endblock %}

@@ -1,37 +1,74 @@
-<div id="chat" class="card chat">
-  <div class="chat-log">
-    {% for msg in state.messages %}
-    <div class="msg {{ msg.role }}"><div class="bubble">{{ msg.content }}</div></div>
-    {% endfor %}
-  </div>
+{% set fresh = state.messages|length == 1 %}
+<div id="chat" class="chat{{ ' fresh' if fresh }}">
+  <div class="thread">
+    <div class="thread-inner">
+      {% if fresh %}
+      <div class="greeting">
+        <h1>What are you building?</h1>
+        <p>Describe your app and I'll work out which Epic integration checks it needs.</p>
+      </div>
+      {% endif %}
 
-  {% if state.ready %}
-  <div class="understood">
-    <div class="understood-head">Here's what I understood</div>
-    <dl class="scope">
-      {% for label, value in summary %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}
-    </dl>
-    <form method="post" action="/assess/plan">
-      {% for k, v in state.intake.model_dump().items() if k not in ("run_mode", "fhir_base_url", "oauth_client_id", "app_redirect_uri", "test_patient_query", "encounter_required") %}
-        {% if v is sameas true %}<input type="hidden" name="{{ k }}" value="on">
-        {% elif v is not sameas false %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}
+      {% for msg in state.messages if not fresh %}
+      <div class="msg {{ msg.role }}">
+        {% if msg.role == "assistant" %}<div class="avatar" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z" fill="currentColor"/></svg></div>{% endif %}
+        <div class="bubble">{{ msg.content }}</div>
+      </div>
       {% endfor %}
+
+      {% if state.ready %}
+      <div class="msg assistant">
+        <div class="avatar ghost" aria-hidden="true"></div>
+        <div class="understood">
+          <div class="understood-head">Here's what I understood</div>
+          <dl>
+            {% for label, value in summary %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}
+          </dl>
+          <form method="post" action="/assess/plan">
+            {% for k, v in state.intake.model_dump().items() if k not in ("run_mode", "fhir_base_url", "oauth_client_id", "app_redirect_uri", "test_patient_query", "encounter_required") %}
+              {% if v is sameas true %}<input type="hidden" name="{{ k }}" value="on">
+              {% elif v is not sameas false %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}
+            {% endfor %}
+            <input type="hidden" name="state" value="{{ state.model_dump_json() }}">
+            <button type="submit" class="primary-btn">Generate test plan &rarr;</button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if state.suggestions and not fresh %}
+      <div class="quick-replies">
+        {% for s in state.suggestions %}<button type="button" data-send="{{ s }}">{{ s }}</button>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="dock">
+    {% if fresh %}
+    <div class="suggestions">
+      {% for title, rest in [
+        ("Patient-facing app", "showing lab results and medications from MyChart"),
+        ("Clinician tool", "launched inside Hyperspace that writes visit notes"),
+        ("Mobile dermatology app", "that saves lesion photos to the chart"),
+        ("Backend service", "pulling nightly encounter data for reporting"),
+      ] %}
+      <button type="button" data-send="A {{ title|lower }} {{ rest }}"><strong>{{ title }}</strong><span>{{ rest }}</span></button>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form id="chat-form" class="composer" hx-post="/assess/chat" hx-target="#chat" hx-swap="outerHTML">
       <input type="hidden" name="state" value="{{ state.model_dump_json() }}">
-      <button type="submit" class="btn big">Generate test plan &rarr;</button>
+      <textarea name="message" rows="1" maxlength="2000" autofocus aria-label="Message"
+                placeholder="{{ 'Correct anything, or add more detail…' if state.ready else ('Describe your app…' if fresh else 'Reply…') }}"></textarea>
+      <div class="composer-bar">
+        <span class="composer-hint">Epic FHIR · SMART on FHIR</span>
+        <button type="submit" class="send" aria-label="Send">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
     </form>
+    <p class="disclaimer">Checks are a starting point. Confirm findings with the health system's Epic team.</p>
   </div>
-  {% endif %}
-
-  {% if state.suggestions %}
-  <div class="chips">
-    {% for s in state.suggestions %}<button type="button" data-reply="{{ s }}">{{ s }}</button>{% endfor %}
-  </div>
-  {% endif %}
-
-  <form id="chat-form" class="composer" hx-post="/assess/chat" hx-target="#chat" hx-swap="outerHTML">
-    <input type="hidden" name="state" value="{{ state.model_dump_json() }}">
-    <textarea name="message" rows="2" maxlength="2000" autofocus
-              placeholder="{{ 'Correct anything, or add more detail…' if state.ready else ('e.g. A mobile app dermatologists at Advocate Health use to photograph a lesion, save it to the chart and get an AI read…' if state.messages|length == 1 else 'Type your answer…') }}"></textarea>
-    <button type="submit" class="btn" aria-label="Send">Send</button>
-  </form>
 </div>
