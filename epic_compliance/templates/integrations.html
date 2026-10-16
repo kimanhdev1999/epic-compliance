@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Integrations — Epic Readiness{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Integrations</h1>
+    <p class="subtitle">Connect a service to turn its tests from "Needs review" into real results. Secrets stay in your <code class="inline">.env</code> and are never shown here.</p>
+  </div>
+</div>
+<div class="int-grid">
+  {% for key, i in integrations.items() %}
+  <div class="card int-card">
+    <div class="int-top">
+      <span class="int-logo" aria-hidden="true">{{ i.name[:1] }}</span>
+      <div><strong>{{ i.name }}</strong><div class="muted small">{{ i.vendor }}</div></div>
+      {{ m.status_pill("int-" ~ i.status, {"connected": "Connected", "configured": "Configured", "not_connected": "Not connected"}[i.status]) }}
+    </div>
+    <p>{{ i.what }}</p>
+    <p class="muted small"><code class="inline">{{ i.detail }}</code></p>
+    {% if i.unlocks %}
+    <div class="unlocks small"><span class="muted">Unlocks {{ i.unlocks|length }} tests:</span>
+      {% for rid in i.unlocks %}<a class="chip mono" href="/tests/{{ rid }}" hx-get="/tests/{{ rid }}" hx-target="#drawer-panel">{{ rid }}</a>{% endfor %}
+    </div>
+    {% endif %}
+    {% if i.actions %}
+    <div class="actions">
+      {% for label, href in i.actions %}<a class="btn {{ 'secondary' if not loop.first }}" href="{{ href }}"{% if href.startswith('http') or href == '/launch' %} target="_blank" rel="noopener"{% endif %}>{{ label }}</a>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -186,9 +186,9 @@ class TestAssessmentRoutes:
     }
 
     def test_intake_page_is_a_chat(self, client):
-        resp = client.get("/")
+        resp = client.get("/assess")
         assert resp.status_code == 200
-        assert "Describe your app" in resp.text and 'id="chat-form"' in resp.text
+        assert "What are you building?" in resp.text and 'id="chat-form"' in resp.text
 
     def test_chat_turn_asks_a_follow_up(self, client, monkeypatch):
         monkeypatch.setattr("epic_compliance.api.get_config", lambda: _NoKeyConfig())

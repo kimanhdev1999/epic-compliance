@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Home — Epic Readiness{% endblock %}
+{% block content %}
+{% set run = w.run %}
+<div class="page-head">
+  <div>
+    <h1>{{ w.intake.app_name or "Get your app ready for Epic" }}</h1>
+    <p class="subtitle">
+      {% if run %}
+        {% if w.intake.health_system %}Integrating with {{ w.intake.health_system }} &middot; {% endif %}
+        Last tested {{ run.created_at[:16].replace('T', ' ') }} UTC on {{ "demo data" if run.run_mode == 'mock' else "the Epic sandbox" }}
+      {% else %}
+        Describe your app, and we'll work out which Epic, ONC (g)(10) and HIPAA tests it has to pass.
+      {% endif %}
+    </p>
+  </div>
+  <div class="actions">
+    {% if run %}
+    {{ m.rerun_button("/") }}
+    <a class="btn" href="/runs/{{ run.run_id }}">Share report</a>
+    {% else %}
+    <a class="btn" href="/assess">Describe your app {{ m.icon("arrow") }}</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="home-grid">
+  <div class="col-main">
+    {% if w.checklist_done < w.checklist|length %}
+    <section class="card checklist">
+      <div class="card-head">
+        <h2>Get started</h2>
+        <span class="muted small">{{ w.checklist_done }} of {{ w.checklist|length }} complete</span>
+      </div>
+      <div class="progress thin"><span class="seg passing" style="width: {{ 100 * w.checklist_done / w.checklist|length }}%"></span></div>
+      <ol>
+        {% set next_shown = namespace(v=false) %}
+        {% for c in w.checklist %}
+        {% set is_next = not c.done and not next_shown.v %}
+        {% if is_next %}{% set next_shown.v = true %}{% endif %}
+        <li class="{{ 'done' if c.done }}{{ ' next' if is_next }}">
+          <span class="tick" aria-hidden="true">{% if c.done %}&#10003;{% else %}{{ loop.index }}{% endif %}</span>
+          <div class="body">
+            <strong>{{ c.title }}</strong>
+            {% if not c.done %}<span class="muted small">{{ c.detail }}</span>{% endif %}
+          </div>
+          {% if not c.done %}<a class="btn {{ '' if is_next else 'secondary' }} small-btn" href="{{ c.href }}">{{ c.cta }}</a>{% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+    {% endif %}
+
+    <section>
+      <div class="section-head">
+        <h2>Frameworks</h2>
+        <a href="/frameworks" class="small">View all {{ m.icon("arrow") }}</a>
+      </div>
+      <div class="fw-grid">
+        {% for fw in w.frameworks if fw.in_scope or not run %}
+        <a class="card fw-card" href="/frameworks/{{ fw.key }}">
+          <div class="fw-top">
+            <strong>{{ fw.name }}</strong>
+            <span class="pct">{{ fw.percent ~ "%" if fw.percent is not none else "—" }}</span>
+          </div>
+          {{ m.progress(fw) }}
+          <div class="fw-counts small muted">
+            {% if fw.in_scope %}{{ fw.counts.passing }}/{{ fw.in_scope }} tests passing{% if fw.counts.failing %} &middot; <span class="t-fail">{{ fw.counts.failing }} failing</span>{% endif %}
+            {% else %}Not tested yet{% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+
+    {% if run %}
+    <section>
+      <div class="section-head">
+        <h2>Needs attention</h2>
+        <a href="/tests?status=failing" class="small">All tests {{ m.icon("arrow") }}</a>
+      </div>
+      {% if w.attention %}
+      <div class="card flush">
+        {% for t in w.attention[:8] %}
+        <a class="attn-row" href="/tests/{{ t.id }}" hx-get="/tests/{{ t.id }}" hx-target="#drawer-panel">
+          {{ m.status_pill(t.status, t.status_label) }}
+          <span class="attn-body"><strong>{{ t.title }}</strong>
+            <span class="muted small"><code>{{ t.id }}</code> &middot; {{ t.category_label }}</span></span>
+          <span class="badge sev-{{ t.severity }}">{{ t.severity }}</span>
+        </a>
+        {% endfor %}
+        {% if w.attention|length > 8 %}<a class="attn-more small" href="/tests?status=failing">{{ w.attention|length - 8 }} more</a>{% endif %}
+      </div>
+      {% else %}
+      <div class="card empty">Every test in scope is passing. Share the report with the health system.</div>
+      {% endif %}
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="col-side">
+    <section class="card score-card">
+      <h2>Readiness</h2>
+      {% if w.percent is not none %}
+      <div class="ring" style="--p: {{ w.percent }}"><span>{{ w.percent }}<small>%</small></span></div>
+      {% else %}
+      <div class="ring empty-ring"><span>—</span></div>
+      {% endif %}
+      <ul class="legend">
+        <li><i class="dot passing"></i>Passing <b>{{ w.counts.passing }}</b></li>
+        <li><i class="dot failing"></i>Failing <b>{{ w.counts.failing }}</b></li>
+        <li><i class="dot needs_review"></i>Needs review <b>{{ w.counts.needs_review }}</b></li>
+        <li><i class="dot not_applicable"></i>Not applicable <b>{{ w.counts.not_applicable }}</b></li>
+      </ul>
+      <p class="muted small">Share of in-scope tests passing. Tests waiting on review don't count yet.</p>
+    </section>
+
+    {% if w.trend|length > 1 %}
+    <section class="card">
+      <h2>Readiness over time</h2>
+      <div class="trend" role="img" aria-label="Readiness of the last {{ w.trend|length }} runs">
+        {% for p in w.trend %}
+        <a href="/runs/{{ p.run_id }}" class="bar" style="--h: {{ [p.percent, 3]|max }}%" title="{{ p.when }} UTC: {{ p.percent }}% passing, {{ p.fail }} failing"></a>
+        {% endfor %}
+      </div>
+      <div class="trend-axis muted small"><span>{{ w.trend[0].when[:10] }}</span><span>{{ w.trend[-1].when[:10] }}</span></div>
+    </section>
+    {% endif %}
+
+    <section class="card">
+      <div class="card-head"><h2>Integrations</h2><a class="small" href="/integrations">Manage</a></div>
+      <ul class="int-mini">
+        {% for key, i in integrations.items() %}
+        <li><span>{{ i.name }}</span>{{ m.status_pill("int-" ~ i.status, {"connected": "Connected", "configured": "Configured", "not_connected": "Not connected"}[i.status]) }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </aside>
+</div>
+{% endblock %}

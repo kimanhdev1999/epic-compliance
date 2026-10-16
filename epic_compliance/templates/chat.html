@@ -1,27 +1,26 @@
 {% extends "base.html" %}
-{% import "_macros.html" as m %}
-{% set active = "assess" %}
 {% block title %}New assessment — Epic Readiness{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/chat.css">{% endblock %}
+{% block body_class %}chat-app{% endblock %}
+{% import "_macros.html" as m %}
+{% block main_class %}chat-main{% endblock %}
 {% block content %}
-<div class="chat-page">
-  {{ m.stepper(1) }}
-  <h1>Describe your app</h1>
-  <p class="subtitle">Tell us what you're building in your own words. We'll ask a few follow-up questions, then generate the Epic integration checks your app needs.</p>
-  {% include "_chat.html" %}
-</div>
-
-{% if runs %}
-<h2>Recent assessments</h2>
-{% include "_history_table.html" %}
-{% endif %}
+{{ m.stepper(1) }}
+{% include "_chat.html" %}
+<template id="avatar-tpl"><div class="avatar" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z" fill="currentColor"/></svg></div></template>
 
 <script>
 (function () {
   function scrollLog() {
-    var log = document.querySelector('#chat .chat-log');
+    var log = document.querySelector('#chat .thread');
     if (log) log.scrollTop = log.scrollHeight;
   }
   function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function grow(box) {
+    box.style.height = 'auto';
+    box.style.height = Math.min(box.scrollHeight, 200) + 'px';
+  }
+  var AVATAR = document.querySelector('#avatar-tpl').innerHTML;
 
   // Show the user's message and a typing indicator while Claude / the parser answers.
   document.addEventListener('htmx:beforeRequest', function (e) {
@@ -30,11 +29,15 @@
     var box = form.querySelector('textarea');
     var text = box.value.trim();
     if (!text) { e.preventDefault(); return; }
-    var log = document.querySelector('#chat .chat-log');
-    log.insertAdjacentHTML('beforeend',
+    var chat = document.getElementById('chat');
+    chat.classList.remove('fresh');
+    chat.querySelector('.thread-inner').insertAdjacentHTML('beforeend',
       '<div class="msg user"><div class="bubble">' + esc(text) + '</div></div>' +
-      '<div class="msg assistant typing"><div class="bubble"><span></span><span></span><span></span></div></div>');
-    document.querySelectorAll('#chat .chips button').forEach(function (b) { b.disabled = true; });
+      '<div class="msg assistant typing">' + AVATAR + '<div class="bubble"><span></span><span></span><span></span></div></div>');
+    chat.querySelectorAll('.suggestions, .quick-replies').forEach(function (el) { el.remove(); });
+    box.value = '';
+    grow(box);
+    form.classList.add('busy');
     scrollLog();
   });
   document.addEventListener('htmx:afterSwap', function (e) {
@@ -43,20 +46,24 @@
     var box = document.querySelector('#chat-form textarea');
     if (box) box.focus();
   });
+  document.addEventListener('input', function (e) {
+    if (e.target.matches('#chat-form textarea')) grow(e.target);
+  });
   document.addEventListener('keydown', function (e) {
-    if (e.target.matches('#chat-form textarea') && e.key === 'Enter' && !e.shiftKey) {
+    if (e.target.matches('#chat-form textarea') && e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
       e.preventDefault();
       e.target.form.requestSubmit();
     }
   });
   document.addEventListener('click', function (e) {
-    var chip = e.target.closest('#chat .chips button');
-    if (!chip) return;
-    var form = document.getElementById('chat-form');
-    form.querySelector('textarea').value = chip.dataset.reply;
-    form.requestSubmit();
+    var pick = e.target.closest('#chat [data-send]');
+    if (pick) {
+      var form = document.getElementById('chat-form');
+      form.querySelector('textarea').value = pick.dataset.send;
+      form.requestSubmit();
+    }
   });
-  document.addEventListener('DOMContentLoaded', scrollLog);
+  scrollLog();
 })();
 </script>
 {% endblock %}
