@@ -4,6 +4,7 @@ from __future__ import annotations
 import pytest
 
 from epic_compliance.assessment import SELECTORS, Intake, build_plan
+from epic_compliance.intake_chat import ChatState, next_turn
 from epic_compliance.rules_engine.catalog import load_rules
 
 
@@ -64,6 +65,110 @@ class TestBuildPlan:
         assert i.saves_images is True and i.reads_chart is False and i.writes_back is False
 
 
+class _NoKeyConfig:
+    anthropic_api_key = ""
+    fhir_base_url = "https://example.test/FHIR/R4"
+
+
+class TestChatIntake:
+    """Offline (no API key) path: keyword parser + scripted follow-ups."""
+
+    def _say(self, state, text):
+        return next_turn(state, text, api_key="")
+
+    def test_opening_message_and_empty_input(self):
+        state = ChatState.start()
+        assert state.messages[0]["role"] == "assistant" and not state.ready
+        assert self._say(state, "   ") == state
+
+    def test_description_fills_topics_then_asks_what_is_missing(self):
+        state = self._say(ChatState.start(),
+                          "We're building DermScan, a mobile app dermatologists at Advocate Health "
+                          "use to photograph a lesion, save the photo to the chart and get an AI read.")
+        i = state.intake
+        assert (i.users, i.platform) == ("clinicians", "mobile")
+        assert i.saves_images and i.third_party_ai
+        assert i.health_system == "Advocate Health" and i.app_name == "DermScan"
+        assert not i.reads_chart  # "save the photo to the chart" is a write, not a read
+        assert set(state.known) == {"users", "platform", "data"}
+        assert "security" in state.messages[-1]["content"].lower()
+        assert state.suggestions
+
+    def test_not_sure_on_security_completes_the_intake(self):
+        state = self._say(ChatState.start(), "A mobile app clinicians use to view the chart")
+        state = self._say(state, "Not sure yet")
+        assert state.ready and state.intake.tls_version == ""
+        assert not state.suggestions
+
+    def test_unrecognised_answer_reasks(self):
+        state = self._say(ChatState.start(), "It helps with skin checks")
+        assert "users" not in state.known
+        state = self._say(state, "hmm")
+        assert state.messages[-1]["content"].startswith("Sorry")
+
+    def test_security_answers_are_parsed(self):
+        state = self._say(ChatState.start(), "A web app with a Django backend that patients use via MyChart to read labs")
+        assert state.intake.users == "patients" and state.intake.platform == "web_server"
+        state = self._say(state, "TLS 1.3, audit logging on and kept 6 years, BAA signed with all vendors")
+        i = state.intake
+        assert state.ready
+        assert (i.tls_version, i.audit_logging, i.audit_retention_days, i.baa_status) == ("TLS 1.3", "yes", "2190", "all")
+
+    def test_negation(self):
+        state = self._say(ChatState.start(), "A mobile app for clinicians that reads the chart, no AI involved")
+        assert state.intake.third_party_ai is False and state.intake.reads_chart is True
+
+    def test_llm_failure_falls_back_to_parser(self, monkeypatch):
+        import epic_compliance.intake_chat as ic
+
+        def boom(state, key):
+            raise RuntimeError("network down")
+        monkeypatch.setattr(ic, "_llm_turn", boom)
+        state = next_turn(ChatState.start(), "A mobile app clinicians use", api_key="sk-test")
+        assert state.intake.platform == "mobile" and state.messages[-1]["role"] == "assistant"
+
+    def test_llm_turn_applies_structured_updates(self, monkeypatch):
+        import json
+        from types import SimpleNamespace
+
+        import anthropic
+
+        out = {
+            "updates": {
+                "app_name": "DermScan", "health_system": "", "users": "clinicians",
+                "platform": "mobile", "reads_chart": "no", "saves_images": "yes",
+                "writes_back": "unknown", "third_party_ai": "yes", "tls_version": "",
+                "audit_logging": "", "audit_retention_days": "", "baa_status": "",
+            },
+            "covered": ["users", "platform", "data"],
+            "reply": "Which health system is this for, and do you know your TLS version?",
+            "suggestions": ["Not sure yet"],
+        }
+        sent = {}
+
+        class FakeMessages:
+            def create(self, **kw):
+                sent.update(kw)
+                return SimpleNamespace(stop_reason="end_turn",
+                                       content=[SimpleNamespace(type="text", text=json.dumps(out))])
+
+        monkeypatch.setattr(anthropic, "Anthropic", lambda **kw: SimpleNamespace(messages=FakeMessages()))
+        state = next_turn(ChatState.start(), "A mobile derm photo app with AI", api_key="sk-test")
+
+        assert sent["messages"][0]["role"] == "user"  # canned opener dropped
+        assert sent["output_config"]["format"]["type"] == "json_schema"
+        i = state.intake
+        assert (i.app_name, i.users, i.saves_images, i.third_party_ai, i.reads_chart) == \
+            ("DermScan", "clinicians", True, True, False)
+        assert not state.ready and state.suggestions == ["Not sure yet"]
+        assert state.messages[-1]["content"] == out["reply"]
+
+    def test_state_round_trips_and_bad_state_restarts(self):
+        state = self._say(ChatState.start(), "A mobile app clinicians use")
+        assert ChatState.load(state.model_dump_json()) == state
+        assert ChatState.load("{not json").messages == ChatState.start().messages
+
+
 class TestAssessmentRoutes:
     @pytest.fixture
     def client(self, tmp_path, monkeypatch):
@@ -80,10 +185,24 @@ class TestAssessmentRoutes:
         "reads_chart": "on", "saves_images": "on", "run_mode": "mock",
     }
 
-    def test_intake_page_renders(self, client):
+    def test_intake_page_is_a_chat(self, client):
         resp = client.get("/")
         assert resp.status_code == 200
-        assert "Describe your app" in resp.text
+        assert "Describe your app" in resp.text and 'id="chat-form"' in resp.text
+
+    def test_chat_turn_asks_a_follow_up(self, client, monkeypatch):
+        monkeypatch.setattr("epic_compliance.api.get_config", lambda: _NoKeyConfig())
+        resp = client.post("/assess/chat", data={
+            "message": "A mobile app dermatologists use to photograph lesions and save them to the chart",
+            "state": "",
+        })
+        assert resp.status_code == 200
+        assert "security" in resp.text.lower()  # users, platform, data known -> asks security
+        assert "Generate test plan" not in resp.text
+
+    def test_plan_lists_run_choice_and_back_to_chat(self, client):
+        resp = client.post("/assess/plan", data=self.FORM)
+        assert "Where should we test?" in resp.text and "Back to chat" in resp.text
 
     def test_plan_lists_selected_and_skipped_checks(self, client):
         resp = client.post("/assess/plan", data=self.FORM)

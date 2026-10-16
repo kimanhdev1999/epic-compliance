@@ -1,7 +1,9 @@
 """FastAPI web application — server-rendered UI (HTMX) + JSON API.
 
 Pages
-  GET  /                      step 1 of an assessment: describe your app
+  GET  /                      step 1 of an assessment: describe your app in a chat
+  POST /assess/chat           one chat turn (HTMX → chat partial)
+  POST /assess/resume         back to the chat from the plan, conversation intact
   POST /assess/plan           step 2: the test plan generated from those answers
   POST /assess/run            step 3: run the plan, redirect to its report
   POST /runs                  ad-hoc run with raw config (HTMX → result partial)
@@ -32,7 +34,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from . import pipeline, store
-from .assessment import BAA_LABELS, PLATFORM_LABELS, USERS_LABELS, Intake, build_plan
+from .assessment import BAA_LABELS, PLATFORM_LABELS, RUN_FIELDS, USERS_LABELS, Intake, build_plan
+from .intake_chat import ChatState, next_turn, summary
 from .config import OVERRIDABLE_FIELDS, config_with_overrides, get_config
 from .models import Report
 from .fhir.writeback import CLINICIAN_SCOPES
@@ -122,29 +125,50 @@ def _intake_labels() -> dict[str, Any]:
     return {"users": USERS_LABELS, "platform": PLATFORM_LABELS, "baa": BAA_LABELS}
 
 
+def _render_chat(request: Request, state: ChatState, partial: bool = False) -> HTMLResponse:
+    ctx = {"state": state, "summary": summary(state.intake) if state.ready else []}
+    if partial:
+        return render(request, "_chat.html", **ctx)
+    return render(request, "chat.html", runs=store.list_runs(limit=5), **ctx)
+
+
 @app.get("/", response_class=HTMLResponse)
 def assess_start(request: Request) -> Any:
-    """Step 1: describe your app. Prefilled with the last answers given."""
-    saved = store.get_last_intake()
-    intake = Intake.model_validate({k: v for k, v in saved.items() if k in Intake.model_fields})
-    if not intake.fhir_base_url:
-        intake.fhir_base_url = get_config().fhir_base_url
-    return render(
-        request, "assess.html",
-        intake=intake, labels=_intake_labels(), runs=store.list_runs(limit=5),
-    )
+    """Step 1: describe your app in your own words; the tool asks follow-ups."""
+    return _render_chat(request, ChatState.start())
+
+
+@app.post("/assess/chat", response_class=HTMLResponse)
+def assess_chat(request: Request, message: str = Form(""), state: str = Form("")) -> Any:
+    """One chat turn. The conversation state round-trips through the page."""
+    new_state = next_turn(ChatState.load(state), message, api_key=get_config().anthropic_api_key)
+    return _render_chat(request, new_state, partial=True)
+
+
+@app.post("/assess/resume", response_class=HTMLResponse)
+def assess_resume(request: Request, state: str = Form("")) -> Any:
+    return _render_chat(request, ChatState.load(state))
 
 
 @app.post("/assess/plan", response_class=HTMLResponse)
 async def assess_plan(request: Request) -> Any:
-    """Step 2: show the checks this app needs, and why, before anything runs."""
-    intake = Intake.from_form(dict(await request.form()))
-    store.save_last_intake(intake.model_dump())
+    """Step 2: show the checks this app needs, and why, before anything runs.
+
+    The chat supplies what the app is; where to run it is picked on this page,
+    prefilled from the last assessment.
+    """
+    form = dict(await request.form())
+    intake = Intake.from_form(form)
+    last = store.get_last_intake()
+    env = {k: last[k] for k in RUN_FIELDS if k in last and k not in form}
+    intake = intake.model_copy(update=env)
+    if not intake.fhir_base_url:
+        intake.fhir_base_url = get_config().fhir_base_url
     plan = build_plan(intake)
     return render(
         request, "plan.html",
-        intake=intake, plan=plan, labels=_intake_labels(),
-        live_token=pipeline.get_live_token() is not None,
+        intake=intake, plan=plan, labels=_intake_labels(), chat_state=form.get("state", ""),
+        run_fields=RUN_FIELDS, live_token=pipeline.get_live_token() is not None,
     )
 
 
@@ -152,6 +176,7 @@ async def assess_plan(request: Request) -> Any:
 async def assess_run(request: Request) -> RedirectResponse:
     """Step 3: run exactly the planned checks, then show the report."""
     intake = Intake.from_form(dict(await request.form()))
+    store.save_last_intake(intake.model_dump())
     plan = build_plan(intake)
     report, _ = _execute_run(plan.config_overrides(), plan.rule_ids, plan.to_dict())
     return RedirectResponse(url=f"/runs/{report.run_id}", status_code=303)

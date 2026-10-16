@@ -10,6 +10,7 @@
   used by {{ intake.users }}{% if intake.health_system %} at {{ intake.health_system }}{% endif %}.
   {{ plan.excluded|length }} checks don't apply and are skipped.
 </p>
+{% if intake.description %}<blockquote class="told">“{{ intake.description }}”</blockquote>{% endif %}
 
 <div class="grid cols-3 plan-summary">
   {% for sec in plan.sections() %}
@@ -18,18 +19,6 @@
   </a>
   {% endfor %}
 </div>
-
-{% if intake.run_mode == 'live' and not live_token %}
-<div class="callout warn">
-  <strong>Sign in to the Epic sandbox first.</strong> Checks that need a real access token will come back
-  <em>Needs review</em> until you do. <a href="/launch">Start SMART sign-in &rarr;</a>
-  <div class="hint">Uses the client ID from <code class="inline">.env</code>. When it finishes, come back and generate the plan again.</div>
-</div>
-{% elif intake.run_mode == 'mock' %}
-<div class="callout">
-  <strong>Demo data run.</strong> This proves the plan and shows you what the report will look like. Run it against the Epic sandbox with your client ID before you take it to {{ intake.health_system or "the health system" }}.
-</div>
-{% endif %}
 
 {% for sec in plan.sections() %}
 <div class="cat-header" id="sec-{{ sec.key }}"><h2>{{ sec.label }}</h2><span class="mini">{{ sec.checks|length }} checks</span></div>
@@ -60,13 +49,54 @@
 </details>
 {% endif %}
 
-<form method="post" action="/assess/run" class="actions sticky-actions" onsubmit="this.querySelector('button').disabled=true; this.querySelector('.running').hidden=false;">
-  {% for k, v in intake.model_dump().items() %}
+<h2>Where should we test?</h2>
+<form method="post" action="/assess/run" id="run-form" onsubmit="document.getElementById('run-btn').disabled=true; document.getElementById('running').hidden=false;">
+  {% for k, v in intake.model_dump().items() if k not in run_fields %}
     {% if v is sameas true %}<input type="hidden" name="{{ k }}" value="on">
     {% elif v is not sameas false %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}
   {% endfor %}
-  <a class="btn secondary" href="/">&larr; Edit answers</a>
-  <button type="submit" class="btn big">Run {{ plan.included|length }} checks</button>
-  <span class="running muted" hidden><span class="spinner dark"></span> Running checks…</span>
+  <div class="card">
+    <div class="choices">
+      <label class="choice">
+        <input type="radio" name="run_mode" value="mock" {{ 'checked' if intake.run_mode != 'live' }}>
+        <span><strong>Demo data</strong><small>Runs offline against sample Epic responses. No credentials needed, so it's a good way to see the plan and the report.</small></span>
+      </label>
+      <label class="choice">
+        <input type="radio" name="run_mode" value="live" {{ 'checked' if intake.run_mode == 'live' }}>
+        <span><strong>Epic sandbox (live)</strong><small>Real calls with your non-production client ID from fhir.epic.com.</small></span>
+      </label>
+    </div>
+    <div class="live-only">
+      {% if not live_token %}
+      <div class="callout warn" style="margin-top:1rem">
+        <strong>Sign in to the Epic sandbox first.</strong> Checks that need a real access token come back
+        <em>Needs review</em> until you do. <a href="/launch" target="_blank">Start SMART sign-in &rarr;</a>
+        <div class="hint">Uses the client ID from <code class="inline">.env</code>. Finish the sign-in in the new tab, then run from here.</div>
+      </div>
+      {% endif %}
+      <div class="grid cols-2" style="margin-top:1rem">
+        <div class="row"><label for="fhir_base_url">FHIR base URL</label>
+          <input type="url" id="fhir_base_url" name="fhir_base_url" value="{{ intake.fhir_base_url }}"></div>
+        <div class="row"><label for="oauth_client_id">Non-production client ID</label>
+          <input type="text" id="oauth_client_id" name="oauth_client_id" value="{{ intake.oauth_client_id }}" placeholder="from fhir.epic.com"></div>
+        <div class="row"><label for="app_redirect_uri">Your app's redirect URI</label>
+          <input type="text" id="app_redirect_uri" name="app_redirect_uri" value="{{ intake.app_redirect_uri }}" placeholder="com.example.app:/callback"></div>
+        {% if intake.users == 'clinicians' %}
+        <div class="row"><label for="test_patient_query">Test patient search</label>
+          <input type="text" id="test_patient_query" name="test_patient_query" value="{{ intake.test_patient_query }}" placeholder="family=Smith&amp;given=Jane&amp;birthdate=1980-01-31"></div>
+        {% endif %}
+      </div>
+      <label class="inline-check"><input type="checkbox" name="encounter_required" {{ 'checked' if intake.encounter_required }}> {{ intake.health_system or "The health system" }} files photos and notes against a visit (Encounter)</label>
+    </div>
+  </div>
 </form>
+
+<div class="actions sticky-actions">
+  <form method="post" action="/assess/resume">
+    <input type="hidden" name="state" value="{{ chat_state }}">
+    <button type="submit" class="btn secondary">&larr; Back to chat</button>
+  </form>
+  <button type="submit" form="run-form" id="run-btn" class="btn big">Run {{ plan.included|length }} checks</button>
+  <span id="running" class="muted" hidden><span class="spinner dark"></span> Running checks…</span>
+</div>
 {% endblock %}
