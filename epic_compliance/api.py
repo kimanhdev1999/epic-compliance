@@ -278,6 +278,15 @@ def _save_chat(state: ChatState) -> ChatState:
     return state
 
 
+def _adopt_chat(raw: str) -> ChatState:
+    """Save a conversation a page sent back if it isn't the saved one yet
+    (e.g. a tab opened before chats were saved)."""
+    state = ChatState.load(raw)
+    if len(state.messages) > 1 and state != _saved_chat():
+        _save_chat(state)
+    return state
+
+
 @app.get("/assess", response_class=HTMLResponse)
 def assess_start(request: Request) -> Any:
     """Step 1: describe your app in your own words; the tool asks follow-ups.
@@ -333,10 +342,7 @@ def assess_new() -> RedirectResponse:
 def assess_resume(request: Request, state: str = Form("")) -> Any:
     if not state:
         return _render_chat(request, _saved_chat())
-    resumed = ChatState.load(state)
-    if resumed != _saved_chat():  # e.g. a tab opened before chats were saved
-        _save_chat(resumed)
-    return _render_chat(request, resumed)
+    return _render_chat(request, _adopt_chat(state))
 
 
 @app.post("/assess/plan", response_class=HTMLResponse)
@@ -347,6 +353,8 @@ async def assess_plan(request: Request) -> Any:
     prefilled from the last assessment.
     """
     form = dict(await request.form())
+    if form.get("state"):
+        _adopt_chat(str(form["state"]))
     intake = Intake.from_form(form)
     last = store.get_last_intake()
     env = {k: last[k] for k in RUN_FIELDS if k in last and k not in form}

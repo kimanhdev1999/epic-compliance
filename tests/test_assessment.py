@@ -298,3 +298,13 @@ class TestSavedConversation:
         self._say(client, "We're building DermScan, a mobile app clinicians use")
         monkeypatch.setattr("epic_compliance.api.get_config", get_config)  # Home needs the full config
         assert "DermScan" in client.get("/").text
+
+    def test_plan_and_back_to_chat_save_a_conversation_from_an_old_tab(self, client):
+        from epic_compliance import store
+        from epic_compliance.intake_chat import next_turn
+        old_tab = next_turn(ChatState.start(), "A mobile app clinicians use", api_key="")
+        client.post("/assess/plan", data={**TestAssessmentRoutes.FORM, "state": old_tab.model_dump_json()})
+        assert self._saved() == old_tab
+        assert len(store.chat_snapshots()) == 1
+        client.post("/assess/resume", data={"state": old_tab.model_dump_json()})
+        assert len(store.chat_snapshots()) == 1  # already saved, not duplicated
