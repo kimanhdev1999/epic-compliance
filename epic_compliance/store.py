@@ -77,6 +77,15 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS chat_turns (
+                seq        INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TEXT NOT NULL,
+                state_json TEXT NOT NULL
+            )
+            """
+        )
         conn.commit()
 
 
@@ -215,3 +224,34 @@ def get_last_intake() -> dict[str, Any]:
     with _connect() as conn:
         row = conn.execute("SELECT value FROM settings WHERE key = 'last_intake'").fetchone()
     return json.loads(row["value"]) if row else {}
+
+
+# --------------------------------------------------------------------------- #
+# Describe-your-app conversation (ADR-013)
+# --------------------------------------------------------------------------- #
+# Every turn appends a snapshot of the whole ChatState, so the conversation
+# survives restarts and an earlier message can be edited by going back to the
+# snapshot taken just before it. Rows are never updated; the newest is current.
+def save_chat_state(state_json: str) -> None:
+    init_db()
+    with _connect() as conn:
+        conn.execute(
+            "INSERT INTO chat_turns (created_at, state_json) VALUES (?, ?)",
+            (datetime.now(timezone.utc).isoformat(), state_json),
+        )
+        conn.commit()
+
+
+def latest_chat_state() -> str | None:
+    init_db()
+    with _connect() as conn:
+        row = conn.execute("SELECT state_json FROM chat_turns ORDER BY seq DESC LIMIT 1").fetchone()
+    return row["state_json"] if row else None
+
+
+def chat_snapshots() -> list[str]:
+    """Every saved snapshot, newest first."""
+    init_db()
+    with _connect() as conn:
+        rows = conn.execute("SELECT state_json FROM chat_turns ORDER BY seq DESC").fetchall()
+    return [r["state_json"] for r in rows]

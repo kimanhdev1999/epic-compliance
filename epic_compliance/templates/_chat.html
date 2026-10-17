@@ -11,8 +11,23 @@
 
       {% for msg in state.messages if not fresh %}
       <div class="msg {{ msg.role }}">
-        {% if msg.role == "assistant" %}<div class="avatar" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z" fill="currentColor"/></svg></div>{% endif %}
+        {% if msg.role == "assistant" %}<div class="avatar" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z" fill="currentColor"/></svg></div>
         <div class="bubble">{{ msg.content }}</div>
+        {% else %}
+        <div class="user-turn">
+          <div class="bubble">{{ msg.content }}</div>
+          <button type="button" class="edit-msg" data-edit aria-label="Edit this message">Edit</button>
+          <form class="edit-form" hidden hx-post="/assess/edit" hx-target="#chat" hx-swap="outerHTML">
+            <input type="hidden" name="index" value="{{ loop.index0 }}">
+            <textarea name="message" rows="3" maxlength="2000" aria-label="Edit message">{{ msg.content }}</textarea>
+            <p class="edit-hint">Saving replaces this answer, and the conversation continues from here. Later messages are replaced.</p>
+            <div class="edit-actions">
+              <button type="button" class="btn-ghost" data-edit-cancel>Cancel</button>
+              <button type="submit" class="btn-save">Save and continue</button>
+            </div>
+          </form>
+        </div>
+        {% endif %}
       </div>
       {% endfor %}
 
@@ -61,7 +76,7 @@
     <form id="chat-form" class="composer" hx-post="/assess/chat" hx-target="#chat" hx-swap="outerHTML">
       <input type="hidden" name="state" value="{{ state.model_dump_json() }}">
       <textarea name="message" rows="1" maxlength="2000" autofocus aria-label="Message"
-                placeholder="{{ 'Correct anything, or add more detail…' if state.ready else ('Describe your app…' if fresh else 'Reply…') }}"></textarea>
+                placeholder="{{ 'Describe your app…' if fresh else ('Correct anything, or add more detail…' if state.ready else 'Reply…') }}"></textarea>
       <div class="composer-bar">
         <span class="composer-hint">Epic FHIR · SMART on FHIR</span>
         <button type="submit" class="send" aria-label="Send">
@@ -69,6 +84,12 @@
         </button>
       </div>
     </form>
-    <p class="disclaimer">Checks are a starting point. Confirm findings with the health system's Epic team.</p>
+    <div class="disclaimer">
+      {% if not fresh %}
+      <form method="post" action="/assess/new" class="inline-form" onsubmit="return confirm('Start a new conversation? This one stays saved in the local database.')">
+        Saved on this computer · <button type="submit" class="link-btn">New conversation</button> ·
+      </form>
+      {% endif %}Checks are a starting point. Confirm findings with the health system's Epic team.
+    </div>
   </div>
 </div>

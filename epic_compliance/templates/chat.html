@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}New assessment — Epic Readiness{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/chat.css">{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('chat.css') }}">{% endblock %}
 {% block body_class %}chat-app{% endblock %}
 {% import "_macros.html" as m %}
 {% block main_class %}chat-main{% endblock %}
@@ -25,6 +25,7 @@
   // Show the user's message and a typing indicator while Claude / the parser answers.
   document.addEventListener('htmx:beforeRequest', function (e) {
     var form = e.detail.elt;
+    if (form.classList.contains('edit-form')) { form.classList.add('busy'); return; }
     if (form.id !== 'chat-form') return;
     var box = form.querySelector('textarea');
     var text = box.value.trim();
@@ -56,6 +57,22 @@
     }
   });
   document.addEventListener('click', function (e) {
+    var edit = e.target.closest('#chat [data-edit]');
+    if (edit) {
+      var turn = edit.closest('.user-turn');
+      turn.classList.add('editing');
+      turn.querySelector('.edit-form').hidden = false;
+      var area = turn.querySelector('.edit-form textarea');
+      area.focus(); area.setSelectionRange(area.value.length, area.value.length);
+      return;
+    }
+    var cancel = e.target.closest('#chat [data-edit-cancel]');
+    if (cancel) {
+      var t = cancel.closest('.user-turn');
+      t.classList.remove('editing');
+      t.querySelector('.edit-form').hidden = true;
+      return;
+    }
     var pick = e.target.closest('#chat [data-send]');
     if (pick) {
       var form = document.getElementById('chat-form');

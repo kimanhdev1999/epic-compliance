@@ -418,6 +418,9 @@ compliance-automation tools:
   history; without HTMX the same URL is a full page.
 - **Integrations**: Epic sandbox, Claude, HL7 FHIR validator, ONC test kit,
   each with a status and the tests it unlocks.
+  Claude (`ANTHROPIC_API_KEY`) is expected to be set, so the Get-started
+  checklist has no "Connect Claude" step; the Integrations card still shows
+  its status, and without a key the chat and SEC-00x checks fall back as before.
 - **Re-run tests** (`POST /assess/rerun`) re-runs the saved plan, standing in
   for continuous monitoring.
 
@@ -442,3 +445,76 @@ the workspace shows progress across those runs.
 - `/` is now Home; the chat moved to `/assess`.
 - The light theme (dark-mode aware) replaces the dark GitHub-style theme.
 
+
+## ADR-013: Save the describe-your-app conversation and allow editing answers
+**Date:** 2026-10-17  **Status:** Accepted
+
+### Context
+The chat state lived only in the browser page (a hidden form field). The
+answers reached the database only when a run started (`last_intake`). Closing
+the tab before running lost the whole conversation. Apps also change over the
+weeks of a health-system review, so an answer given earlier ("read-only")
+needs to be corrected later.
+
+### Decision
+- Every chat turn appends a snapshot of the full `ChatState` to a new
+  `chat_turns` table in the local SQLite DB (`store.save_chat_state`). The
+  newest row is the current conversation, and `/assess` opens it.
+- **Edit an answer:** each of the user's messages has an Edit button
+  (`POST /assess/edit`). It rewinds to the snapshot taken just before that
+  message (`intake_chat.rewind`), so the intake reflects only the earlier
+  answers. The edited message is then answered as a new turn, and later
+  messages are replaced. If no exact snapshot exists (older turns were
+  trimmed by `MAX_TURNS`), it keeps the current intake and drops the later
+  messages.
+- **New conversation** (`POST /assess/new`) saves a fresh start as the newest
+  snapshot. Earlier conversations stay in the table.
+- Home and the sidebar use the saved conversation's answers until the first
+  run saves `last_intake`.
+
+### Reasoning
+Append-only snapshots are the simplest way to support both "resume later" and
+"edit an earlier answer" correctly. Replaying the conversation to rebuild the
+intake would mean new Claude calls and could give different answers. The rows
+are small, and the DB is local and single-tenant like the rest of the tool.
+
+### Consequences / limits
+- The conversation can contain PHI-adjacent product details but not patient
+  data; it is stored only in the local DB, like run history.
+- No UI yet to browse or restore older conversations; they are kept in
+  `chat_turns` for that later.
+- Editing an answer doesn't change existing reports. Run the plan again to
+  apply it.
+
+## ADR-014: Sample-data ("demo") mode becomes a smoke test, not a UI choice
+**Date:** 2026-10-17  **Status:** Accepted
+
+### Context
+The plan page offered "Demo data" next to "Epic sandbox (live)". Demo runs
+use built-in sample Epic responses that are written to be correct, so most
+tests pass and the report says nothing about the user's integration. Users of
+an Epic integration tool found the choice confusing and the results
+misleading. In demo mode the SEC-* rules also skipped Claude even with a key.
+
+### Decision
+- The web UI only runs against the Epic sandbox. The plan page no longer asks
+  where to test. Run is disabled until a SMART sign-in has completed, and the
+  page polls `GET /launch/status` to unlock it. Without `OAUTH_CLIENT_ID` it
+  says to add one. `Intake.run_mode` defaults to `live`.
+- The Home checklist connects the Epic sandbox before the first run. Settings
+  no longer has a run-mode field.
+- Sample-data mode (`RUN_MODE=mock`, `run_mode=mock` on the routes) stays for
+  development and as the **smoke test**: `tests/test_smoke.py` (`pytest -m
+  smoke`) runs chat → plan → run → report → every workspace page → rerun for a
+  clinician and a patient app, plus the CLI, with no network, credentials or
+  Claude key.
+- `.github/workflows/ci.yml` runs the smoke test, then the unit tests, on
+  every pull request and push to main. `live` and `launch` tests don't run in
+  CI.
+
+### Consequences
+- Nothing can be run from the UI without a registered non-production Epic
+  app. That's the point: only sandbox results mean anything to a health system.
+- Every UI run is live, so SEC-001..003 are always judged by Claude when a key
+  is set.
+- Old demo runs in the history still show as "Demo data".

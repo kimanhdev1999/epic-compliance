@@ -13,13 +13,6 @@
   <form method="post" action="/config">
     <div class="grid cols-2">
       <div class="row">
-        <label for="run_mode">Default run mode</label>
-        <select id="run_mode" name="run_mode">
-          <option value="mock" {{ 'selected' if cfg.run_mode != 'live' }}>mock</option>
-          <option value="live" {{ 'selected' if cfg.run_mode == 'live' }}>live</option>
-        </select>
-      </div>
-      <div class="row">
         <label for="oauth_client_id">OAuth client ID</label>
         <input type="text" id="oauth_client_id" name="oauth_client_id" value="{{ cfg.oauth_client_id or '' }}">
       </div>

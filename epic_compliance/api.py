@@ -10,6 +10,8 @@ Pages (workspace shell, ADR-012)
   POST /assess/rerun          re-run the current app's plan, back to where you were
   GET  /assess                step 1 of an assessment: describe your app in a chat
   POST /assess/chat           one chat turn (HTMX → chat partial)
+  POST /assess/edit           replace an earlier answer and continue from there
+  POST /assess/new            start a new conversation (old ones stay saved)
   POST /assess/resume         back to the chat from the plan, conversation intact
   POST /assess/plan           step 2: the test plan generated from those answers
   POST /assess/run            step 3: run the plan, redirect to its report
@@ -42,7 +44,7 @@ from fastapi.templating import Jinja2Templates
 
 from . import pipeline, store
 from .assessment import BAA_LABELS, PLATFORM_LABELS, RUN_FIELDS, USERS_LABELS, Intake, build_plan
-from .intake_chat import ChatState, next_turn, summary
+from .intake_chat import ChatState, next_turn, rewind, summary
 from .config import OVERRIDABLE_FIELDS, config_with_overrides, get_config
 from .models import Report
 from .fhir.writeback import CLINICIAN_SCOPES
@@ -58,6 +60,17 @@ BASE_DIR = Path(__file__).parent
 app = FastAPI(title="Epic Compliance Tool", version="0.2.0")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+def _asset(path: str) -> str:
+    """Static URL with the file's mtime, so browsers fetch CSS/JS again after a change."""
+    try:
+        return f"/static/{path}?v={int((BASE_DIR / 'static' / path).stat().st_mtime)}"
+    except OSError:
+        return f"/static/{path}"
+
+
+templates.env.globals["asset"] = _asset
 
 _last_report: Report | None = None
 
@@ -89,9 +102,18 @@ def render(request: Request, name: str, **ctx: Any) -> HTMLResponse:
     return templates.TemplateResponse(request, name, {"request": request, "nav": _nav(), **ctx})
 
 
+def _current_intake() -> dict[str, Any]:
+    """The app's answers: from the last run, else from the saved conversation."""
+    last = store.get_last_intake()
+    if last:
+        return last
+    chat = _saved_chat()
+    return chat.intake.model_dump() if len(chat.messages) > 1 else {}
+
+
 def _nav() -> dict[str, Any]:
     """Sidebar context on every page: which app this workspace is, and its open counts."""
-    intake = store.get_last_intake()
+    intake = _current_intake()
     latest = store.list_runs(limit=1)
     return {
         "app_name": intake.get("app_name") or "Your app",
@@ -204,7 +226,7 @@ def _integrations() -> dict[str, dict[str, Any]]:
 
 def _workspace() -> dict[str, Any]:
     return ws.build_workspace(
-        store.latest_run(), intake=store.get_last_intake(),
+        store.latest_run(), intake=_current_intake(),
         integrations=_integrations(), history=store.list_runs(limit=30),
     )
 
@@ -257,10 +279,33 @@ def integrations_page(request: Request) -> Any:
     return render(request, "integrations.html", active="integrations", integrations=_integrations())
 
 
+def _saved_chat() -> ChatState:
+    raw = store.latest_chat_state()
+    return ChatState.load(raw) if raw else ChatState.start()
+
+
+def _save_chat(state: ChatState) -> ChatState:
+    store.save_chat_state(state.model_dump_json())
+    return state
+
+
+def _adopt_chat(raw: str) -> ChatState:
+    """Save a conversation a page sent back if it isn't the saved one yet
+    (e.g. a tab opened before chats were saved)."""
+    state = ChatState.load(raw)
+    if len(state.messages) > 1 and state != _saved_chat():
+        _save_chat(state)
+    return state
+
+
 @app.get("/assess", response_class=HTMLResponse)
 def assess_start(request: Request) -> Any:
-    """Step 1: describe your app in your own words; the tool asks follow-ups."""
-    return _render_chat(request, ChatState.start())
+    """Step 1: describe your app in your own words; the tool asks follow-ups.
+
+    Opens the saved conversation (ADR-013), so you can pick up where you left
+    off or correct an answer when the app changes.
+    """
+    return _render_chat(request, _saved_chat())
 
 
 @app.post("/assess/rerun")
@@ -277,14 +322,38 @@ def assess_rerun(next: str = Form("/")) -> RedirectResponse:
 
 @app.post("/assess/chat", response_class=HTMLResponse)
 def assess_chat(request: Request, message: str = Form(""), state: str = Form("")) -> Any:
-    """One chat turn. The conversation state round-trips through the page."""
-    new_state = next_turn(ChatState.load(state), message, api_key=get_config().anthropic_api_key)
+    """One chat turn. The state round-trips through the page and is saved locally."""
+    old = ChatState.load(state)
+    new_state = next_turn(old, message, api_key=get_config().anthropic_api_key)
+    if new_state != old:
+        _save_chat(new_state)
     return _render_chat(request, new_state, partial=True)
+
+
+@app.post("/assess/edit", response_class=HTMLResponse)
+def assess_edit(request: Request, index: int = Form(...), message: str = Form("")) -> Any:
+    """Replace an earlier answer: rewind to just before it and answer again."""
+    current = _saved_chat()
+    snapshots = [ChatState.load(raw) for raw in store.chat_snapshots()]
+    base = rewind(current, index, snapshots)
+    if base is None or not message.strip():
+        return _render_chat(request, current, partial=True)
+    return _render_chat(request, _save_chat(
+        next_turn(base, message, api_key=get_config().anthropic_api_key)), partial=True)
+
+
+@app.post("/assess/new")
+def assess_new() -> RedirectResponse:
+    """Start a new conversation. Earlier ones stay in the local database."""
+    _save_chat(ChatState.start())
+    return RedirectResponse(url="/assess", status_code=303)
 
 
 @app.post("/assess/resume", response_class=HTMLResponse)
 def assess_resume(request: Request, state: str = Form("")) -> Any:
-    return _render_chat(request, ChatState.load(state))
+    if not state:
+        return _render_chat(request, _saved_chat())
+    return _render_chat(request, _adopt_chat(state))
 
 
 @app.post("/assess/plan", response_class=HTMLResponse)
@@ -295,6 +364,8 @@ async def assess_plan(request: Request) -> Any:
     prefilled from the last assessment.
     """
     form = dict(await request.form())
+    if form.get("state"):
+        _adopt_chat(str(form["state"]))
     intake = Intake.from_form(form)
     last = store.get_last_intake()
     env = {k: last[k] for k in RUN_FIELDS if k in last and k not in form}
@@ -306,6 +377,7 @@ async def assess_plan(request: Request) -> Any:
         request, "plan.html", active="assess",
         intake=intake, plan=plan, labels=_intake_labels(), chat_state=form.get("state", ""),
         run_fields=RUN_FIELDS, live_token=pipeline.get_live_token() is not None,
+        epic_client_id=bool(get_config().oauth_client_id),
     )
 
 
@@ -397,7 +469,6 @@ def config_page(request: Request, saved: bool = False) -> Any:
 
 @app.post("/config")
 def save_config(
-    run_mode: str = Form("mock"),
     fhir_base_url: str = Form(""),
     smart_launch_url: str = Form(""),
     smart_token_url: str = Form(""),
@@ -407,7 +478,6 @@ def save_config(
 ) -> RedirectResponse:
     store.save_config_defaults(
         {
-            "run_mode": run_mode,
             "fhir_base_url": fhir_base_url,
             "smart_launch_url": smart_launch_url,
             "smart_token_url": smart_token_url,
@@ -459,6 +529,12 @@ def start_launch(request: Request) -> RedirectResponse:
         aud=config.fhir_base_url,
     )
     return RedirectResponse(url=url, status_code=302)
+
+
+@app.get("/launch/status")
+def launch_status() -> dict[str, bool]:
+    """Whether a SMART sign-in has completed; the plan page polls this."""
+    return {"signed_in": pipeline.get_live_token() is not None}
 
 
 @app.get("/callback", response_class=HTMLResponse)

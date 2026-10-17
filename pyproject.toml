@@ -43,6 +43,7 @@ include = ["epic_compliance*"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 markers = [
+    "smoke: whole tool end to end on sample Epic responses; offline, no credentials (CI gate)",
     "live: hits real Epic sandbox endpoints over the network (no credentials needed)",
     "launch: full interactive SMART launch; needs EPIC_SANDBOX_CLIENT_ID + --launch-interactive",
 ]

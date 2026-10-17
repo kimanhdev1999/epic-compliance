@@ -46,7 +46,9 @@ class Intake(BaseModel):
     baa_status: str = ""
 
     # Where to run.
-    run_mode: Literal["mock", "live"] = "mock"
+    # The web UI always tests against the Epic sandbox. "mock" (sample
+    # responses) is only for the smoke test and development (ADR-014).
+    run_mode: Literal["mock", "live"] = "live"
     fhir_base_url: str = ""
     oauth_client_id: str = ""
     app_redirect_uri: str = ""

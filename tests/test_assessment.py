@@ -67,6 +67,7 @@ class TestBuildPlan:
 
 class _NoKeyConfig:
     anthropic_api_key = ""
+    oauth_client_id = ""
     fhir_base_url = "https://example.test/FHIR/R4"
 
 
@@ -143,6 +144,7 @@ class TestChatIntake:
             "covered": ["users", "platform", "data"],
             "reply": "Which health system is this for, and do you know your TLS version?",
             "suggestions": ["Not sure yet"],
+            "done": False,
         }
         sent = {}
 
@@ -162,6 +164,40 @@ class TestChatIntake:
             ("DermScan", "clinicians", True, True, False)
         assert not state.ready and state.suggestions == ["Not sure yet"]
         assert state.messages[-1]["content"] == out["reply"]
+
+    def test_summary_waits_until_claude_has_no_more_questions(self, monkeypatch):
+        import json
+        from types import SimpleNamespace
+
+        import anthropic
+
+        def reply(done):
+            return {
+                "updates": {k: "" for k in ("app_name", "health_system", "users", "platform",
+                                            "tls_version", "audit_logging", "audit_retention_days",
+                                            "baa_status")}
+                | {k: "unknown" for k in ("reads_chart", "saves_images", "writes_back", "third_party_ai")},
+                "covered": ["users", "platform", "data", "security"],
+                "reply": "Do you have a BAA with AWS?" if not done else "That's everything.",
+                "suggestions": ["Yes", "Not yet"] if not done else [],
+                "done": done,
+            }
+        outs = iter([reply(False), reply(True)])
+
+        class FakeMessages:
+            def create(self, **kw):
+                return SimpleNamespace(stop_reason="end_turn", content=[
+                    SimpleNamespace(type="text", text=json.dumps(next(outs)))])
+
+        monkeypatch.setattr(anthropic, "Anthropic", lambda **kw: SimpleNamespace(messages=FakeMessages()))
+        state = next_turn(ChatState.start(), "TLS: not sure", api_key="sk-test")
+        assert not state.ready and state.suggestions == ["Yes", "Not yet"]  # still asking
+        state = next_turn(state, "Not yet", api_key="sk-test")
+        assert state.ready and not state.suggestions
+
+    def test_old_saved_state_without_asking_still_loads(self):
+        raw = ChatState.start().model_dump_json().replace(',"asking":false', "")
+        assert ChatState.load(raw).asking is False
 
     def test_state_round_trips_and_bad_state_restarts(self):
         state = self._say(ChatState.start(), "A mobile app clinicians use")
@@ -200,9 +236,26 @@ class TestAssessmentRoutes:
         assert "security" in resp.text.lower()  # users, platform, data known -> asks security
         assert "Generate test plan" not in resp.text
 
-    def test_plan_lists_run_choice_and_back_to_chat(self, client):
+    def test_plan_runs_against_the_epic_sandbox_only(self, client):
         resp = client.post("/assess/plan", data=self.FORM)
-        assert "Where should we test?" in resp.text and "Back to chat" in resp.text
+        assert "Back to chat" in resp.text
+        assert "Demo data" not in resp.text and 'name="run_mode" value="live"' in resp.text
+
+    def test_run_is_locked_until_signed_in_to_epic(self, client, monkeypatch):
+        from epic_compliance import pipeline
+        monkeypatch.setattr(pipeline, "get_live_token", lambda: None)
+        resp = client.post("/assess/plan", data=self.FORM)
+        assert 'id="run-btn" class="btn big" disabled' in resp.text
+        assert client.get("/launch/status").json() == {"signed_in": False}
+
+        monkeypatch.setattr(pipeline, "get_live_token", lambda: object())
+        resp = client.post("/assess/plan", data=self.FORM)
+        assert 'id="run-btn" class="btn big" >' in resp.text
+        assert client.get("/launch/status").json() == {"signed_in": True}
+
+    def test_intake_defaults_to_the_epic_sandbox(self):
+        from epic_compliance.assessment import Intake
+        assert Intake().run_mode == "live" and Intake.from_form({}).run_mode == "live"
 
     def test_plan_lists_selected_and_skipped_checks(self, client):
         resp = client.post("/assess/plan", data=self.FORM)
@@ -227,3 +280,84 @@ class TestAssessmentRoutes:
 
         runs = client.get("/api/runs").json()
         assert runs[0]["app_name"] == "DermScan"
+
+
+class TestSavedConversation:
+    """The chat is saved locally and earlier answers can be edited (ADR-013)."""
+
+    @pytest.fixture
+    def client(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("EPIC_COMPLIANCE_DB", str(tmp_path / "runs.db"))
+        monkeypatch.setattr("epic_compliance.api.get_config", lambda: _NoKeyConfig())
+        from fastapi.testclient import TestClient
+
+        from epic_compliance.api import app
+
+        return TestClient(app)
+
+    def _say(self, client, text):
+        from epic_compliance import store
+        state = store.latest_chat_state() or ""
+        return client.post("/assess/chat", data={"message": text, "state": state})
+
+    def _saved(self):
+        from epic_compliance import store
+        return ChatState.load(store.latest_chat_state())
+
+    def test_conversation_survives_reload(self, client):
+        self._say(client, "A mobile app dermatologists use to photograph lesions")
+        page = client.get("/assess")
+        assert "photograph lesions" in page.text and "What are you building?" not in page.text
+        assert "New conversation" in page.text and 'hx-post="/assess/edit"' in page.text
+
+    def test_edit_rewinds_to_before_the_message(self, client):
+        self._say(client, "A mobile app clinicians use to view the chart")
+        self._say(client, "It also writes visit notes back")
+        assert self._saved().intake.writes_back
+
+        # Edit the second answer (index 3: opener, user, assistant, user).
+        resp = client.post("/assess/edit", data={"index": 3, "message": "Not sure yet"})
+        assert resp.status_code == 200
+        state = self._saved()
+        assert not state.intake.writes_back          # the edited answer is gone
+        assert state.intake.platform == "mobile"     # earlier answers kept
+        assert [m["content"] for m in state.messages if m["role"] == "user"] == \
+            ["A mobile app clinicians use to view the chart", "Not sure yet"]
+
+    def test_edit_first_message_starts_from_scratch(self, client):
+        self._say(client, "A mobile app clinicians use")
+        client.post("/assess/edit", data={"index": 1, "message": "A web app patients use via MyChart"})
+        i = self._saved().intake
+        assert i.users == "patients"
+        assert i.description == "A web app patients use via MyChart"
+
+    def test_edit_ignores_bad_index(self, client):
+        self._say(client, "A mobile app clinicians use")
+        before = self._saved()
+        client.post("/assess/edit", data={"index": 0, "message": "x"})  # assistant message
+        client.post("/assess/edit", data={"index": 99, "message": "x"})
+        assert self._saved() == before
+
+    def test_new_conversation_keeps_the_old_one(self, client):
+        from epic_compliance import store
+        self._say(client, "A mobile app clinicians use")
+        resp = client.post("/assess/new", follow_redirects=False)
+        assert resp.status_code == 303
+        assert "What are you building?" in client.get("/assess").text
+        assert any("A mobile app clinicians use" in raw for raw in store.chat_snapshots())
+
+    def test_home_counts_a_described_app_before_any_run(self, client, monkeypatch):
+        from epic_compliance.config import get_config
+        self._say(client, "We're building DermScan, a mobile app clinicians use")
+        monkeypatch.setattr("epic_compliance.api.get_config", get_config)  # Home needs the full config
+        assert "DermScan" in client.get("/").text
+
+    def test_plan_and_back_to_chat_save_a_conversation_from_an_old_tab(self, client):
+        from epic_compliance import store
+        from epic_compliance.intake_chat import next_turn
+        old_tab = next_turn(ChatState.start(), "A mobile app clinicians use", api_key="")
+        client.post("/assess/plan", data={**TestAssessmentRoutes.FORM, "state": old_tab.model_dump_json()})
+        assert self._saved() == old_tab
+        assert len(store.chat_snapshots()) == 1
+        client.post("/assess/resume", data={"state": old_tab.model_dump_json()})
+        assert len(store.chat_snapshots()) == 1  # already saved, not duplicated
