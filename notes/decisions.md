@@ -418,6 +418,9 @@ compliance-automation tools:
   history; without HTMX the same URL is a full page.
 - **Integrations**: Epic sandbox, Claude, HL7 FHIR validator, ONC test kit,
   each with a status and the tests it unlocks.
+  Claude (`ANTHROPIC_API_KEY`) is expected to be set, so the Get-started
+  checklist has no "Connect Claude" step; the Integrations card still shows
+  its status, and without a key the chat and SEC-00x checks fall back as before.
 - **Re-run tests** (`POST /assess/rerun`) re-runs the saved plan, standing in
   for continuous monitoring.
 
@@ -442,3 +445,43 @@ the workspace shows progress across those runs.
 - `/` is now Home; the chat moved to `/assess`.
 - The light theme (dark-mode aware) replaces the dark GitHub-style theme.
 
+
+## ADR-013: Save the describe-your-app conversation and allow editing answers
+**Date:** 2026-10-17  **Status:** Accepted
+
+### Context
+The chat state lived only in the browser page (a hidden form field). The
+answers reached the database only when a run started (`last_intake`). Closing
+the tab before running lost the whole conversation. Apps also change over the
+weeks of a health-system review, so an answer given earlier ("read-only")
+needs to be corrected later.
+
+### Decision
+- Every chat turn appends a snapshot of the full `ChatState` to a new
+  `chat_turns` table in the local SQLite DB (`store.save_chat_state`). The
+  newest row is the current conversation, and `/assess` opens it.
+- **Edit an answer:** each of the user's messages has an Edit button
+  (`POST /assess/edit`). It rewinds to the snapshot taken just before that
+  message (`intake_chat.rewind`), so the intake reflects only the earlier
+  answers. The edited message is then answered as a new turn, and later
+  messages are replaced. If no exact snapshot exists (older turns were
+  trimmed by `MAX_TURNS`), it keeps the current intake and drops the later
+  messages.
+- **New conversation** (`POST /assess/new`) saves a fresh start as the newest
+  snapshot. Earlier conversations stay in the table.
+- Home and the sidebar use the saved conversation's answers until the first
+  run saves `last_intake`.
+
+### Reasoning
+Append-only snapshots are the simplest way to support both "resume later" and
+"edit an earlier answer" correctly. Replaying the conversation to rebuild the
+intake would mean new Claude calls and could give different answers. The rows
+are small, and the DB is local and single-tenant like the rest of the tool.
+
+### Consequences / limits
+- The conversation can contain PHI-adjacent product details but not patient
+  data; it is stored only in the local DB, like run history.
+- No UI yet to browse or restore older conversations; they are kept in
+  `chat_turns` for that later.
+- Editing an answer doesn't change existing reports. Run the plan again to
+  apply it.

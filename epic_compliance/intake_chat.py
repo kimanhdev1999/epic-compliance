@@ -134,6 +134,25 @@ def next_turn(state: ChatState, message: str, api_key: str = "") -> ChatState:
     return _rule_turn(state, message)
 
 
+def rewind(current: ChatState, index: int, snapshots: list[ChatState]) -> ChatState | None:
+    """The state just before ``current.messages[index]`` (a user message), so it
+    can be replaced with an edited one. ``snapshots`` are the saved states.
+
+    Prefers a saved snapshot whose transcript is exactly that prefix, since its
+    intake reflects only the earlier answers. If none matches (older turns were
+    trimmed), it falls back to the prefix with the current intake.
+    """
+    if not (0 <= index < len(current.messages)) or current.messages[index]["role"] != "user":
+        return None
+    prefix = current.messages[:index]
+    if index == 1 and prefix[0]["content"] == OPENING:
+        return ChatState.start()
+    for snap in snapshots:
+        if snap.messages == prefix:
+            return snap.model_copy(deep=True)
+    return current.model_copy(deep=True, update={"messages": prefix, "suggestions": []})
+
+
 def _finish(state: ChatState, reply: str, suggestions: list[str]) -> ChatState:
     state.messages.append({"role": "assistant", "content": reply})
     state.suggestions = suggestions

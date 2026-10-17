@@ -113,3 +113,22 @@ main.chat-main .stepper { max-width: 768px; width: 100%; margin: 0 auto 0.5rem; 
   .greeting h1 { font-size: 1.6rem; }
 }
 .chat:not(.fresh) .greeting { display: none; }
+
+/* Editing an earlier answer (ADR-013) */
+.user-turn { display: flex; flex-direction: column; align-items: flex-end; max-width: 75%; }
+.msg.user .edit-msg { margin-top: 0.25rem; border: none; background: none; color: var(--c-muted); font: inherit; font-size: 0.78rem; cursor: pointer; padding: 0.15rem 0.4rem; border-radius: 6px; opacity: 0; transition: opacity 0.15s; }
+.msg.user:hover .edit-msg, .edit-msg:focus-visible { opacity: 1; }
+.edit-msg:hover { background: var(--c-soft); color: inherit; }
+@media (hover: none) { .edit-msg { opacity: 1; } }
+.user-turn.editing { width: 100%; max-width: 100%; }
+.user-turn.editing .bubble, .user-turn.editing .edit-msg { display: none; }
+.edit-form { width: 100%; }
+.edit-form textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 0.95rem; line-height: 1.5; padding: 0.7rem 0.9rem; border: 1px solid var(--c-border); border-radius: 14px; background: var(--c-card); color: inherit; resize: vertical; }
+.edit-hint { margin: 0.35rem 0 0; font-size: 0.78rem; color: var(--c-muted); }
+.edit-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
+.edit-actions button { font: inherit; font-size: 0.85rem; padding: 0.4rem 0.9rem; border-radius: 999px; cursor: pointer; }
+.btn-ghost { border: 1px solid var(--c-border); background: none; color: inherit; }
+.btn-save { border: none; background: var(--c-primary); color: var(--c-primary-fg); }
+.edit-form.busy { opacity: 0.6; pointer-events: none; }
+.inline-form { display: inline; margin: 0; }
+.link-btn { border: none; background: none; padding: 0; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }

@@ -227,3 +227,74 @@ class TestAssessmentRoutes:
 
         runs = client.get("/api/runs").json()
         assert runs[0]["app_name"] == "DermScan"
+
+
+class TestSavedConversation:
+    """The chat is saved locally and earlier answers can be edited (ADR-013)."""
+
+    @pytest.fixture
+    def client(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("EPIC_COMPLIANCE_DB", str(tmp_path / "runs.db"))
+        monkeypatch.setattr("epic_compliance.api.get_config", lambda: _NoKeyConfig())
+        from fastapi.testclient import TestClient
+
+        from epic_compliance.api import app
+
+        return TestClient(app)
+
+    def _say(self, client, text):
+        from epic_compliance import store
+        state = store.latest_chat_state() or ""
+        return client.post("/assess/chat", data={"message": text, "state": state})
+
+    def _saved(self):
+        from epic_compliance import store
+        return ChatState.load(store.latest_chat_state())
+
+    def test_conversation_survives_reload(self, client):
+        self._say(client, "A mobile app dermatologists use to photograph lesions")
+        page = client.get("/assess")
+        assert "photograph lesions" in page.text and "What are you building?" not in page.text
+        assert "New conversation" in page.text and 'hx-post="/assess/edit"' in page.text
+
+    def test_edit_rewinds_to_before_the_message(self, client):
+        self._say(client, "A mobile app clinicians use to view the chart")
+        self._say(client, "It also writes visit notes back")
+        assert self._saved().intake.writes_back
+
+        # Edit the second answer (index 3: opener, user, assistant, user).
+        resp = client.post("/assess/edit", data={"index": 3, "message": "Not sure yet"})
+        assert resp.status_code == 200
+        state = self._saved()
+        assert not state.intake.writes_back          # the edited answer is gone
+        assert state.intake.platform == "mobile"     # earlier answers kept
+        assert [m["content"] for m in state.messages if m["role"] == "user"] == \
+            ["A mobile app clinicians use to view the chart", "Not sure yet"]
+
+    def test_edit_first_message_starts_from_scratch(self, client):
+        self._say(client, "A mobile app clinicians use")
+        client.post("/assess/edit", data={"index": 1, "message": "A web app patients use via MyChart"})
+        i = self._saved().intake
+        assert i.users == "patients"
+        assert i.description == "A web app patients use via MyChart"
+
+    def test_edit_ignores_bad_index(self, client):
+        self._say(client, "A mobile app clinicians use")
+        before = self._saved()
+        client.post("/assess/edit", data={"index": 0, "message": "x"})  # assistant message
+        client.post("/assess/edit", data={"index": 99, "message": "x"})
+        assert self._saved() == before
+
+    def test_new_conversation_keeps_the_old_one(self, client):
+        from epic_compliance import store
+        self._say(client, "A mobile app clinicians use")
+        resp = client.post("/assess/new", follow_redirects=False)
+        assert resp.status_code == 303
+        assert "What are you building?" in client.get("/assess").text
+        assert any("A mobile app clinicians use" in raw for raw in store.chat_snapshots())
+
+    def test_home_counts_a_described_app_before_any_run(self, client, monkeypatch):
+        from epic_compliance.config import get_config
+        self._say(client, "We're building DermScan, a mobile app clinicians use")
+        monkeypatch.setattr("epic_compliance.api.get_config", get_config)  # Home needs the full config
+        assert "DermScan" in client.get("/").text

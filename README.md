@@ -54,6 +54,9 @@ that turn tests into real results, and a **Get started** checklist on Home.
    you to confirm or correct. With `ANTHROPIC_API_KEY` set, Claude runs the
    conversation; without one, a keyword parser with scripted follow-ups does,
    so it works offline too.
+   The conversation is saved in the local database, so you can come back to
+   it. If your app changes, click **Edit** on any earlier answer and the chat
+   continues from there.
 2. **Review the test plan** — the tests your answers call for, each with
    *why* it's included, plus the tests that don't apply, and pick where to
    test (demo data or the Epic sandbox). Nothing has run yet.
@@ -63,7 +66,7 @@ that turn tests into real results, and a **Get started** checklist on Home.
 
 | Page | What it shows |
 |---|---|
-| **Home** | Get-started checklist (describe → run → connect Epic → connect Claude → fix failing → resolve reviews → share), overall readiness, readiness per framework, **Needs attention**, readiness over time, integration status |
+| **Home** | Get-started checklist (describe → run → connect Epic → fix failing → resolve reviews → share), overall readiness, readiness per framework, **Needs attention**, readiness over time, integration status |
 | **Frameworks** | ONC (g)(10), SMART App Launch, US Core / FHIR R4, Epic requirements, HIPAA Security Rule, Patient safety. Each test counts toward every framework its source cites, so SEC-001 counts for both ONC and HIPAA |
 | **Tests** | Every test, with status **Failing / Needs review / Passing / Not applicable**. Filter by status, framework or category, or search. Click a test to open a side panel with the result, how to fix it, why it's in scope, and its history across runs |
 | **Integrations** | Epic sandbox, Claude, HL7 FHIR validator, ONC test kit: whether each is connected, and which tests it unlocks |
