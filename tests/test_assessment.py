@@ -67,6 +67,7 @@ class TestBuildPlan:
 
 class _NoKeyConfig:
     anthropic_api_key = ""
+    oauth_client_id = ""
     fhir_base_url = "https://example.test/FHIR/R4"
 
 
@@ -235,9 +236,26 @@ class TestAssessmentRoutes:
         assert "security" in resp.text.lower()  # users, platform, data known -> asks security
         assert "Generate test plan" not in resp.text
 
-    def test_plan_lists_run_choice_and_back_to_chat(self, client):
+    def test_plan_runs_against_the_epic_sandbox_only(self, client):
         resp = client.post("/assess/plan", data=self.FORM)
-        assert "Where should we test?" in resp.text and "Back to chat" in resp.text
+        assert "Back to chat" in resp.text
+        assert "Demo data" not in resp.text and 'name="run_mode" value="live"' in resp.text
+
+    def test_run_is_locked_until_signed_in_to_epic(self, client, monkeypatch):
+        from epic_compliance import pipeline
+        monkeypatch.setattr(pipeline, "get_live_token", lambda: None)
+        resp = client.post("/assess/plan", data=self.FORM)
+        assert 'id="run-btn" class="btn big" disabled' in resp.text
+        assert client.get("/launch/status").json() == {"signed_in": False}
+
+        monkeypatch.setattr(pipeline, "get_live_token", lambda: object())
+        resp = client.post("/assess/plan", data=self.FORM)
+        assert 'id="run-btn" class="btn big" >' in resp.text
+        assert client.get("/launch/status").json() == {"signed_in": True}
+
+    def test_intake_defaults_to_the_epic_sandbox(self):
+        from epic_compliance.assessment import Intake
+        assert Intake().run_mode == "live" and Intake.from_form({}).run_mode == "live"
 
     def test_plan_lists_selected_and_skipped_checks(self, client):
         resp = client.post("/assess/plan", data=self.FORM)

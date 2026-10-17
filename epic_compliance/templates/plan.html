@@ -49,31 +49,30 @@
 </details>
 {% endif %}
 
-<h2>Where should we test?</h2>
+<h2>Epic sandbox</h2>
 <form method="post" action="/assess/run" id="run-form" onsubmit="document.getElementById('run-btn').disabled=true; document.getElementById('running').hidden=false;">
+  <input type="hidden" name="run_mode" value="live">
   {% for k, v in intake.model_dump().items() if k not in run_fields %}
     {% if v is sameas true %}<input type="hidden" name="{{ k }}" value="on">
     {% elif v is not sameas false %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}
   {% endfor %}
   <div class="card">
-    <div class="choices">
-      <label class="choice">
-        <input type="radio" name="run_mode" value="mock" {{ 'checked' if intake.run_mode != 'live' }}>
-        <span><strong>Demo data</strong><small>Runs offline against sample Epic responses. No credentials needed, so it's a good way to see the plan and the report.</small></span>
-      </label>
-      <label class="choice">
-        <input type="radio" name="run_mode" value="live" {{ 'checked' if intake.run_mode == 'live' }}>
-        <span><strong>Epic sandbox (live)</strong><small>Real calls with your non-production client ID from fhir.epic.com.</small></span>
-      </label>
+    <p class="muted" style="margin-top:0">These checks make real SMART sign-in and FHIR calls to Epic's non-production sandbox
+      (fhir.epic.com) as your app. They write test photos and notes to a sandbox test patient only.</p>
+    {% if not epic_client_id %}
+    <div class="callout warn" id="epic-gate">
+      <strong>Add your Epic client ID to run these checks.</strong>
+      Set <code class="inline">OAUTH_CLIENT_ID</code> in <code class="inline">.env</code> to your app's non-production client ID
+      from fhir.epic.com, then restart the tool.
     </div>
-    <div class="live-only">
-      {% if not live_token %}
-      <div class="callout warn" style="margin-top:1rem">
-        <strong>Sign in to the Epic sandbox first.</strong> Checks that need a real access token come back
-        <em>Needs review</em> until you do. <a href="/launch" target="_blank">Start SMART sign-in &rarr;</a>
-        <div class="hint">Uses the client ID from <code class="inline">.env</code>. Finish the sign-in in the new tab, then run from here.</div>
-      </div>
-      {% endif %}
+    {% elif not live_token %}
+    <div class="callout warn" id="epic-gate">
+      <strong>Sign in to the Epic sandbox to run these checks.</strong>
+      <a href="/launch" target="_blank">Start SMART sign-in &rarr;</a>
+      <div class="hint">Log in with an Epic sandbox test user in the new tab. This page unlocks the run when you're signed in.</div>
+    </div>
+    {% endif %}
+    <div>
       <div class="grid cols-2" style="margin-top:1rem">
         <div class="row"><label for="fhir_base_url">FHIR base URL</label>
           <input type="url" id="fhir_base_url" name="fhir_base_url" value="{{ intake.fhir_base_url }}"></div>
@@ -96,7 +95,22 @@
     <input type="hidden" name="state" value="{{ chat_state }}">
     <button type="submit" class="btn secondary">&larr; Back to chat</button>
   </form>
-  <button type="submit" form="run-form" id="run-btn" class="btn big">Run {{ plan.included|length }} checks</button>
+  <button type="submit" form="run-form" id="run-btn" class="btn big" {{ 'disabled' if not live_token }}>Run {{ plan.included|length }} checks</button>
   <span id="running" class="muted" hidden><span class="spinner dark"></span> Running checks…</span>
 </div>
+{% if epic_client_id and not live_token %}
+<script>
+// Unlock Run once the SMART sign-in in the other tab completes.
+(function poll() {
+  fetch('/launch/status').then(function (r) { return r.json(); }).then(function (s) {
+    if (s.signed_in) {
+      document.getElementById('run-btn').disabled = false;
+      var gate = document.getElementById('epic-gate');
+      gate.className = 'callout ok';
+      gate.innerHTML = '<strong>Signed in to the Epic sandbox.</strong> You can run the checks.';
+    } else { setTimeout(poll, 2000); }
+  }).catch(function () { setTimeout(poll, 5000); });
+})();
+</script>
+{% endif %}
 {% endblock %}

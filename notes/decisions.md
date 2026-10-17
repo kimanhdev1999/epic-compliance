@@ -485,3 +485,36 @@ are small, and the DB is local and single-tenant like the rest of the tool.
   `chat_turns` for that later.
 - Editing an answer doesn't change existing reports. Run the plan again to
   apply it.
+
+## ADR-014: Sample-data ("demo") mode becomes a smoke test, not a UI choice
+**Date:** 2026-10-17  **Status:** Accepted
+
+### Context
+The plan page offered "Demo data" next to "Epic sandbox (live)". Demo runs
+use built-in sample Epic responses that are written to be correct, so most
+tests pass and the report says nothing about the user's integration. Users of
+an Epic integration tool found the choice confusing and the results
+misleading. In demo mode the SEC-* rules also skipped Claude even with a key.
+
+### Decision
+- The web UI only runs against the Epic sandbox. The plan page no longer asks
+  where to test. Run is disabled until a SMART sign-in has completed, and the
+  page polls `GET /launch/status` to unlock it. Without `OAUTH_CLIENT_ID` it
+  says to add one. `Intake.run_mode` defaults to `live`.
+- The Home checklist connects the Epic sandbox before the first run. Settings
+  no longer has a run-mode field.
+- Sample-data mode (`RUN_MODE=mock`, `run_mode=mock` on the routes) stays for
+  development and as the **smoke test**: `tests/test_smoke.py` (`pytest -m
+  smoke`) runs chat → plan → run → report → every workspace page → rerun for a
+  clinician and a patient app, plus the CLI, with no network, credentials or
+  Claude key.
+- `.github/workflows/ci.yml` runs the smoke test, then the unit tests, on
+  every pull request and push to main. `live` and `launch` tests don't run in
+  CI.
+
+### Consequences
+- Nothing can be run from the UI without a registered non-production Epic
+  app. That's the point: only sandbox results mean anything to a health system.
+- Every UI run is live, so SEC-001..003 are always judged by Claude when a key
+  is set.
+- Old demo runs in the history still show as "Demo data".

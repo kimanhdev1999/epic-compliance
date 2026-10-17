@@ -5,7 +5,7 @@ set of Epic integration checks it needs, and see what is blocking go-live —
 ONC (g)(10), SMART on FHIR, US Core, and the security questions a health
 system's review will ask — before you sit down with their Epic team.
 
-It connects to a FHIR server (the Epic sandbox, or offline demo data), collects
+It connects to Epic's non-production sandbox as your app, collects
 evidence (SMART configuration, OAuth token, US Core resources, the resources
 your app writes), runs the checks that apply to your app — deterministic
 probes plus LLM-assisted review of your security answers — and produces a
@@ -58,8 +58,9 @@ that turn tests into real results, and a **Get started** checklist on Home.
    it. If your app changes, click **Edit** on any earlier answer and the chat
    continues from there.
 2. **Review the test plan** — the tests your answers call for, each with
-   *why* it's included, plus the tests that don't apply, and pick where to
-   test (demo data or the Epic sandbox). Nothing has run yet.
+   *why* it's included, plus the tests that don't apply. Sign in to the Epic
+   sandbox with your non-production client ID; **Run** unlocks once you're
+   signed in. Nothing has run yet.
 3. **See results** — the run lands in the workspace.
 
 **The workspace (day to day):**
@@ -110,10 +111,9 @@ approval oracle:
 - It is a client-side check: it verifies the requests your registration can make. It does not host or validate a FHIR server of your own.
 - It is not the health system's review. Their Epic, security and vendor-risk teams decide; a clean run is evidence you bring to that conversation.
 
-Practical way to use it: run it on demo data to see your plan, run it against
-the Epic sandbox with your non-production client ID before you meet the health
-system, and keep running the CLI in CI so a regression in your login or scopes
-fails the build. (Caveat: the in-pipeline token exchange is still stubbed — see
+Practical way to use it: run it against the Epic sandbox with your
+non-production client ID before you meet the health system, and re-run it as
+your app changes. (Caveat: the in-pipeline token exchange is still stubbed — see
 the status table below.)
 
 ## What it gives you
@@ -121,7 +121,7 @@ the status table below.)
 - **Web UI** — the workspace above: chat onboarding, Home, Frameworks, Tests, Integrations, Reports (HTML export, printable/PDF). FastAPI + Jinja + HTMX.
 - **CLI** — `python -m epic_compliance run` runs every rule for the configured launch profile, prints a colored findings table, and exits non-zero on failures (CI-friendly).
 - **JSON API** — `/api/run`, `/api/runs`, `/api/runs/{id}` for integration.
-- **Demo (mock) mode** — the whole pipeline runs offline against fixtures, with no credentials and no API key. This is the default.
+- **Smoke test** — `pytest -m smoke` runs the whole tool (chat → plan → run → report → every page, plus the CLI) offline on sample Epic responses, with no credentials and no API key. CI runs it on every pull request (`.github/workflows/ci.yml`). It checks that the tool works, not your integration; the sample-data mode it uses (`RUN_MODE=mock`) isn't offered in the web UI (ADR-014).
 
 ## Quick start
 
@@ -131,8 +131,9 @@ pip install -e ".[dev]"
 cp .env.example .env          # optional; defaults work in mock mode
 
 python -m epic_compliance serve   # web UI at http://localhost:8000 — Home, then "Describe your app"
-python -m epic_compliance run     # CLI run (mock)
-pytest -v                         # tests
+RUN_MODE=mock python -m epic_compliance run   # CLI run on sample data
+pytest -m smoke                   # smoke test: the whole tool, offline
+pytest -v                         # all tests
 ```
 
 Requires Python 3.11+. An `ANTHROPIC_API_KEY` is optional — without it, LLM

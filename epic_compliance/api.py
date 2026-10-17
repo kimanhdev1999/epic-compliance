@@ -377,6 +377,7 @@ async def assess_plan(request: Request) -> Any:
         request, "plan.html", active="assess",
         intake=intake, plan=plan, labels=_intake_labels(), chat_state=form.get("state", ""),
         run_fields=RUN_FIELDS, live_token=pipeline.get_live_token() is not None,
+        epic_client_id=bool(get_config().oauth_client_id),
     )
 
 
@@ -468,7 +469,6 @@ def config_page(request: Request, saved: bool = False) -> Any:
 
 @app.post("/config")
 def save_config(
-    run_mode: str = Form("mock"),
     fhir_base_url: str = Form(""),
     smart_launch_url: str = Form(""),
     smart_token_url: str = Form(""),
@@ -478,7 +478,6 @@ def save_config(
 ) -> RedirectResponse:
     store.save_config_defaults(
         {
-            "run_mode": run_mode,
             "fhir_base_url": fhir_base_url,
             "smart_launch_url": smart_launch_url,
             "smart_token_url": smart_token_url,
@@ -530,6 +529,12 @@ def start_launch(request: Request) -> RedirectResponse:
         aud=config.fhir_base_url,
     )
     return RedirectResponse(url=url, status_code=302)
+
+
+@app.get("/launch/status")
+def launch_status() -> dict[str, bool]:
+    """Whether a SMART sign-in has completed; the plan page polls this."""
+    return {"signed_in": pipeline.get_live_token() is not None}
 
 
 @app.get("/callback", response_class=HTMLResponse)

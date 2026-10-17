@@ -355,7 +355,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 .inline-check { display: flex; gap: 0.5rem; align-items: center; color: var(--text); }
 .callout { border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); background: color-mix(in srgb, var(--accent) 6%, transparent); border-radius: var(--radius); padding: 0.85rem 1rem; margin: 0 0 1rem; font-size: 0.9rem; }
 .callout.warn { border-color: color-mix(in srgb, var(--warn) 40%, transparent); background: color-mix(in srgb, var(--warn) 8%, transparent); }
-.card:has(input[name=run_mode][value=mock]:checked) .live-only { display: none; }
+.callout.ok { border-color: color-mix(in srgb, var(--pass) 40%, transparent); background: color-mix(in srgb, var(--pass) 8%, transparent); }
 
 /* Tables (reports list) */
 table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
