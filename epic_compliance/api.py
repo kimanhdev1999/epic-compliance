@@ -61,6 +61,17 @@ app = FastAPI(title="Epic Compliance Tool", version="0.2.0")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
+
+def _asset(path: str) -> str:
+    """Static URL with the file's mtime, so browsers fetch CSS/JS again after a change."""
+    try:
+        return f"/static/{path}?v={int((BASE_DIR / 'static' / path).stat().st_mtime)}"
+    except OSError:
+        return f"/static/{path}"
+
+
+templates.env.globals["asset"] = _asset
+
 _last_report: Report | None = None
 
 # Pending live launches, keyed by the random `state` value, holding the PKCE

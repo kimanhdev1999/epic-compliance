@@ -116,7 +116,8 @@ main.chat-main .stepper { max-width: 768px; width: 100%; margin: 0 auto 0.5rem; 
 
 /* Editing an earlier answer (ADR-013) */
 .user-turn { display: flex; flex-direction: column; align-items: flex-end; max-width: 75%; }
-.msg.user .edit-msg { margin-top: 0.25rem; border: none; background: none; color: var(--c-muted); font: inherit; font-size: 0.78rem; cursor: pointer; padding: 0.15rem 0.4rem; border-radius: 6px; opacity: 0; transition: opacity 0.15s; }
+.msg.user .user-turn .bubble { max-width: none; }
+.edit-msg { margin-top: 0.25rem; border: none; background: none; color: var(--c-muted); font: inherit; font-size: 0.78rem; cursor: pointer; padding: 0.15rem 0.4rem; border-radius: 6px; opacity: 0; transition: opacity 0.15s; }
 .msg.user:hover .edit-msg, .edit-msg:focus-visible { opacity: 1; }
 .edit-msg:hover { background: var(--c-soft); color: inherit; }
 @media (hover: none) { .edit-msg { opacity: 1; } }
@@ -132,3 +133,4 @@ main.chat-main .stepper { max-width: 768px; width: 100%; margin: 0 auto 0.5rem; 
 .edit-form.busy { opacity: 0.6; pointer-events: none; }
 .inline-form { display: inline; margin: 0; }
 .link-btn { border: none; background: none; padding: 0; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }
+.link-btn:hover { color: var(--c-fg); }
