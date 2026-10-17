@@ -76,7 +76,7 @@
     <form id="chat-form" class="composer" hx-post="/assess/chat" hx-target="#chat" hx-swap="outerHTML">
       <input type="hidden" name="state" value="{{ state.model_dump_json() }}">
       <textarea name="message" rows="1" maxlength="2000" autofocus aria-label="Message"
-                placeholder="{{ 'Describe your app…' if fresh else ('Reply, or correct anything above…' if state.ready else 'Reply…') }}"></textarea>
+                placeholder="{{ 'Describe your app…' if fresh else ('Correct anything, or add more detail…' if state.ready else 'Reply…') }}"></textarea>
       <div class="composer-bar">
         <span class="composer-hint">Epic FHIR · SMART on FHIR</span>
         <button type="submit" class="send" aria-label="Send">

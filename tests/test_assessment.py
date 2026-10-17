@@ -143,6 +143,7 @@ class TestChatIntake:
             "covered": ["users", "platform", "data"],
             "reply": "Which health system is this for, and do you know your TLS version?",
             "suggestions": ["Not sure yet"],
+            "done": False,
         }
         sent = {}
 
@@ -162,6 +163,40 @@ class TestChatIntake:
             ("DermScan", "clinicians", True, True, False)
         assert not state.ready and state.suggestions == ["Not sure yet"]
         assert state.messages[-1]["content"] == out["reply"]
+
+    def test_summary_waits_until_claude_has_no_more_questions(self, monkeypatch):
+        import json
+        from types import SimpleNamespace
+
+        import anthropic
+
+        def reply(done):
+            return {
+                "updates": {k: "" for k in ("app_name", "health_system", "users", "platform",
+                                            "tls_version", "audit_logging", "audit_retention_days",
+                                            "baa_status")}
+                | {k: "unknown" for k in ("reads_chart", "saves_images", "writes_back", "third_party_ai")},
+                "covered": ["users", "platform", "data", "security"],
+                "reply": "Do you have a BAA with AWS?" if not done else "That's everything.",
+                "suggestions": ["Yes", "Not yet"] if not done else [],
+                "done": done,
+            }
+        outs = iter([reply(False), reply(True)])
+
+        class FakeMessages:
+            def create(self, **kw):
+                return SimpleNamespace(stop_reason="end_turn", content=[
+                    SimpleNamespace(type="text", text=json.dumps(next(outs)))])
+
+        monkeypatch.setattr(anthropic, "Anthropic", lambda **kw: SimpleNamespace(messages=FakeMessages()))
+        state = next_turn(ChatState.start(), "TLS: not sure", api_key="sk-test")
+        assert not state.ready and state.suggestions == ["Yes", "Not yet"]  # still asking
+        state = next_turn(state, "Not yet", api_key="sk-test")
+        assert state.ready and not state.suggestions
+
+    def test_old_saved_state_without_asking_still_loads(self):
+        raw = ChatState.start().model_dump_json().replace(',"asking":false', "")
+        assert ChatState.load(raw).asking is False
 
     def test_state_round_trips_and_bad_state_restarts(self):
         state = self._say(ChatState.start(), "A mobile app clinicians use")

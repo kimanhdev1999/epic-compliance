@@ -73,10 +73,12 @@ class ChatState(BaseModel):
     intake: Intake = Field(default_factory=Intake)
     known: list[str] = Field(default_factory=list)
     suggestions: list[str] = Field(default_factory=list)
+    #: The assistant's last reply asks something, so the summary waits for the answer.
+    asking: bool = False
 
     @property
     def ready(self) -> bool:
-        return all(t in self.known for t in TOPICS)
+        return not self.asking and all(t in self.known for t in TOPICS)
 
     @classmethod
     def start(cls) -> "ChatState":
@@ -205,6 +207,9 @@ If all four are covered, reply with one sentence saying you have what you need \
 and they can generate the test plan or correct anything. No markdown.
 - `suggestions`: 2-4 short quick-reply options that answer your question, or [] \
 when nothing is open.
+- `done`: true only when all four topics are covered AND your reply asks no \
+question. If you still ask anything (even an optional follow-up), it is false; \
+the summary is shown to the user only once you are done.
 Do not give compliance advice in the chat; the report does that."""
 
 _YES_NO = {"type": "string", "enum": ["yes", "no", "unknown"]}
@@ -238,8 +243,9 @@ OUTPUT_SCHEMA: dict[str, Any] = {
         "covered": {"type": "array", "items": {"type": "string", "enum": list(TOPICS)}},
         "reply": _STR,
         "suggestions": {"type": "array", "items": _STR},
+        "done": {"type": "boolean"},
     },
-    "required": ["updates", "covered", "reply", "suggestions"],
+    "required": ["updates", "covered", "reply", "suggestions", "done"],
     "additionalProperties": False,
 }
 
@@ -272,6 +278,7 @@ def _llm_turn(state: ChatState, api_key: str) -> ChatState:
         updates[key] = (value == "yes") if value in ("yes", "no") else value
     state.intake = state.intake.model_copy(update=updates)
     state.known = [t for t in TOPICS if t in state.known or t in out["covered"]]
+    state.asking = not out.get("done", True)
 
     if state.ready:
         return _finish(state, out["reply"] or READY_REPLY, [])
