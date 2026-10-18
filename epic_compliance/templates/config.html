@@ -45,11 +45,4 @@
   </form>
 </div>
 
-<div class="card">
-  <h2 style="margin-top:0">Anthropic API key</h2>
-  <p class="muted" style="font-size:0.9rem">
-    Status: {% if cfg.anthropic_api_key == '***set***' %}<span class="badge pass">configured</span> in the environment{% else %}<span class="badge needs_human">not set</span> — LLM security rules return “needs human”{% endif %}.
-    Set <code class="inline">ANTHROPIC_API_KEY</code> in your <code class="inline">.env</code>, or supply a key per-run on the dashboard.
-  </p>
-</div>
 {% endblock %}

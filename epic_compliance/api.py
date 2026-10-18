@@ -462,8 +462,7 @@ def config_page(request: Request, saved: bool = False) -> Any:
     cfg = get_config().model_dump()
     defaults = store.get_config_defaults()
     cfg.update({k: v for k, v in defaults.items() if v})
-    if get_config().anthropic_api_key:
-        cfg["anthropic_api_key"] = "***set***"
+    cfg.pop("anthropic_api_key", None)  # never sent to the page
     return render(request, "config.html", active="config", cfg=cfg, saved=saved)
 
 
