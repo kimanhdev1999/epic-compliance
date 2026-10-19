@@ -79,6 +79,22 @@ def init_db() -> None:
         )
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS evidence (
+                id          TEXT PRIMARY KEY,
+                rule_id     TEXT NOT NULL,
+                created_at  TEXT NOT NULL,
+                kind        TEXT NOT NULL,
+                text        TEXT NOT NULL DEFAULT '',
+                filename    TEXT NOT NULL DEFAULT '',
+                media_type  TEXT NOT NULL DEFAULT '',
+                size        INTEGER NOT NULL DEFAULT 0,
+                sha256      TEXT NOT NULL DEFAULT '',
+                stored_name TEXT NOT NULL DEFAULT ''
+            )
+            """
+        )
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS chat_turns (
                 seq        INTEGER PRIMARY KEY AUTOINCREMENT,
                 created_at TEXT NOT NULL,
@@ -255,3 +271,63 @@ def chat_snapshots() -> list[str]:
     with _connect() as conn:
         rows = conn.execute("SELECT state_json FROM chat_turns ORDER BY seq DESC").fetchall()
     return [r["state_json"] for r in rows]
+
+
+# --------------------------------------------------------------------------- #
+# Evidence attached to tests (ADR-015)
+# --------------------------------------------------------------------------- #
+# One row per statement, file or link. File bytes live in evidence_dir();
+# this table holds what the UI, the report and Claude need to know about them.
+EVIDENCE_FIELDS = ("id", "rule_id", "created_at", "kind", "text", "filename",
+                   "media_type", "size", "sha256", "stored_name")
+
+
+def evidence_dir() -> Path:
+    path = _db_path().parent / "evidence"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def add_evidence(item: dict[str, Any]) -> None:
+    init_db()
+    row = {k: item.get(k, "" if k != "size" else 0) for k in EVIDENCE_FIELDS}
+    row["created_at"] = row["created_at"] or datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        conn.execute(
+            f"INSERT INTO evidence ({', '.join(EVIDENCE_FIELDS)}) "
+            f"VALUES ({', '.join('?' for _ in EVIDENCE_FIELDS)})",
+            tuple(row[k] for k in EVIDENCE_FIELDS),
+        )
+        conn.commit()
+
+
+def list_evidence(rule_id: str | None = None) -> list[dict[str, Any]]:
+    """Evidence for one test (or all), oldest first."""
+    init_db()
+    with _connect() as conn:
+        if rule_id is None:
+            rows = conn.execute("SELECT * FROM evidence ORDER BY created_at").fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM evidence WHERE rule_id = ? ORDER BY created_at",
+                                (rule_id,)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_evidence(evidence_id: str) -> dict[str, Any] | None:
+    init_db()
+    with _connect() as conn:
+        row = conn.execute("SELECT * FROM evidence WHERE id = ?", (evidence_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def delete_evidence(evidence_id: str) -> dict[str, Any] | None:
+    """Remove one item (and its file). Returns what was removed."""
+    item = get_evidence(evidence_id)
+    if item is None:
+        return None
+    with _connect() as conn:
+        conn.execute("DELETE FROM evidence WHERE id = ?", (evidence_id,))
+        conn.commit()
+    if item["stored_name"]:
+        (evidence_dir() / item["stored_name"]).unlink(missing_ok=True)
+    return item

@@ -518,3 +518,49 @@ misleading. In demo mode the SEC-* rules also skipped Claude even with a key.
 - Every UI run is live, so SEC-001..003 are always judged by Claude when a key
   is set.
 - Old demo runs in the history still show as "Demo data".
+
+## ADR-015: Evidence on tests, and missing answers are never a fail
+**Date:** 2026-10-19  **Status:** Accepted
+
+### Context
+The AI-reviewed tests (SEC-001..003) judge what the developer states about
+TLS, audit logging and BAAs. The only way to state anything was the chat, and
+the only output was the chat answer, which is an attestation without proof.
+Developers and backend engineers use this tool to hand evidence to a health
+system's security review, so they need to attach proof.
+
+A run also showed a bug: with "Not sure" answers there was nothing to judge,
+but Claude returned **fail** for SEC-002 even though its instructions said to
+use needs_human when evidence is insufficient.
+
+### Decision
+- **Missing answers are never a fail.** `engine._nothing_to_judge` returns
+  needs_human without calling Claude when an attested rule has none of its
+  `app_config` answers (read from `evidence_needed`) and no attached evidence.
+  Claude's system prompt also says missing or "not sure" information is never
+  a fail; fail only when evidence positively shows non-compliance. SEC-001's
+  `evidence_needed` now names the real field (`transport_tls_version`).
+- **Evidence on every test.** The test side panel has an Evidence section:
+  a statement, files (text/log/JSON/YAML/CSV/config, PNG/JPEG/GIF/WebP, PDF;
+  up to 10 MB each) and links. Rows live in an `evidence` table and files in
+  `data/evidence/` next to the DB (git-ignored), named by a random id; the
+  original name is sanitised and the SHA-256 is recorded. Downloads are always
+  served as attachments.
+- **Claude reviews it.** For AI-reviewed tests, statements, links and text
+  files go in the request as numbered `developer_evidence`; images and PDFs
+  are sent as image / document blocks. Claude cites evidence by number, treats
+  a statement as an attestation and a bare link as no proof.
+- **The report lists it.** Each run stores a snapshot of the evidence it used
+  (metadata and hash, not file contents) in its config; the report and the
+  export show "Evidence provided" under each finding.
+- The upload form warns: no real patient data; sandbox or de-identified
+  samples only.
+
+### Consequences / limits
+- Evidence is per test, not per run: it applies to every later run until
+  removed. A report keeps the snapshot even if a file is later deleted, but the
+  download link then returns 404.
+- Automated tests show attached evidence in the report but their verdict still
+  comes from the automated check only.
+- Links are not fetched. Files are sent to the Anthropic API for AI-reviewed
+  tests; nothing is uploaded anywhere else.

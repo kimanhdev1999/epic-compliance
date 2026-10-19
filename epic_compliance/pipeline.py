@@ -430,10 +430,15 @@ def collect_evidence(config: AppConfig) -> dict[str, Any]:
     }
 
 
-def run_full_pipeline(config: AppConfig, rule_ids: set[str] | None = None) -> Report:
+def run_full_pipeline(
+    config: AppConfig,
+    rule_ids: set[str] | None = None,
+    attached_evidence: dict[str, list[dict[str, Any]]] | None = None,
+) -> Report:
     """Run the complete pipeline: evidence collection + validation.
 
-    ``rule_ids`` limits validation to an assessment plan's checks.
+    ``rule_ids`` limits validation to an assessment plan's checks;
+    ``attached_evidence`` is what the developer attached per test (ADR-015).
     """
     evidence = collect_evidence(config)
     mock_llm = not bool(config.anthropic_api_key) or config.run_mode == "mock"
@@ -443,4 +448,5 @@ def run_full_pipeline(config: AppConfig, rule_ids: set[str] | None = None) -> Re
         rule_ids=rule_ids,
         api_key=config.anthropic_api_key,
         mock_llm=mock_llm,
+        attached_evidence=attached_evidence,
     )

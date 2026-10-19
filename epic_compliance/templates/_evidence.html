@@ -1,0 +1,46 @@
+{% import "_macros.html" as m %}
+<section id="evidence-section" class="evidence-section">
+  <h3>Evidence</h3>
+  <p class="muted small">
+    {% if t.type_label == "AI review" %}
+    Back up your answer with proof. Claude reviews it on the next run, and the report lists it with this test.
+    {% else %}
+    Attach proof for the health system's review. It's listed with this test in the report; the result itself comes from the automated check.
+    {% endif %}
+  </p>
+
+  {% if evidence_items %}
+  <ul class="evidence-items">
+    {% for e in evidence_items %}
+    <li>
+      <div class="ev-main">
+        {% if e.kind == "note" %}<span class="ev-kind">Statement</span><span class="ev-text">{{ e.text }}</span>
+        {% elif e.kind == "link" %}<span class="ev-kind">Link</span><a href="{{ e.text }}" target="_blank" rel="noopener noreferrer">{{ e.text }}</a>
+        {% else %}<span class="ev-kind">File</span><a href="/evidence/{{ e.id }}/file">{{ e.filename }}</a>
+          <span class="muted small">{{ (e.size / 1024)|round(1) }} KB</span>{% endif %}
+        <span class="muted small">Added {{ e.created_at[:16].replace('T', ' ') }} UTC</span>
+      </div>
+      <button type="button" class="link-btn small" hx-post="/evidence/{{ e.id }}/delete" hx-target="#evidence-section"
+              hx-swap="outerHTML" hx-confirm="Remove this evidence?">Remove</button>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if evidence_error %}<div class="callout warn" role="alert">{{ evidence_error }}</div>{% endif %}
+  {% if evidence_added %}<div class="callout ok" role="status">Added. Re-run tests to have it reviewed.</div>{% endif %}
+
+  <form class="evidence-form" hx-post="/tests/{{ t.id }}/evidence" hx-target="#evidence-section"
+        hx-swap="outerHTML" hx-encoding="multipart/form-data">
+    <label for="ev-note-{{ t.id }}">Statement</label>
+    <textarea id="ev-note-{{ t.id }}" name="note" rows="3" maxlength="5000"
+              placeholder="e.g. Every sign-in, chart read, photo/note write and export is written to CloudWatch; logs are kept 6 years (S3 lifecycle policy)."></textarea>
+    <label for="ev-files-{{ t.id }}">Files</label>
+    <input id="ev-files-{{ t.id }}" type="file" name="files" multiple accept="{{ evidence_accept }}">
+    <p class="muted small">Logs, configs, screenshots or PDFs, up to 10 MB each.</p>
+    <label for="ev-link-{{ t.id }}">Link</label>
+    <input id="ev-link-{{ t.id }}" type="url" name="link" placeholder="https://… (e.g. your logging dashboard or SOC 2 report)">
+    <p class="phi-warning small"><strong>No real patient data.</strong> Use sandbox or de-identified samples only. Evidence is stored on this computer and, for AI-reviewed tests, sent to Claude.</p>
+    <button type="submit" class="btn">Add evidence</button>
+  </form>
+</section>

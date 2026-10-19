@@ -27,6 +27,8 @@
   </section>
   {% endif %}
 
+  {% include "_evidence.html" %}
+
   {% if t.reason %}
   <section>
     <h3>{{ "Why it's not applicable" if t.status == "not_applicable" else "Why it's in scope" }}</h3>

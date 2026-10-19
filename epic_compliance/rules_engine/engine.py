@@ -8,6 +8,7 @@ from ..models import Finding, Report
 from .catalog import load_rules, Rule
 from .automated_checks import AUTOMATED_CHECKS
 from .llm_evaluator import evaluate_with_llm
+from .. import evidence as dev_evidence
 
 
 def _build_evidence_for_llm(rule: Rule, evidence: dict[str, Any]) -> str:
@@ -23,17 +24,49 @@ def _build_evidence_for_llm(rule: Rule, evidence: dict[str, Any]) -> str:
     return "\n".join(str(p) for p in parts)
 
 
+def _attested_fields(rule: Rule) -> list[str]:
+    """The app_config answers a rule judges, from its evidence_needed text."""
+    for part in rule.evidence_needed.split(";"):
+        head, _, fields = part.partition(":")
+        if head.strip() == "app_config":
+            return [f.strip() for f in fields.split(",") if f.strip()]
+    return []
+
+
+def _nothing_to_judge(rule: Rule, evidence: dict[str, Any], attached: list[dict[str, Any]]) -> Finding | None:
+    """needs_human, without asking Claude, when an attested rule has no answer
+    and no attached evidence. Missing information is unknown, not a failure."""
+    fields = _attested_fields(rule)
+    app_config = evidence.get("app_config") or {}
+    if not fields or attached or any(app_config.get(f) for f in fields):
+        return None
+    return Finding(
+        rule_id=rule.id,
+        verdict="needs_human",
+        evidence=f"No answer given for {', '.join(fields)}, and no evidence attached to this test.",
+        remediation_hint=rule.remediation_hint,
+        check_type="llm",
+        severity=rule.severity,
+        category=rule.category,
+        citation="Not evaluated: nothing to judge. Answer in the chat or attach evidence to this test, then re-run.",
+    )
+
+
 def run_pipeline(
     evidence: dict[str, Any],
     api_key: str = "",
     mock_llm: bool = True,
     launch_profile: str = "patient_launch",
     rule_ids: set[str] | None = None,
+    attached_evidence: dict[str, list[dict[str, Any]]] | None = None,
 ) -> Report:
     """Run the rules that apply to ``launch_profile``, return a Report.
 
     ``rule_ids`` narrows the run to an assessment plan's checks; None runs all.
+    ``attached_evidence`` maps rule id -> evidence the developer attached
+    (ADR-015); Claude reviews it for the AI-reviewed rules.
     """
+    attached_evidence = attached_evidence or {}
     rules = [
         r for r in load_rules()
         if r.applies_to(launch_profile) and (rule_ids is None or r.id in rule_ids)
@@ -59,12 +92,19 @@ def run_pipeline(
                 else:
                     findings.append(check_fn(evidence, rule))
             elif rule.check_type == "llm":
-                evidence_str = _build_evidence_for_llm(rule, evidence)
+                attached = attached_evidence.get(rule.id, [])
+                skipped = _nothing_to_judge(rule, evidence, attached)
+                if skipped is not None:
+                    findings.append(skipped)
+                    continue
+                summary, blocks = dev_evidence.for_claude(attached) if attached else ("", [])
                 findings.append(evaluate_with_llm(
                     rule=rule,
-                    evidence_str=evidence_str,
+                    evidence_str=_build_evidence_for_llm(rule, evidence),
                     api_key=api_key,
                     mock=mock_llm,
+                    developer_evidence=summary,
+                    attachments=blocks,
                 ))
             else:
                 findings.append(Finding(

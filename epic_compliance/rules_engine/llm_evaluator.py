@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -35,6 +35,16 @@ Rules:
 - verdict must be one of: pass, fail, needs_human
 - citation must quote from the evidence string provided — never fabricate evidence
 - Use needs_human when evidence is insufficient to determine compliance
+- Missing or "not sure" information is NEVER a fail: an absent answer only means \
+compliance is unknown, so it is needs_human. Use fail only when the evidence \
+positively shows non-compliance (e.g. logging disabled, retention under 6 years, \
+TLS 1.0/1.1 enabled, no BAA with a vendor that receives PHI).
+- The input may include developer_evidence: statements, links and files the \
+developer attached (numbered [1], [2], ...; images and PDFs follow as attachments). \
+Judge whether they demonstrate the requirement and cite them by number and quote. \
+A link alone, without its content, is not proof. A statement is the developer's \
+attestation: it can support pass when it specifically covers the requirement, but \
+note in the citation that it is attested, not observed.
 - Never return verdict without citation"""
 
 
@@ -62,7 +72,14 @@ def _parse_llm_response(content: str) -> LLMVerdict:
     raise ValueError(f"Could not parse LLM response as verdict JSON: {content!r}")
 
 
-def evaluate_with_llm(rule: Rule, evidence_str: str, api_key: str, mock: bool = False) -> Finding:
+def evaluate_with_llm(
+    rule: Rule,
+    evidence_str: str,
+    api_key: str,
+    mock: bool = False,
+    developer_evidence: str = "",
+    attachments: list[dict[str, Any]] | None = None,
+) -> Finding:
     """Call Claude to evaluate a security/narrative rule against collected evidence."""
     if mock or not api_key:
         # Mock mode: return needs_human so pipeline runs without API key
@@ -80,19 +97,19 @@ def evaluate_with_llm(rule: Rule, evidence_str: str, api_key: str, mock: bool = 
     import anthropic  # import only when needed
 
     client = anthropic.Anthropic(api_key=api_key)
-    user_message = json.dumps({
-        "requirement": rule.description,
-        "evidence": evidence_str,
-    })
+    payload = {"requirement": rule.description, "evidence": evidence_str}
+    if developer_evidence:
+        payload["developer_evidence"] = developer_evidence
+    content: list[dict[str, Any]] = [{"type": "text", "text": json.dumps(payload)}, *(attachments or [])]
 
     message = client.messages.create(
         model=LLM_MODEL,
-        max_tokens=512,
+        max_tokens=1024,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_message}],
+        messages=[{"role": "user", "content": content}],
     )
 
-    raw_content = message.content[0].text if message.content else ""
+    raw_content = next((b.text for b in message.content if getattr(b, "type", "text") == "text"), "")
     verdict_obj = _parse_llm_response(raw_content)
 
     if not verdict_obj.citation:

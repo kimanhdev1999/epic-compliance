@@ -37,11 +37,12 @@ import secrets
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from . import evidence as dev_evidence
 from . import pipeline, store
 from .assessment import BAA_LABELS, PLATFORM_LABELS, RUN_FIELDS, USERS_LABELS, Intake, build_plan
 from .intake_chat import ChatState, next_turn, rewind, summary
@@ -143,8 +144,10 @@ def _execute_run(
     """
     global _last_report
     config = config_with_overrides(overrides)
-    report = run_full_pipeline(config, rule_ids=rule_ids)
+    attached = [e for e in store.list_evidence() if rule_ids is None or e["rule_id"] in rule_ids]
+    report = run_full_pipeline(config, rule_ids=rule_ids, attached_evidence=dev_evidence.by_rule(attached))
     snapshot = config.model_dump()
+    snapshot["evidence"] = dev_evidence.snapshot(attached)
     if assessment is not None:
         snapshot["assessment"] = assessment
     store.save_run(report, snapshot)
@@ -283,10 +286,65 @@ def test_detail(request: Request, rule_id: str) -> Any:
     if test is None:
         raise HTTPException(status_code=404, detail=f"No test {rule_id}")
     ctx = {"t": test, "w": w, "fw_names": {f.key: f.name for f in ws.FRAMEWORKS},
-           "history": ws.history_of_test(store.recent_runs(limit=8), rule_id)}
+           "history": ws.history_of_test(store.recent_runs(limit=8), rule_id),
+           **_evidence_ctx(rule_id, test)}
     if request.headers.get("HX-Request"):
         return render(request, "_test_drawer.html", **ctx)
     return render(request, "test.html", active="tests", **ctx)
+
+
+def _evidence_ctx(rule_id: str, test: dict[str, Any], error: str = "", added: bool = False) -> dict[str, Any]:
+    return {"t": test, "evidence_items": store.list_evidence(rule_id), "evidence_error": error,
+            "evidence_added": added, "evidence_accept": dev_evidence.ACCEPT}
+
+
+def _test_or_404(rule_id: str) -> dict[str, Any]:
+    test = next((t for t in ws.build_tests(store.latest_run()) if t["id"] == rule_id), None)
+    if test is None:
+        raise HTTPException(status_code=404, detail=f"No test {rule_id}")
+    return test
+
+
+@app.post("/tests/{rule_id}/evidence", response_class=HTMLResponse)
+async def add_evidence(
+    request: Request,
+    rule_id: str,
+    note: str = Form(""),
+    link: str = Form(""),
+    files: list[UploadFile] = File(default=[]),
+) -> Any:
+    """Attach a statement, files and/or a link to a test (ADR-015)."""
+    test = _test_or_404(rule_id)
+    try:
+        uploads = [(f.filename or "file", await f.read()) for f in files if f.filename]
+        if not (note.strip() or link.strip() or uploads):
+            raise dev_evidence.EvidenceError("Add a statement, a file or a link.")
+        dev_evidence.add_note(rule_id, note)
+        dev_evidence.add_link(rule_id, link)
+        for name, data in uploads:
+            dev_evidence.add_file(rule_id, name, data)
+    except dev_evidence.EvidenceError as exc:
+        return render(request, "_evidence.html", **_evidence_ctx(rule_id, test, error=str(exc)))
+    return render(request, "_evidence.html", **_evidence_ctx(rule_id, test, added=True))
+
+
+@app.post("/evidence/{evidence_id}/delete", response_class=HTMLResponse)
+def remove_evidence(request: Request, evidence_id: str) -> Any:
+    item = store.delete_evidence(evidence_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="No such evidence")
+    return render(request, "_evidence.html", **_evidence_ctx(item["rule_id"], _test_or_404(item["rule_id"])))
+
+
+@app.get("/evidence/{evidence_id}/file")
+def evidence_file(evidence_id: str) -> FileResponse:
+    """Download an attached file. Always as an attachment, never rendered inline."""
+    item = store.get_evidence(evidence_id)
+    path = dev_evidence.file_path(item) if item else None
+    if path is None:
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(path, media_type=item["media_type"], filename=item["filename"],
+                        content_disposition_type="attachment")
 
 
 @app.get("/integrations", response_class=HTMLResponse)
@@ -439,7 +497,7 @@ def history(request: Request) -> Any:
 @app.get("/runs/{run_id}", response_class=HTMLResponse)
 def report_detail(request: Request, run_id: str) -> Any:
     run = _load_run_or_404(run_id)
-    view = build_report_view(run["report"])
+    view = build_report_view(run["report"], run["config"].get("evidence"))
     return render(
         request, "report.html", active="history", view=view, run=run,
         assessment=run["config"].get("assessment"), labels=_intake_labels(),
@@ -455,7 +513,7 @@ def delete_run(request: Request, run_id: str) -> Any:
 @app.get("/runs/{run_id}/export", response_class=HTMLResponse)
 def export_run(request: Request, run_id: str) -> Any:
     run = _load_run_or_404(run_id)
-    view = build_report_view(run["report"])
+    view = build_report_view(run["report"], run["config"].get("evidence"))
     html = templates.get_template("export.html").render(
         request=request, view=view, run=run
     )
@@ -470,7 +528,7 @@ def export_run(request: Request, run_id: str) -> Any:
 @app.get("/runs/{run_id}/print", response_class=HTMLResponse)
 def print_run(request: Request, run_id: str) -> Any:
     run = _load_run_or_404(run_id)
-    view = build_report_view(run["report"])
+    view = build_report_view(run["report"], run["config"].get("evidence"))
     return render(request, "export.html", view=view, run=run)
 
 
