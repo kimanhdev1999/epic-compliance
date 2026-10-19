@@ -109,9 +109,9 @@ def build_report_view(report: Report, evidence: list[dict[str, Any]] | None = No
 
     counts = report.summary()["counts"]
     total = sum(counts.values())
-    # Simple readiness score: passes / (total - needs_human), guarded for /0.
-    decided = counts["pass"] + counts["fail"]
-    score = round(100 * counts["pass"] / decided) if decided else None
+    # Readiness: passing checks out of every check run, the same as Home.
+    # Checks waiting on review count as not done, so the headline isn't inflated.
+    score = round(100 * counts["pass"] / total) if total else None
 
     all_items = [it for cat in cat_views for it in cat["items"]]
     by_severity = lambda its: sorted(its, key=lambda it: SEVERITY_ORDER.get(it["severity"], 9))

@@ -1,6 +1,8 @@
 """Top-level pipeline orchestrator — wires all stages together."""
 from __future__ import annotations
 
+import time
+
 from typing import Any
 
 from .config import AppConfig
@@ -25,9 +27,13 @@ from .models import Report
 #: Why a live run has no token. Any evidence dict carrying this key means the
 #: token-dependent rules MUST NOT return pass/fail — there is nothing to judge.
 TOKEN_UNAVAILABLE_REASON = (
-    "Live run: no access token was obtained. Start a launch at GET /launch and "
-    "complete it at GET /callback (a browser + Epic login is required) before "
-    "running the pipeline. Token-dependent rules cannot be evaluated until then."
+    "Not signed in to the Epic sandbox, so this couldn't be checked. Sign in on "
+    "the test plan page (Sign in to Epic sandbox), then run again."
+)
+#: Why the clinician steps were skipped when no test patient was given.
+NO_TEST_PATIENT_REASON = (
+    "Skipped: no test patient was given. Add a Test patient search on the test "
+    "plan page (one Epic sandbox patient), then run again."
 )
 
 
@@ -47,9 +53,13 @@ def set_live_token(token: TokenResponse, auth_probe: dict[str, Any] | None = Non
     """Called by api.py's /callback after a real authorization-code exchange."""
     _live_token_holder["token"] = token
     _live_token_holder["auth_probe"] = auth_probe or {}
+    # Treat it as gone a minute before Epic's expiry, so a run never starts on a dying token.
+    _live_token_holder["expires_at"] = time.time() + max(0, (token.expires_in or 3600) - 60)
 
 
 def get_live_token() -> TokenResponse | None:
+    if _live_token_holder["token"] is not None and time.time() >= _live_token_holder.get("expires_at", 0):
+        clear_live_token()
     return _live_token_holder["token"]
 
 
@@ -234,7 +244,7 @@ def collect_clinician_evidence(
     # Patient.Search -> Patient.Read (the confirmation screen)
     query = config.test_patient_query or (MOCK_PATIENT_QUERY if fhir_client.mock else "")
     if not query:
-        ev["patient_search"] = {"_unavailable": "TEST_PATIENT_QUERY not set — nothing to search for"}
+        ev["patient_search"] = {"_unavailable": NO_TEST_PATIENT_REASON}
         return ev
     search = fhir_client.search("Patient", dict(parse_qsl(query)))
     matches = search.get("entries", [])

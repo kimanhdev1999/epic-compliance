@@ -13,6 +13,8 @@
   {% if w.run %}<div class="actions">{{ m.rerun_button("/tests") }}</div>{% endif %}
 </div>
 
+{{ m.stale_banner(w, "/tests") }}
+
 {% set fw_names = {} %}{% for f in frameworks %}{% set _ = fw_names.update({f.key: f.name}) %}{% endfor %}
 <div id="tests-view">
   <div class="tabs" role="tablist">

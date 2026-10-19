@@ -46,7 +46,7 @@ class TestMissingAnswerGuard:
     def test_no_answer_and_no_evidence_is_needs_review_without_claude(self, claude):
         findings = _run(NO_ANSWERS)
         assert findings["SEC-002"].verdict == "needs_human"
-        assert "No answer given for audit_logging_enabled" in findings["SEC-002"].evidence
+        assert "whether PHI access is audit-logged" in findings["SEC-002"].evidence
         assert findings["SEC-001"].verdict == "needs_human"
         assert claude.calls == []
 
@@ -123,7 +123,7 @@ class TestEvidenceRoutes:
         resp = client.post("/tests/SEC-002/evidence",
                            data={"note": "Logs kept 6 years", "link": "https://example.com/dash"},
                            files=[("files", ("audit.log", b"READ Patient/1", "text/plain"))])
-        assert resp.status_code == 200 and "Added." in resp.text
+        assert resp.status_code == 200 and "Evidence added" in resp.text
         assert "Logs kept 6 years" in resp.text and "audit.log" in resp.text
 
         file_item = next(e for e in store.list_evidence("SEC-002") if e["kind"] == "file")

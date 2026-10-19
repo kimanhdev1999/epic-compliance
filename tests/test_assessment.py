@@ -242,17 +242,59 @@ class TestAssessmentRoutes:
         assert "Back to chat" in resp.text
         assert "Demo data" not in resp.text and 'name="run_mode" value="live"' in resp.text
 
-    def test_run_is_locked_until_signed_in_to_epic(self, client, monkeypatch):
+    def test_plan_puts_the_epic_setup_steps_first(self, client, monkeypatch):
         from epic_compliance import pipeline
         monkeypatch.setattr(pipeline, "get_live_token", lambda: None)
-        resp = client.post("/assess/plan", data=self.FORM)
-        assert 'id="run-btn" class="btn big" disabled' in resp.text and "Sign in to Epic sandbox" in resp.text
+        text = client.post("/assess/plan", data=self.FORM).text
+        assert text.index("Before you run") < text.index("What will be checked")
+        assert 'id="test_patient_query"' in text and "Sign in to Epic sandbox" in text
+        assert 'id="run-btn" class="btn big" disabled' in text  # the page script unlocks it
         assert client.get("/launch/status").json() == {"signed_in": False}
 
         monkeypatch.setattr(pipeline, "get_live_token", lambda: object())
-        resp = client.post("/assess/plan", data=self.FORM)
-        assert 'id="run-btn" class="btn big" >' in resp.text
+        text = client.post("/assess/plan", data=self.FORM).text
+        assert 'id="step-signin" class="done"' in text and 'id="signin"' not in text
         assert client.get("/launch/status").json() == {"signed_in": True}
+
+    LIVE = {**FORM, "run_mode": "live", "oauth_client_id": "abc"}
+
+    def test_live_run_without_sign_in_goes_back_to_the_setup_steps(self, client, monkeypatch):
+        from epic_compliance import pipeline, store
+        monkeypatch.setattr(pipeline, "get_live_token", lambda: None)
+        resp = client.post("/assess/run", data=self.LIVE, follow_redirects=False)
+        assert resp.headers["location"] == "/assess/plan?notice=signin"
+        assert store.list_runs() == []
+        page = client.get("/assess/plan?notice=signin")
+        assert "Sign in to the Epic sandbox before running" in page.text and 'value="abc"' in page.text
+
+    def test_clinician_live_run_needs_a_test_patient(self, client, monkeypatch):
+        from epic_compliance import pipeline
+        monkeypatch.setattr(pipeline, "get_live_token", lambda: object())
+        resp = client.post("/assess/run", data=self.LIVE, follow_redirects=False)
+        assert resp.headers["location"] == "/assess/plan?notice=patient"
+
+    def test_rerun_without_sign_in_does_not_overwrite_results(self, client, monkeypatch):
+        from epic_compliance import pipeline, store
+        client.post("/assess/run", data=self.FORM)  # a sample-data run to keep
+        store.save_last_intake({**store.get_last_intake(), "run_mode": "live"})
+        monkeypatch.setattr(pipeline, "get_live_token", lambda: None)
+        resp = client.post("/assess/rerun", data={"next": "/tests"}, follow_redirects=False)
+        assert resp.headers["location"] == "/assess/plan?notice=signin"
+        assert len(store.list_runs()) == 1
+
+    def test_plan_page_without_saved_answers_goes_to_the_chat(self, client):
+        assert client.get("/assess/plan", follow_redirects=False).headers["location"] == "/assess"
+
+    def test_sign_in_expires_with_epics_token(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from epic_compliance import pipeline
+        now = [1000.0]
+        monkeypatch.setattr(pipeline.time, "time", lambda: now[0])
+        pipeline.set_live_token(SimpleNamespace(expires_in=3600))
+        assert pipeline.get_live_token() is not None
+        now[0] += 3600
+        assert pipeline.get_live_token() is None
 
     def test_sign_in_uses_the_client_id_from_the_plan_page(self, client, monkeypatch):
         from types import SimpleNamespace

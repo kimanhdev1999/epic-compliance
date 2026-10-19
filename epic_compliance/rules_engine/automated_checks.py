@@ -528,9 +528,14 @@ def _clinician_step(evidence: dict[str, Any], rule: Rule, step: str) -> tuple[di
     blob = evidence["clinician"].get(step)
     if not isinstance(blob, dict) or not blob or "_unavailable" in blob:
         reason = (blob or {}).get("_unavailable") if isinstance(blob, dict) else None
+        search = evidence["clinician"].get("patient_search")
+        if not reason and isinstance(search, dict) and "_unavailable" in search:
+            # Nothing went wrong in Epic: there was no patient to work with.
+            reason = ("Skipped because no test patient was searched for (see CLIN-001). Add a Test "
+                      "patient search on the test plan page, then run again.")
         return {}, _finding(
             rule, "needs_human",
-            f"{step} not collected: {reason or 'an earlier step (patient search) did not succeed'}",
+            reason or "Skipped because an earlier step didn't find or confirm the patient (see CLIN-001).",
             "Evidence not collected — rule not evaluated.",
         )
     return blob, None

@@ -12,6 +12,67 @@
 </p>
 {% if intake.description %}<blockquote class="told">“{{ intake.description }}”</blockquote>{% endif %}
 
+{% if notice %}<div class="callout warn" role="alert">{{ notice }}</div>{% endif %}
+
+{% set needs_patient = plan.launch_profile == "clinician_standalone" %}
+<h2 id="setup">Before you run</h2>
+<form method="post" action="/assess/run" id="run-form" class="card setup-card"
+      onsubmit="document.getElementById('run-btn').disabled=true; document.getElementById('running').hidden=false;">
+  <input type="hidden" name="run_mode" value="live">
+  {% for k, v in intake.model_dump().items() if k not in run_fields %}
+    {% if v is sameas true %}<input type="hidden" name="{{ k }}" value="on">
+    {% elif v is not sameas false %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}
+  {% endfor %}
+  <p class="muted setup-intro">These checks sign in to Epic's non-production sandbox (fhir.epic.com) as your app and make real FHIR calls.
+    They write test photos and notes to a sandbox test patient only.</p>
+  <ol class="setup-steps">
+    <li id="step-client" class="{{ 'done' if intake.oauth_client_id }}">
+      <span class="step-mark" aria-hidden="true"></span>
+      <div class="step-body">
+        <label for="oauth_client_id">Non-production client ID</label>
+        <input type="text" id="oauth_client_id" name="oauth_client_id" value="{{ intake.oauth_client_id }}"
+               placeholder="e.g. bfbab8d8-40e8-…" autocomplete="off" required>
+        <p class="hint">From your app's registration on <a href="https://fhir.epic.com/Developer/Apps" target="_blank" rel="noopener">fhir.epic.com</a>.</p>
+      </div>
+    </li>
+    {% if needs_patient %}
+    <li id="step-patient" class="{{ 'done' if intake.test_patient_query }}">
+      <span class="step-mark" aria-hidden="true"></span>
+      <div class="step-body">
+        <label for="test_patient_query">Test patient search</label>
+        <input type="text" id="test_patient_query" name="test_patient_query" value="{{ intake.test_patient_query }}"
+               placeholder="family=Cadence&amp;given=Anna" autocomplete="off" required>
+        <p class="hint">A FHIR Patient search that finds exactly one Epic sandbox patient, the way a clinician would look them up.
+          Pick one from Epic's <a href="https://fhir.epic.com/Documentation?docId=testpatients" target="_blank" rel="noopener">sandbox test data</a>.
+          Without it, the clinician workflow checks that need a patient (finding them, filing photos and notes) are skipped.</p>
+      </div>
+    </li>
+    {% endif %}
+    <li id="step-signin" class="{{ 'done' if live_token }}">
+      <span class="step-mark" aria-hidden="true"></span>
+      <div class="step-body">
+        <span class="step-title">Sign in to the Epic sandbox</span>
+        <p class="hint" id="signin-hint">{% if live_token %}Signed in. The sign-in lasts until the tool restarts or Epic's token expires.
+          {% else %}Epic's login opens in a small window. Log in as a sandbox test {{ "clinician (e.g. FHIRTWO)" if needs_patient else "patient (MyChart)" }}; it closes by itself when you're done.{% endif %}</p>
+        {% if not live_token %}<a href="/launch" id="signin" target="_blank" class="btn">Sign in to Epic sandbox &rarr;</a>{% endif %}
+      </div>
+    </li>
+  </ol>
+  <details class="more-settings">
+    <summary>More settings</summary>
+    <div class="grid cols-2">
+      <div class="row"><label for="fhir_base_url">FHIR base URL</label>
+        <input type="url" id="fhir_base_url" name="fhir_base_url" value="{{ intake.fhir_base_url }}"></div>
+      <div class="row"><label for="app_redirect_uri">Your app's redirect URI</label>
+        <input type="text" id="app_redirect_uri" name="app_redirect_uri" value="{{ intake.app_redirect_uri }}" placeholder="dermscan://callback">
+        <p class="hint">The deep link or URL your app registers with Epic. Only checked by the redirect-URI test (CLIN-012); not used to sign in here.</p></div>
+    </div>
+    <label class="inline-check"><input type="checkbox" name="encounter_required" {{ 'checked' if intake.encounter_required }}> {{ intake.health_system or "The health system" }} files photos and notes against a visit (Encounter)</label>
+  </details>
+</form>
+
+<h2>What will be checked</h2>
+
 <div class="grid cols-3 plan-summary">
   {% for sec in plan.sections() %}
   <a class="card stat-card" href="#sec-{{ sec.key }}">
@@ -49,92 +110,74 @@
 </details>
 {% endif %}
 
-<h2>Epic sandbox</h2>
-<form method="post" action="/assess/run" id="run-form" onsubmit="document.getElementById('run-btn').disabled=true; document.getElementById('running').hidden=false;">
-  <input type="hidden" name="run_mode" value="live">
-  {% for k, v in intake.model_dump().items() if k not in run_fields %}
-    {% if v is sameas true %}<input type="hidden" name="{{ k }}" value="on">
-    {% elif v is not sameas false %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}
-  {% endfor %}
-  <div class="card">
-    <p class="muted" style="margin-top:0">These checks make real SMART sign-in and FHIR calls to Epic's non-production sandbox
-      (fhir.epic.com) as your app. They write test photos and notes to a sandbox test patient only.</p>
-    {% if not live_token %}
-    <div class="callout warn" id="epic-gate">
-      <strong>Step 1: Sign in to the Epic sandbox.</strong> Run stays locked until you do.
-      <div class="hint" id="signin-hint">Uses the non-production client ID below. Epic's login opens in a small window: log in with an
-        Epic sandbox test {{ "clinician" if plan.launch_profile == "clinician_standalone" else "patient" }}. The window closes and Run unlocks when you're done.</div>
-      <a href="/launch" id="signin" target="_blank" class="btn" style="margin-top:0.7rem">Sign in to Epic sandbox &rarr;</a>
-    </div>
-    {% endif %}
-    <div>
-      <div class="grid cols-2" style="margin-top:1rem">
-        <div class="row"><label for="fhir_base_url">FHIR base URL</label>
-          <input type="url" id="fhir_base_url" name="fhir_base_url" value="{{ intake.fhir_base_url }}"></div>
-        <div class="row"><label for="oauth_client_id">Non-production client ID</label>
-          <input type="text" id="oauth_client_id" name="oauth_client_id" value="{{ intake.oauth_client_id }}" placeholder="from fhir.epic.com"></div>
-        <div class="row"><label for="app_redirect_uri">Your app's redirect URI</label>
-          <input type="text" id="app_redirect_uri" name="app_redirect_uri" value="{{ intake.app_redirect_uri }}" placeholder="com.example.app:/callback"></div>
-        {% if intake.users == 'clinicians' %}
-        <div class="row"><label for="test_patient_query">Test patient search</label>
-          <input type="text" id="test_patient_query" name="test_patient_query" value="{{ intake.test_patient_query }}" placeholder="family=Smith&amp;given=Jane&amp;birthdate=1980-01-31"></div>
-        {% endif %}
-      </div>
-      <label class="inline-check"><input type="checkbox" name="encounter_required" {{ 'checked' if intake.encounter_required }}> {{ intake.health_system or "The health system" }} files photos and notes against a visit (Encounter)</label>
-    </div>
-  </div>
-</form>
 
 <div class="actions sticky-actions">
   <form method="post" action="/assess/resume">
     <input type="hidden" name="state" value="{{ chat_state }}">
     <button type="submit" class="btn secondary">&larr; Back to chat</button>
   </form>
-  <button type="submit" form="run-form" id="run-btn" class="btn big" {{ 'disabled title="Sign in to the Epic sandbox first"'|safe if not live_token }}>Run {{ plan.included|length }} checks</button>
-  {% if not live_token %}<a href="#epic-gate" id="run-locked" class="muted small">Locked: sign in to the Epic sandbox first</a>{% endif %}
+  <button type="submit" form="run-form" id="run-btn" class="btn big" disabled>Run {{ plan.included|length }} checks</button>
+  <a href="#setup" id="run-locked" class="muted small"></a>
   <span id="running" class="muted" hidden><span class="spinner dark"></span> Running checks…</span>
 </div>
-{% if not live_token %}
+
 <script>
 (function () {
-  // Sign in with the client ID typed on this page, and the scopes this plan needs.
-  document.getElementById('signin').addEventListener('click', function (e) {
-    var id = document.getElementById('oauth_client_id');
-    if (!id.value.trim()) {
+  var signedIn = {{ 'true' if live_token else 'false' }};
+  var clientId = document.getElementById('oauth_client_id');
+  var patient = document.getElementById('test_patient_query');
+  var runBtn = document.getElementById('run-btn');
+  var locked = document.getElementById('run-locked');
+
+  // Run unlocks when every setup step is done; the text says what's missing.
+  function update() {
+    var missing = [];
+    toggle('step-client', clientId.value.trim()) || missing.push('add your client ID');
+    if (patient) toggle('step-patient', patient.value.trim()) || missing.push('add a test patient');
+    toggle('step-signin', signedIn) || missing.push('sign in to the Epic sandbox');
+    runBtn.disabled = missing.length > 0;
+    runBtn.title = missing.length ? 'To run: ' + missing.join(', ') : '';
+    locked.textContent = missing.length ? 'To run: ' + missing.join(', ') : '';
+  }
+  function toggle(id, ok) { document.getElementById(id).classList.toggle('done', !!ok); return !!ok; }
+  clientId.addEventListener('input', update);
+  if (patient) patient.addEventListener('input', update);
+
+  var signin = document.getElementById('signin');
+  if (signin) signin.addEventListener('click', function (e) {
+    if (!clientId.value.trim()) {
       e.preventDefault();
-      document.getElementById('signin-hint').textContent = 'Enter your non-production client ID from fhir.epic.com below first.';
-      id.focus();
+      document.getElementById('signin-hint').textContent = 'Enter your non-production client ID first (step 1).';
+      clientId.focus();
       return;
     }
-    var url = '/launch?profile={{ plan.launch_profile }}&client_id=' + encodeURIComponent(id.value.trim());
+    var url = '/launch?profile={{ plan.launch_profile }}&client_id=' + encodeURIComponent(clientId.value.trim());
     this.href = url;
-    // A centred popup over this page; if the browser blocks it, the link opens a tab instead.
     var w = 520, h = 720;
     var popup = window.open(url, 'epic-signin', 'popup,width=' + w + ',height=' + h +
       ',left=' + Math.round(screenX + (outerWidth - w) / 2) + ',top=' + Math.round(screenY + (outerHeight - h) / 2));
     if (popup) { e.preventDefault(); popup.focus(); }
   });
-  // The sign-in window reports back as soon as Epic returns; polling below is the fallback.
-  window.addEventListener('message', function (e) {
-    if (e.origin !== window.location.origin || !e.data || e.data.type !== 'epic-signin') return;
-    if (e.data.ok) { check(); }
-    else { document.getElementById('signin-hint').textContent = 'Epic sign-in failed. See the sign-in window for why, then try again.'; }
-  });
-  // Unlock Run once the sign-in completes.
+
+  function signedInNow() {
+    signedIn = true;
+    if (signin) signin.remove();
+    document.getElementById('signin-hint').textContent = 'Signed in. The sign-in lasts until the tool restarts or Epic\'s token expires.';
+    update();
+  }
   function check(again) {
     fetch('/launch/status').then(function (r) { return r.json(); }).then(function (s) {
-      if (s.signed_in) {
-        document.getElementById('run-btn').disabled = false;
-        document.getElementById('run-btn').removeAttribute('title');
-        var locked = document.getElementById('run-locked'); if (locked) locked.remove();
-        var gate = document.getElementById('epic-gate');
-        gate.className = 'callout ok';
-        gate.innerHTML = '<strong>Signed in to the Epic sandbox.</strong> You can run the checks.';
-      } else if (again) { setTimeout(function () { check(true); }, 2000); }
+      if (s.signed_in) signedInNow();
+      else if (again) setTimeout(function () { check(true); }, 2000);
     }).catch(function () { if (again) setTimeout(function () { check(true); }, 5000); });
   }
-  check(true);
+  window.addEventListener('message', function (e) {
+    if (e.origin !== window.location.origin || !e.data || e.data.type !== 'epic-signin') return;
+    if (e.data.ok) check(false);
+    else document.getElementById('signin-hint').textContent = 'Epic sign-in failed. See the sign-in window for why, then try again.';
+  });
+  if (!signedIn) check(true);
+  update();
 })();
 </script>
-{% endif %}
 {% endblock %}

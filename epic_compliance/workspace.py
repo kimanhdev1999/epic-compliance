@@ -206,6 +206,35 @@ def _trend(history: list[dict[str, Any]], app_name: str) -> list[dict[str, Any]]
     return list(reversed(points[:12]))
 
 
+def stale_reasons(
+    run: dict[str, Any] | None,
+    *,
+    intake: dict[str, Any],
+    evidence: list[dict[str, Any]],
+    rules_fingerprint: str,
+) -> tuple[list[str], set[str]]:
+    """What changed since ``run``: (plain-language reasons, ids of tests whose
+    evidence changed). Empty when the results are current."""
+    if run is None:
+        return [], set()
+    cfg = run.get("config", {})
+    reasons: list[str] = []
+    if cfg.get("rules_fingerprint") != rules_fingerprint:
+        reasons.append("the test rules were updated")
+    before = {(e["rule_id"], e["id"]) for e in cfg.get("evidence") or []}
+    now = {(e["rule_id"], e["id"]) for e in evidence}
+    changed = {rule_id for rule_id, _ in before ^ now}
+    if changed:
+        n = len(changed)
+        reasons.append(f"evidence was added or removed on {n} test{'s' if n != 1 else ''}")
+    ran_with = (cfg.get("assessment") or {}).get("intake") or {}
+    skip = {"description", "run_mode", "fhir_base_url", "oauth_client_id", "app_redirect_uri",
+            "test_patient_query", "encounter_required"}
+    if ran_with and intake and any(ran_with.get(k) != v for k, v in intake.items() if k not in skip):
+        reasons.append("your app's answers changed")
+    return reasons, changed
+
+
 def history_of_test(runs: list[dict[str, Any]], rule_id: str) -> list[dict[str, Any]]:
     """Status of one test across recent full runs, newest first."""
     out = []

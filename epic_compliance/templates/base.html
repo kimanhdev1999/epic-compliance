@@ -76,6 +76,43 @@
     if (e.target.closest('[data-toggle-sidebar]')) document.getElementById('shell').classList.toggle('sb-open');
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !drawer.hidden) closeDrawer(); });
+
+  // Evidence section (in the test drawer, loaded by HTMX): tabs, show/hide, file names.
+  document.addEventListener('click', function (e) {
+    var tab = e.target.closest('[data-ev-tab]');
+    if (tab) {
+      var form = tab.closest('.ev-form');
+      form.querySelectorAll('[data-ev-tab]').forEach(function (b) {
+        var on = b === tab; b.classList.toggle('active', on); b.setAttribute('aria-selected', on);
+      });
+      form.querySelectorAll('[data-ev-panel]').forEach(function (p) { p.hidden = p.dataset.evPanel !== tab.dataset.evTab; });
+      var field = form.querySelector('[data-ev-panel="' + tab.dataset.evTab + '"] textarea, [data-ev-panel="' + tab.dataset.evTab + '"] input[type=url]');
+      if (field) field.focus();
+      return;
+    }
+    var toggle = e.target.closest('[data-ev-toggle]');
+    if (toggle) {
+      var sec = toggle.closest('.ev'), form = sec.querySelector('.ev-form');
+      form.hidden = !form.hidden;
+      sec.querySelectorAll('.ev-head [data-ev-toggle]').forEach(function (b) { b.hidden = !form.hidden; });
+      if (!form.hidden) form.querySelector('textarea').focus();
+    }
+  });
+  function showFiles(input) {
+    var out = input.closest('.ev-drop').querySelector('.ev-drop-files');
+    out.textContent = Array.prototype.map.call(input.files, function (f) { return f.name; }).join(', ');
+  }
+  document.addEventListener('change', function (e) { if (e.target.matches('.ev-drop input[type=file]')) showFiles(e.target); });
+  ['dragenter', 'dragover'].forEach(function (t) {
+    document.addEventListener(t, function (e) { var d = e.target.closest && e.target.closest('.ev-drop'); if (d) { e.preventDefault(); d.classList.add('over'); } });
+  });
+  ['dragleave', 'drop'].forEach(function (t) {
+    document.addEventListener(t, function (e) {
+      var d = e.target.closest && e.target.closest('.ev-drop'); if (!d) return;
+      d.classList.remove('over');
+      if (t === 'drop') { e.preventDefault(); var input = d.querySelector('input[type=file]'); input.files = e.dataTransfer.files; showFiles(input); }
+    });
+  });
 })();
 </script>
 </body>

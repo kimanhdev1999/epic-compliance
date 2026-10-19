@@ -57,10 +57,10 @@ that turn tests into real results, and a **Get started** checklist on Home.
    The conversation is saved in the local database, so you can come back to
    it. If your app changes, click **Edit** on any earlier answer and the chat
    continues from there.
-2. **Review the test plan** — the tests your answers call for, each with
-   *why* it's included, plus the tests that don't apply. Sign in to the Epic
-   sandbox with your non-production client ID; **Run** unlocks once you're
-   signed in. Nothing has run yet.
+2. **Review the test plan** — first the **Before you run** steps (your
+   non-production client ID, a sandbox test patient for clinician apps, and
+   signing in to the Epic sandbox), then the tests your answers call for, each
+   with *why* it's included. **Run** unlocks when every step is done.
 3. **See results** — the run lands in the workspace.
 
 **The workspace (day to day):**
