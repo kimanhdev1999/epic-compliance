@@ -1,12 +1,20 @@
 {% extends "base.html" %}
 {% block title %}SMART Launch — Epic Compliance{% endblock %}
 {% block content %}
-<h1>SMART launch {{ "complete" if ok else "failed" }}</h1>
-<div class="card" style="border-color: {{ 'var(--accent)' if ok else '#c0392b' }}">
+<h1>{{ "Signed in to the Epic sandbox" if ok else "Epic sign-in failed" }}</h1>
+<div class="card" style="border-color: {{ 'var(--pass)' if ok else 'var(--fail)' }}">
   <p>{{ message }}</p>
+  <p class="muted" id="close-note" hidden>This window closes by itself…</p>
   <div class="actions">
-    <a class="btn" href="/">Back to assessment</a>
-    {% if not ok %}<a class="btn" href="/launch">Retry launch</a>{% endif %}
+    <a class="btn" href="/">Back to the app</a>
   </div>
 </div>
+<script>
+// Opened as the sign-in popup from the test plan: tell the plan page and close.
+if (window.opener && !window.opener.closed) {
+  try { window.opener.postMessage({ type: 'epic-signin', ok: {{ 'true' if ok else 'false' }} }, window.location.origin); } catch (e) {}
+  {% if ok %}document.getElementById('close-note').hidden = false;
+  setTimeout(function () { window.close(); }, 1200);{% endif %}
+}
+</script>
 {% endblock %}

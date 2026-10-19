@@ -175,15 +175,30 @@ def _render_chat(request: Request, state: ChatState, partial: bool = False) -> H
     return render(request, "chat.html", active="assess", **ctx)
 
 
-def _integrations() -> dict[str, dict[str, Any]]:
-    """Each external service: status, and which tests it turns into real results."""
+def _epic_connection() -> dict[str, str]:
+    """How the tool signs in to the Epic sandbox: Settings first, then .env.
+
+    The one place sign-in, the plan page and Integrations read the client ID
+    from, so a client ID entered in any of them is the one that's used.
+    """
     cfg = get_config()
     defaults = store.get_config_defaults()
     client_id = defaults.get("oauth_client_id") or cfg.oauth_client_id
+    return {
+        "client_id": "" if client_id == "mock-client-id" else client_id,
+        "redirect_uri": defaults.get("oauth_redirect_uri") or cfg.oauth_redirect_uri,
+        "fhir_base_url": defaults.get("fhir_base_url") or cfg.fhir_base_url,
+    }
+
+
+def _integrations() -> dict[str, dict[str, Any]]:
+    """Each external service: status, and which tests it turns into real results."""
+    cfg = get_config()
+    client_id = _epic_connection()["client_id"]
     rules = load_rules()
     if pipeline.get_live_token() is not None:
         epic = "connected"
-    elif client_id and client_id != "mock-client-id":
+    elif client_id:
         epic = "configured"
     else:
         epic = "not_connected"
@@ -370,14 +385,14 @@ async def assess_plan(request: Request) -> Any:
     last = store.get_last_intake()
     env = {k: last[k] for k in RUN_FIELDS if k in last and k not in form}
     intake = intake.model_copy(update=env)
-    if not intake.fhir_base_url:
-        intake.fhir_base_url = get_config().fhir_base_url
+    epic = _epic_connection()
+    intake.fhir_base_url = intake.fhir_base_url or epic["fhir_base_url"]
+    intake.oauth_client_id = intake.oauth_client_id or epic["client_id"]
     plan = build_plan(intake)
     return render(
         request, "plan.html", active="assess",
         intake=intake, plan=plan, labels=_intake_labels(), chat_state=form.get("state", ""),
         run_fields=RUN_FIELDS, live_token=pipeline.get_live_token() is not None,
-        epic_client_id=bool(get_config().oauth_client_id),
     )
 
 
@@ -386,6 +401,8 @@ async def assess_run(request: Request) -> RedirectResponse:
     """Step 3: run exactly the planned checks, then show the report."""
     intake = Intake.from_form(dict(await request.form()))
     store.save_last_intake(intake.model_dump())
+    if intake.oauth_client_id:
+        store.save_config_defaults({"oauth_client_id": intake.oauth_client_id})
     plan = build_plan(intake)
     report, _ = _execute_run(plan.config_overrides(), plan.rule_ids, plan.to_dict())
     return RedirectResponse(url=f"/runs/{report.run_id}", status_code=303)
@@ -496,12 +513,25 @@ def save_config(
 # of a normal SMART launch — the same role any app plays when Epic redirects
 # a user back to it.
 # --------------------------------------------------------------------------- #
-@app.get("/launch")
-def start_launch(request: Request) -> RedirectResponse:
+@app.get("/launch", response_model=None)
+def start_launch(request: Request, client_id: str = "", profile: str = "") -> Response:
     """Begin a live SMART launch: discover Epic's endpoints, then redirect the
-    browser to Epic's authorization endpoint. Completes at GET /callback."""
+    browser to Epic's authorization endpoint. Completes at GET /callback.
+
+    ``client_id`` (from the plan page) is saved as the Epic client ID, and
+    ``profile`` asks for the scopes the app's plan needs.
+    """
     config = get_config()
-    smart_config = fetch_smart_configuration(config.fhir_base_url, mock=False)
+    if client_id.strip():
+        store.save_config_defaults({"oauth_client_id": client_id.strip()})
+    epic = _epic_connection()
+    if not epic["client_id"]:
+        return HTMLResponse(
+            "<p>Add your app's non-production client ID from fhir.epic.com on the test plan "
+            "page or in Settings, then sign in again.</p>", status_code=400)
+    if profile not in ("clinician_standalone", "patient_launch"):
+        profile = config.launch_profile
+    smart_config = fetch_smart_configuration(epic["fhir_base_url"], mock=False)
     if not smart_config.authorization_endpoint:
         raise HTTPException(
             status_code=502,
@@ -512,20 +542,20 @@ def start_launch(request: Request) -> RedirectResponse:
     state = secrets.token_urlsafe(24)
     _pending_launches[state] = {
         "pkce": pkce,
-        "redirect_uri": config.oauth_redirect_uri,
-        "client_id": config.oauth_client_id,
+        "redirect_uri": epic["redirect_uri"],
+        "client_id": epic["client_id"],
         "client_secret": config.oauth_client_secret,
         "token_endpoint": smart_config.token_endpoint,
     }
 
     url = build_authorization_url(
         authorization_endpoint=smart_config.authorization_endpoint,
-        client_id=config.oauth_client_id,
-        redirect_uri=config.oauth_redirect_uri,
-        scopes=CLINICIAN_SCOPES if config.launch_profile == "clinician_standalone" else LAUNCH_SCOPES,
+        client_id=epic["client_id"],
+        redirect_uri=epic["redirect_uri"],
+        scopes=CLINICIAN_SCOPES if profile == "clinician_standalone" else LAUNCH_SCOPES,
         pkce=pkce,
         state=state,
-        aud=config.fhir_base_url,
+        aud=epic["fhir_base_url"],
     )
     return RedirectResponse(url=url, status_code=302)
 
@@ -598,7 +628,7 @@ def smart_callback(
             # A clinician standalone login has no patient until one is searched for.
             f"Live launch complete for patient {token.patient!r}. " if token.patient
             else f"Live launch complete, signed in as {token.fhir_user or 'unknown user'!r}. "
-        ) + "Go back to your test plan and run the assessment.",
+        ) + "You can now run your test plan.",
     )
 
 
