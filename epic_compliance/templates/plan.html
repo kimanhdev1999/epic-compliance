@@ -59,17 +59,12 @@
   <div class="card">
     <p class="muted" style="margin-top:0">These checks make real SMART sign-in and FHIR calls to Epic's non-production sandbox
       (fhir.epic.com) as your app. They write test photos and notes to a sandbox test patient only.</p>
-    {% if not epic_client_id %}
-    <div class="callout warn" id="epic-gate">
-      <strong>Add your Epic client ID to run these checks.</strong>
-      Set <code class="inline">OAUTH_CLIENT_ID</code> in <code class="inline">.env</code> to your app's non-production client ID
-      from fhir.epic.com, then restart the tool.
-    </div>
-    {% elif not live_token %}
+    {% if not live_token %}
     <div class="callout warn" id="epic-gate">
       <strong>Sign in to the Epic sandbox to run these checks.</strong>
-      <a href="/launch" target="_blank">Start SMART sign-in &rarr;</a>
-      <div class="hint">Log in with an Epic sandbox test user in the new tab. This page unlocks the run when you're signed in.</div>
+      <a href="/launch" id="signin" target="_blank">Sign in with SMART &rarr;</a>
+      <div class="hint" id="signin-hint">Uses the non-production client ID below. Log in with an Epic sandbox test
+        {{ "clinician" if plan.launch_profile == "clinician_standalone" else "patient" }} in the new tab; Run unlocks when you're signed in.</div>
     </div>
     {% endif %}
     <div>
@@ -98,18 +93,31 @@
   <button type="submit" form="run-form" id="run-btn" class="btn big" {{ 'disabled' if not live_token }}>Run {{ plan.included|length }} checks</button>
   <span id="running" class="muted" hidden><span class="spinner dark"></span> Running checks…</span>
 </div>
-{% if epic_client_id and not live_token %}
+{% if not live_token %}
 <script>
-// Unlock Run once the SMART sign-in in the other tab completes.
-(function poll() {
-  fetch('/launch/status').then(function (r) { return r.json(); }).then(function (s) {
-    if (s.signed_in) {
-      document.getElementById('run-btn').disabled = false;
-      var gate = document.getElementById('epic-gate');
-      gate.className = 'callout ok';
-      gate.innerHTML = '<strong>Signed in to the Epic sandbox.</strong> You can run the checks.';
-    } else { setTimeout(poll, 2000); }
-  }).catch(function () { setTimeout(poll, 5000); });
+(function () {
+  // Sign in with the client ID typed on this page, and the scopes this plan needs.
+  document.getElementById('signin').addEventListener('click', function (e) {
+    var id = document.getElementById('oauth_client_id');
+    if (!id.value.trim()) {
+      e.preventDefault();
+      document.getElementById('signin-hint').textContent = 'Enter your non-production client ID from fhir.epic.com below first.';
+      id.focus();
+      return;
+    }
+    this.href = '/launch?profile={{ plan.launch_profile }}&client_id=' + encodeURIComponent(id.value.trim());
+  });
+  // Unlock Run once the sign-in in the other tab completes.
+  (function poll() {
+    fetch('/launch/status').then(function (r) { return r.json(); }).then(function (s) {
+      if (s.signed_in) {
+        document.getElementById('run-btn').disabled = false;
+        var gate = document.getElementById('epic-gate');
+        gate.className = 'callout ok';
+        gate.innerHTML = '<strong>Signed in to the Epic sandbox.</strong> You can run the checks.';
+      } else { setTimeout(poll, 2000); }
+    }).catch(function () { setTimeout(poll, 5000); });
+  })();
 })();
 </script>
 {% endif %}

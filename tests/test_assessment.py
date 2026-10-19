@@ -68,6 +68,7 @@ class TestBuildPlan:
 class _NoKeyConfig:
     anthropic_api_key = ""
     oauth_client_id = ""
+    oauth_redirect_uri = ""
     fhir_base_url = "https://example.test/FHIR/R4"
 
 
@@ -252,6 +253,30 @@ class TestAssessmentRoutes:
         resp = client.post("/assess/plan", data=self.FORM)
         assert 'id="run-btn" class="btn big" >' in resp.text
         assert client.get("/launch/status").json() == {"signed_in": True}
+
+    def test_sign_in_uses_the_client_id_from_the_plan_page(self, client, monkeypatch):
+        from types import SimpleNamespace
+        from urllib.parse import parse_qs, urlparse
+
+        from epic_compliance import store
+        monkeypatch.setattr("epic_compliance.api.fetch_smart_configuration",
+                            lambda base, mock: SimpleNamespace(
+                                authorization_endpoint="https://epic.test/authorize",
+                                token_endpoint="https://epic.test/token"))
+        resp = client.get("/launch", params={"client_id": "abc-123", "profile": "clinician_standalone"},
+                          follow_redirects=False)
+        assert resp.status_code == 302
+        q = parse_qs(urlparse(resp.headers["location"]).query)
+        assert q["client_id"] == ["abc-123"] and "user/" in q["scope"][0]
+        # Saved, so the plan page, Settings and Integrations show the same ID.
+        assert store.get_config_defaults()["oauth_client_id"] == "abc-123"
+        assert 'value="abc-123"' in client.post("/assess/plan", data=self.FORM).text
+
+    def test_sign_in_without_a_client_id_explains_what_to_add(self, client, monkeypatch):
+        monkeypatch.setattr("epic_compliance.api._epic_connection",
+                            lambda: {"client_id": "", "redirect_uri": "", "fhir_base_url": ""})
+        resp = client.get("/launch", follow_redirects=False)
+        assert resp.status_code == 400 and "client ID" in resp.text
 
     def test_intake_defaults_to_the_epic_sandbox(self):
         from epic_compliance.assessment import Intake
