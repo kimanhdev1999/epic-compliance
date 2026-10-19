@@ -62,8 +62,8 @@
     {% if not live_token %}
     <div class="callout warn" id="epic-gate">
       <strong>Step 1: Sign in to the Epic sandbox.</strong> Run stays locked until you do.
-      <div class="hint" id="signin-hint">Uses the non-production client ID below. Epic's sign-in opens in a new tab: log in with an
-        Epic sandbox test {{ "clinician" if plan.launch_profile == "clinician_standalone" else "patient" }}, then come back here.</div>
+      <div class="hint" id="signin-hint">Uses the non-production client ID below. Epic's login opens in a small window: log in with an
+        Epic sandbox test {{ "clinician" if plan.launch_profile == "clinician_standalone" else "patient" }}. The window closes and Run unlocks when you're done.</div>
       <a href="/launch" id="signin" target="_blank" class="btn" style="margin-top:0.7rem">Sign in to Epic sandbox &rarr;</a>
     </div>
     {% endif %}
@@ -106,10 +106,22 @@
       id.focus();
       return;
     }
-    this.href = '/launch?profile={{ plan.launch_profile }}&client_id=' + encodeURIComponent(id.value.trim());
+    var url = '/launch?profile={{ plan.launch_profile }}&client_id=' + encodeURIComponent(id.value.trim());
+    this.href = url;
+    // A centred popup over this page; if the browser blocks it, the link opens a tab instead.
+    var w = 520, h = 720;
+    var popup = window.open(url, 'epic-signin', 'popup,width=' + w + ',height=' + h +
+      ',left=' + Math.round(screenX + (outerWidth - w) / 2) + ',top=' + Math.round(screenY + (outerHeight - h) / 2));
+    if (popup) { e.preventDefault(); popup.focus(); }
   });
-  // Unlock Run once the sign-in in the other tab completes.
-  (function poll() {
+  // The sign-in window reports back as soon as Epic returns; polling below is the fallback.
+  window.addEventListener('message', function (e) {
+    if (e.origin !== window.location.origin || !e.data || e.data.type !== 'epic-signin') return;
+    if (e.data.ok) { check(); }
+    else { document.getElementById('signin-hint').textContent = 'Epic sign-in failed. See the sign-in window for why, then try again.'; }
+  });
+  // Unlock Run once the sign-in completes.
+  function check(again) {
     fetch('/launch/status').then(function (r) { return r.json(); }).then(function (s) {
       if (s.signed_in) {
         document.getElementById('run-btn').disabled = false;
@@ -118,9 +130,10 @@
         var gate = document.getElementById('epic-gate');
         gate.className = 'callout ok';
         gate.innerHTML = '<strong>Signed in to the Epic sandbox.</strong> You can run the checks.';
-      } else { setTimeout(poll, 2000); }
-    }).catch(function () { setTimeout(poll, 5000); });
-  })();
+      } else if (again) { setTimeout(function () { check(true); }, 2000); }
+    }).catch(function () { if (again) setTimeout(function () { check(true); }, 5000); });
+  }
+  check(true);
 })();
 </script>
 {% endif %}

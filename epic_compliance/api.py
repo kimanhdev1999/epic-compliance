@@ -628,7 +628,7 @@ def smart_callback(
             # A clinician standalone login has no patient until one is searched for.
             f"Live launch complete for patient {token.patient!r}. " if token.patient
             else f"Live launch complete, signed in as {token.fhir_user or 'unknown user'!r}. "
-        ) + "Go back to your test plan and run the assessment.",
+        ) + "You can now run your test plan.",
     )
 
 
