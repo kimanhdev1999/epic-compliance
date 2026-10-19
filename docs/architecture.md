@@ -30,7 +30,8 @@ api.py       ─┘        run_pipeline() (rules engine)             └──�
 | `rules_engine/automated_checks.py` | `AUTOMATED_CHECKS`: `rule_id → fn(evidence, rule) -> Finding` |
 | `rules_engine/llm_evaluator.py` | Claude call for `check_type: llm`; strict JSON verdict + citation |
 | `rules_engine/engine.py` | Iterate rules, dispatch by `check_type`, aggregate into a `Report` |
-| `store.py` | SQLite (stdlib `sqlite3`): run history, config defaults, saved chat (ADR-013), secret redaction |
+| `store.py` | SQLite (stdlib `sqlite3`): run history, config defaults, saved chat (ADR-013), evidence rows (ADR-015), secret redaction |
+| `evidence.py` | Evidence attached to tests: upload checks, files in `data/evidence/`, what Claude is sent, run snapshots (ADR-015) |
 | `viewmodel.py` | `Report` → sorted, grouped, template-ready dict. Keeps logic out of Jinja |
 | `workspace.py` | Latest run + plan → workspace: frameworks, test statuses, Home checklist (ADR-012) |
 | `api.py` | FastAPI routes: HTML pages (HTMX) + JSON API |

@@ -56,6 +56,14 @@
     {% if item.requirement %}<div class="req">{{ item.requirement }}</div>{% endif %}
     {% if item.source %}<div class="src">{{ item.source }}</div>{% endif %}
     <div class="evidence">{{ item.evidence }}</div>
+    {% if item.provided_evidence %}
+    <div class="provided"><strong>Evidence provided:</strong>
+      <ol>{% for e in item.provided_evidence %}
+        <li>{% if e.kind == "note" %}Statement: {{ e.text }}{% elif e.kind == "link" %}Link: {{ e.text }}{% else %}File: {{ e.filename }} ({{ (e.size / 1024)|round(1) }} KB, SHA-256 {{ e.sha256 }}){% endif %}
+          — added {{ e.created_at[:16].replace('T', ' ') }} UTC</li>
+      {% endfor %}</ol>
+    </div>
+    {% endif %}
     {% if item.remediation_hint %}<div class="fix"><strong>How to fix:</strong> {{ item.remediation_hint }}</div>{% endif %}
   </div>
   {% endfor %}

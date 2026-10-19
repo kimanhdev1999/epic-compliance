@@ -466,3 +466,21 @@ dl.scope dd { margin: 0; }
   .finding .detail dl, dl.scope { grid-template-columns: 1fr; }
   .page-head .actions { width: 100%; }
 }
+
+/* Evidence attached to a test (ADR-015) */
+.evidence-section .evidence-items { list-style: none; margin: 0.5rem 0 0.75rem; padding: 0; }
+.evidence-section .evidence-items li { display: flex; gap: 0.75rem; align-items: flex-start; justify-content: space-between; padding: 0.55rem 0; border-top: 1px solid var(--border); }
+.evidence-section .evidence-items li:first-child { border-top: none; }
+.ev-main { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.ev-main a, .ev-text { overflow-wrap: anywhere; white-space: pre-wrap; }
+.ev-kind { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.evidence-form { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.5rem; padding: 0.85rem; border: 1px dashed var(--border-strong); border-radius: var(--radius); }
+.evidence-form label { font-size: 0.82rem; font-weight: 600; margin-top: 0.35rem; }
+.evidence-form textarea, .evidence-form input[type=url] { width: 100%; box-sizing: border-box; }
+.evidence-form p { margin: 0; }
+.evidence-form .btn { align-self: flex-start; margin-top: 0.5rem; }
+.phi-warning { color: var(--warn); margin-top: 0.4rem !important; }
+.evidence-list { margin: 0; padding-left: 1.2rem; }
+.evidence-list li { margin: 0.2rem 0; overflow-wrap: anywhere; }
+.link-btn { border: none; background: none; padding: 0; font: inherit; color: var(--muted); text-decoration: underline; cursor: pointer; }
+.link-btn:hover { color: var(--text); }

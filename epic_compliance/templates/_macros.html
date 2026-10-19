@@ -14,6 +14,20 @@
 <span class="badge {{ v }}">{{ {'pass':'Passed','fail':'Failed','needs_human':'Needs review'}[v] }}</span>
 {% endmacro %}
 
+{% macro evidence_list(items) %}
+<ol class="evidence-list">
+  {% for e in items %}
+  <li>
+    {% if e.kind == "note" %}<span class="ev-kind">Statement</span> <span class="ev-text">{{ e.text }}</span>
+    {% elif e.kind == "link" %}<span class="ev-kind">Link</span> <a href="{{ e.text }}" target="_blank" rel="noopener noreferrer">{{ e.text }}</a>
+    {% else %}<span class="ev-kind">File</span> <a href="/evidence/{{ e.id }}/file">{{ e.filename }}</a>
+      <span class="muted small">{{ (e.size / 1024)|round(1) }} KB · SHA-256 {{ e.sha256[:12] }}…</span>{% endif %}
+    <span class="muted small">· added {{ e.created_at[:16].replace('T', ' ') }} UTC</span>
+  </li>
+  {% endfor %}
+</ol>
+{% endmacro %}
+
 {% macro finding(item) %}
 <details class="finding v-{{ item.verdict }}" id="f-{{ item.rule_id }}" data-verdict="{{ item.verdict }}">
   <summary>
@@ -33,6 +47,7 @@
       {% if item.evidence_needed %}<dt>Evidence needed</dt><dd><code class="inline">{{ item.evidence_needed }}</code></dd>{% endif %}
       <dt>Evidence / reason</dt><dd class="evidence">{{ item.evidence }}</dd>
       {% if item.citation %}<dt>LLM citation</dt><dd>{{ item.citation }}</dd>{% endif %}
+      {% if item.provided_evidence %}<dt>Evidence provided</dt><dd>{{ evidence_list(item.provided_evidence) }}</dd>{% endif %}
     </dl>
     {% if item.remediation_hint %}
     <div class="remediation"><strong>How to fix:</strong> {{ item.remediation_hint }}</div>

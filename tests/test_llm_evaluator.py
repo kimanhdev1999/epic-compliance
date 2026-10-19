@@ -166,6 +166,6 @@ def test_live_sends_requirement_and_evidence(monkeypatch):
     evaluate_with_llm(_rule(), "the-exact-evidence-string", api_key="sk-test", mock=False)
     call = captured["client"].messages.last_call
     assert call is not None
-    sent = call["messages"][0]["content"]
+    sent = call["messages"][0]["content"][0]["text"]
     assert "the-exact-evidence-string" in sent
     assert _rule().description in sent

@@ -69,3 +69,4 @@ logs/
 .vscode/
 *.swp
 *~
+data/evidence/

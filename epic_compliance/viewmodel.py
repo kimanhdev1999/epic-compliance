@@ -45,7 +45,8 @@ SUBJECTS = {
     ),
     "app_attested": (
         "Judges your stated answers",
-        "Based on what you entered in the config, not verified against your systems.",
+        "Claude judges your answers in the chat and the evidence you attach. "
+        "It doesn't connect to your systems to verify them.",
     ),
 }
 
@@ -57,10 +58,17 @@ def _sort_key(item: dict[str, Any]) -> tuple[int, int]:
     )
 
 
-def build_report_view(report: Report) -> dict[str, Any]:
-    """Return {run_id, counts, total, score, categories:[{key,label,items,counts}]}."""
+def build_report_view(report: Report, evidence: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Return {run_id, counts, total, score, categories:[{key,label,items,counts}]}.
+
+    ``evidence`` is the run's snapshot of developer-attached evidence (ADR-015);
+    each finding lists the items attached to its test.
+    """
     rules = {r.id: r for r in load_rules()}
     categories: dict[str, list[dict[str, Any]]] = {}
+    provided: dict[str, list[dict[str, Any]]] = {}
+    for e in evidence or []:
+        provided.setdefault(e["rule_id"], []).append(e)
 
     for f in report.findings:
         rule = rules.get(f.rule_id)
@@ -80,6 +88,7 @@ def build_report_view(report: Report) -> dict[str, Any]:
             "subject": rule.subject if rule else "",
             "subject_label": SUBJECTS.get(rule.subject, ("", ""))[0] if rule else "",
             "subject_detail": SUBJECTS.get(rule.subject, ("", ""))[1] if rule else "",
+            "provided_evidence": provided.get(f.rule_id, []),
         }
         categories.setdefault(category, []).append(item)
 

@@ -69,7 +69,7 @@ that turn tests into real results, and a **Get started** checklist on Home.
 |---|---|
 | **Home** | Get-started checklist (describe → run → connect Epic → fix failing → resolve reviews → share), overall readiness, readiness per framework, **Needs attention**, readiness over time, integration status |
 | **Frameworks** | ONC (g)(10), SMART App Launch, US Core / FHIR R4, Epic requirements, HIPAA Security Rule, Patient safety. Each test counts toward every framework its source cites, so SEC-001 counts for both ONC and HIPAA |
-| **Tests** | Every test, with status **Failing / Needs review / Passing / Not applicable**. Filter by status, framework or category, or search. Click a test to open a side panel with the result, how to fix it, why it's in scope, and its history across runs |
+| **Tests** | Every test, with status **Failing / Needs review / Passing / Not applicable**. Filter by status, framework or category, or search. Click a test to open a side panel with the result, how to fix it, why it's in scope, its history across runs, and **Evidence**: attach a statement, files (logs, configs, screenshots, PDFs) or links. Claude reviews the evidence for the AI-reviewed tests on the next run, and the report lists it under the test (ADR-015) |
 | **Integrations** | Epic sandbox, Claude, HL7 FHIR validator, ONC test kit: whether each is connected, and which tests it unlocks |
 | **Reports** | Every run as a shareable readiness report (HTML, print/PDF, JSON) |
 
