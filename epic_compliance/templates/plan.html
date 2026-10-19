@@ -61,10 +61,10 @@
       (fhir.epic.com) as your app. They write test photos and notes to a sandbox test patient only.</p>
     {% if not live_token %}
     <div class="callout warn" id="epic-gate">
-      <strong>Sign in to the Epic sandbox to run these checks.</strong>
-      <a href="/launch" id="signin" target="_blank">Sign in with SMART &rarr;</a>
-      <div class="hint" id="signin-hint">Uses the non-production client ID below. Log in with an Epic sandbox test
-        {{ "clinician" if plan.launch_profile == "clinician_standalone" else "patient" }} in the new tab; Run unlocks when you're signed in.</div>
+      <strong>Step 1: Sign in to the Epic sandbox.</strong> Run stays locked until you do.
+      <div class="hint" id="signin-hint">Uses the non-production client ID below. Epic's sign-in opens in a new tab: log in with an
+        Epic sandbox test {{ "clinician" if plan.launch_profile == "clinician_standalone" else "patient" }}, then come back here.</div>
+      <a href="/launch" id="signin" target="_blank" class="btn" style="margin-top:0.7rem">Sign in to Epic sandbox &rarr;</a>
     </div>
     {% endif %}
     <div>
@@ -90,7 +90,8 @@
     <input type="hidden" name="state" value="{{ chat_state }}">
     <button type="submit" class="btn secondary">&larr; Back to chat</button>
   </form>
-  <button type="submit" form="run-form" id="run-btn" class="btn big" {{ 'disabled' if not live_token }}>Run {{ plan.included|length }} checks</button>
+  <button type="submit" form="run-form" id="run-btn" class="btn big" {{ 'disabled title="Sign in to the Epic sandbox first"'|safe if not live_token }}>Run {{ plan.included|length }} checks</button>
+  {% if not live_token %}<a href="#epic-gate" id="run-locked" class="muted small">Locked: sign in to the Epic sandbox first</a>{% endif %}
   <span id="running" class="muted" hidden><span class="spinner dark"></span> Running checks…</span>
 </div>
 {% if not live_token %}
@@ -112,6 +113,8 @@
     fetch('/launch/status').then(function (r) { return r.json(); }).then(function (s) {
       if (s.signed_in) {
         document.getElementById('run-btn').disabled = false;
+        document.getElementById('run-btn').removeAttribute('title');
+        var locked = document.getElementById('run-locked'); if (locked) locked.remove();
         var gate = document.getElementById('epic-gate');
         gate.className = 'callout ok';
         gate.innerHTML = '<strong>Signed in to the Epic sandbox.</strong> You can run the checks.';

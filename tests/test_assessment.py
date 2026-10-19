@@ -246,7 +246,7 @@ class TestAssessmentRoutes:
         from epic_compliance import pipeline
         monkeypatch.setattr(pipeline, "get_live_token", lambda: None)
         resp = client.post("/assess/plan", data=self.FORM)
-        assert 'id="run-btn" class="btn big" disabled' in resp.text
+        assert 'id="run-btn" class="btn big" disabled' in resp.text and "Sign in to Epic sandbox" in resp.text
         assert client.get("/launch/status").json() == {"signed_in": False}
 
         monkeypatch.setattr(pipeline, "get_live_token", lambda: object())
