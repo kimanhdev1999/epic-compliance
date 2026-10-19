@@ -24,6 +24,16 @@ def _build_evidence_for_llm(rule: Rule, evidence: dict[str, Any]) -> str:
     return "\n".join(str(p) for p in parts)
 
 
+#: What each attested answer is called in the chat, for messages people read.
+ANSWER_LABELS = {
+    "transport_tls_version": "your minimum TLS version",
+    "audit_logging_enabled": "whether PHI access is audit-logged",
+    "audit_log_retention_days": "how long audit logs are kept",
+    "baa_in_place": "which BAAs are signed",
+    "covered_entity_relationship": "your relationship to the health system",
+}
+
+
 def _attested_fields(rule: Rule) -> list[str]:
     """The app_config answers a rule judges, from its evidence_needed text."""
     for part in rule.evidence_needed.split(";"):
@@ -43,7 +53,10 @@ def _nothing_to_judge(rule: Rule, evidence: dict[str, Any], attached: list[dict[
     return Finding(
         rule_id=rule.id,
         verdict="needs_human",
-        evidence=f"No answer given for {', '.join(fields)}, and no evidence attached to this test.",
+        evidence=(f"Not checked yet: the chat has no answer for "
+                  f"{' or '.join(ANSWER_LABELS.get(f, f) for f in fields)} (you may have said "
+                  f"\"not sure\"), and no evidence is attached to this test. Add evidence here, or "
+                  f"answer in the chat, then re-run."),
         remediation_hint=rule.remediation_hint,
         check_type="llm",
         severity=rule.severity,

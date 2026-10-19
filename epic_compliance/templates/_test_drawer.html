@@ -12,6 +12,9 @@
   <a class="icon-btn" href="/tests" data-close-drawer aria-label="Close">{{ m.icon("x") }}</a>
 </div>
 <div class="drawer-body">
+  {% if t.changed %}
+  <div class="callout warn" style="margin-top:0.75rem">Evidence for this test changed after the last run, so the result below doesn't reflect it yet. Re-run tests to have it reviewed.</div>
+  {% endif %}
   {% if t.status == "failing" and t.remediation %}
   <section class="fix-box">
     <h3>How to fix</h3>
@@ -70,6 +73,7 @@
 {% if w.run %}
 <div class="drawer-foot">
   {{ m.rerun_button("/tests", cls="btn") }}
-  {% if t.status == "needs_review" %}<a class="btn secondary" href="/assess">Answer in chat</a>{% endif %}
+  {% if t.status == "needs_review" and ("test patient" in t.evidence or "Not signed in" in t.evidence) %}<a class="btn secondary" href="/assess/plan">Open test plan</a>
+  {% elif t.status == "needs_review" and t.subject == "app_attested" %}<a class="btn secondary" href="/assess">Answer in chat</a>{% endif %}
 </div>
 {% endif %}

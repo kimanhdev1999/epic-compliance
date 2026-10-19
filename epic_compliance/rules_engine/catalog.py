@@ -1,6 +1,7 @@
 """Rule catalog loader — reads all rules/*.json files."""
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import Any
 
@@ -29,6 +30,15 @@ class Rule(BaseModel):
 
     def applies_to(self, launch_profile: str) -> bool:
         return not self.profiles or launch_profile in self.profiles
+
+
+def rules_fingerprint() -> str:
+    """Short hash of the rule files, stored with each run so the UI can tell
+    when results predate a rule change."""
+    h = hashlib.sha256()
+    for f in sorted(RULES_DIR.glob("*.json")):
+        h.update(f.name.encode() + b"\0" + f.read_bytes())
+    return h.hexdigest()[:16]
 
 
 def load_rules() -> list[Rule]:

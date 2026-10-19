@@ -564,3 +564,41 @@ use needs_human when evidence is insufficient.
   comes from the automated check only.
 - Links are not fetched. Files are sent to the Anthropic API for AI-reviewed
   tests; nothing is uploaded anywhere else.
+
+## ADR-016: Honest, current results and a guided run setup (UX review)
+**Date:** 2026-10-19  **Status:** Accepted
+
+### Context
+A UX review (the `ux-flow-reviewer` agent, `.claude/agents/`) walked every
+flow. Its top findings matched what confused the user:
+- Results never said they were out of date. After a rule fix, or after adding
+  evidence or changing an answer, Tests still showed the old "Failing".
+- The plan page put the sign-in step above the client ID field it needs, and
+  both sat below 23 checks. The test patient field was optional, unexplained,
+  and leaving it empty silently skipped 9 clinician checks.
+- Re-run started a live run with no Epic sign-in (e.g. after a restart) and
+  overwrote real results with "Needs review".
+- The report's 100% (passed of decided) contradicted Home's 74% (passed of all).
+- The Evidence form looked unfinished.
+
+### Decision
+- **Freshness.** Each run stores a `rules_fingerprint` (hash of `rules/*.json`)
+  next to its evidence snapshot and intake. `workspace.stale_reasons` compares
+  them with now; Home, Tests and Frameworks show "These results are out of
+  date. Since the last run, …" with Re-run. Tests whose evidence changed get a
+  "Changed" chip and a note in the side panel.
+- **Plan page: "Before you run" first.** Numbered steps (client ID, test patient
+  for clinician apps, sign in) with check marks, above the checks list. Run
+  unlocks only when all are done, and says what's missing. There is now a
+  `GET /assess/plan` built from the saved answers, so the page can be reloaded.
+- **Guards.** `/assess/run` and `/assess/rerun` won't start a live run without
+  a sign-in, or a clinician run without a test patient. They redirect to the
+  plan page with a notice instead. The sign-in also expires with Epic's token.
+- **Plain messages.** "Not signed in to the Epic sandbox…", "Skipped: no test
+  patient was given…", and answer names instead of config field names. The side
+  panel's button goes to the test plan when that's where the fix is.
+- **One readiness number.** The report uses Home's formula (passing / all
+  checks run) and says how many await review.
+- **Evidence UI redesigned.** A list of items and a tabbed form (Statement / File / Link)
+  with a drop zone. The form folds away once evidence exists, and the copy
+  depends on whether Claude is connected.

@@ -88,6 +88,12 @@
 {%- elif name == "check" %}<circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.5 2.5L16 9.5"/>
 {%- elif name == "plug" %}<path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/>
 {%- elif name == "file" %}<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>
+{%- elif name == "link" %}<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/>
+{%- elif name == "quote" %}<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12.5h5"/>
+{%- elif name == "upload" %}<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>
+{%- elif name == "plus" %}<path d="M12 5v14M5 12h14"/>
+{%- elif name == "trash" %}<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>
+{%- elif name == "lock" %}<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
 {%- elif name == "chat" %}<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>
 {%- elif name == "gear" %}<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
 {%- elif name == "shield" %}<path d="M12 3 4 6v6c0 5 3.4 8.3 8 9 4.6-.7 8-4 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/>
@@ -124,7 +130,7 @@
   <a class="t-row" role="row" href="/tests/{{ t.id }}" hx-get="/tests/{{ t.id }}" hx-target="#drawer-panel" hx-push-url="false"
      data-status="{{ t.status }}" data-category="{{ t.category }}" data-frameworks=" {{ t.frameworks|join(' ') }} "
      data-text="{{ (t.id ~ ' ' ~ t.title ~ ' ' ~ t.category_label)|lower }}">
-    <span class="t-name" role="cell"><code>{{ t.id }}</code><span>{{ t.title }}</span></span>
+    <span class="t-name" role="cell"><code>{{ t.id }}</code><span>{{ t.title }}</span>{% if t.changed %}<span class="changed-chip" title="Evidence changed after the last run">Changed</span>{% endif %}</span>
     <span role="cell">{{ status_pill(t.status, t.status_label) }}</span>
     {% if show_frameworks %}<span role="cell" class="chips hide-sm">{% for k in t.frameworks %}<span class="chip">{{ fw_names[k] }}</span>{% endfor %}</span>{% endif %}
     <span role="cell" class="hide-sm"><span class="badge sev-{{ t.severity }}">{{ t.severity }}</span></span>
@@ -133,6 +139,19 @@
   {% endfor %}
   <div class="t-empty" hidden>No tests match these filters.</div>
 </div>
+{% endmacro %}
+
+{% macro stale_banner(w, next) %}
+{% if w.run and w.stale %}
+<div class="stale-banner" role="status">
+  <span class="stale-icon">{{ icon("refresh") }}</span>
+  <div class="stale-text">
+    <strong>These results are out of date.</strong>
+    Since the last run ({{ w.run.created_at[:16].replace('T', ' ') }} UTC), {{ w.stale|join("; ") }}. Re-run to see where you stand now.
+  </div>
+  {{ rerun_button(next, cls="btn small-btn") }}
+</div>
+{% endif %}
 {% endmacro %}
 
 {% macro rerun_button(next, label="Re-run tests", cls="btn secondary") %}

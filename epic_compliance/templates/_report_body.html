@@ -4,7 +4,7 @@
     <div class="card ring-card">
       {% if view.score is not none %}
       <div class="ring" style="--p: {{ view.score }}"><span>{{ view.score }}<small>%</small></span></div>
-      <div class="lbl">Readiness<br><span class="muted">passed of decided checks</span></div>
+      <div class="lbl">Readiness<br><span class="muted">{{ view.counts.pass }} of {{ view.total }} checks passing{% if view.counts.needs_human %}; {{ view.counts.needs_human }} awaiting review{% endif %}</span></div>
       {% else %}
       <div class="ring empty-ring"><span>—</span></div>
       <div class="lbl">Readiness<br><span class="muted">nothing decided yet</span></div>

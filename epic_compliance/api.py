@@ -52,7 +52,7 @@ from .fhir.writeback import CLINICIAN_SCOPES
 from .pipeline import run_full_pipeline
 from .smart.discovery import fetch_smart_configuration
 from .smart.pkce import build_authorization_url, exchange_code_for_token, generate_pkce
-from .rules_engine.catalog import load_rules
+from .rules_engine.catalog import load_rules, rules_fingerprint
 from .viewmodel import build_report_view
 from . import workspace as ws
 
@@ -148,6 +148,7 @@ def _execute_run(
     report = run_full_pipeline(config, rule_ids=rule_ids, attached_evidence=dev_evidence.by_rule(attached))
     snapshot = config.model_dump()
     snapshot["evidence"] = dev_evidence.snapshot(attached)
+    snapshot["rules_fingerprint"] = rules_fingerprint()
     if assessment is not None:
         snapshot["assessment"] = assessment
     store.save_run(report, snapshot)
@@ -243,10 +244,13 @@ def _integrations() -> dict[str, dict[str, Any]]:
 
 
 def _workspace() -> dict[str, Any]:
-    return ws.build_workspace(
-        store.latest_run(), intake=_current_intake(),
-        integrations=_integrations(), history=store.list_runs(limit=30),
-    )
+    run, intake = store.latest_run(), _current_intake()
+    w = ws.build_workspace(run, intake=intake, integrations=_integrations(), history=store.list_runs(limit=30))
+    w["stale"], changed = ws.stale_reasons(run, intake=intake, evidence=store.list_evidence(),
+                                           rules_fingerprint=rules_fingerprint())
+    for t in w["tests"]:
+        t["changed"] = t["id"] in changed
+    return w
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -295,7 +299,8 @@ def test_detail(request: Request, rule_id: str) -> Any:
 
 def _evidence_ctx(rule_id: str, test: dict[str, Any], error: str = "", added: bool = False) -> dict[str, Any]:
     return {"t": test, "evidence_items": store.list_evidence(rule_id), "evidence_error": error,
-            "evidence_added": added, "evidence_accept": dev_evidence.ACCEPT}
+            "evidence_added": added, "evidence_accept": dev_evidence.ACCEPT,
+            "claude_connected": bool(get_config().anthropic_api_key)}
 
 
 def _test_or_404(rule_id: str) -> dict[str, Any]:
@@ -387,6 +392,9 @@ def assess_rerun(next: str = Form("/")) -> RedirectResponse:
     last = store.get_last_intake()
     if not last:
         return RedirectResponse(url="/assess", status_code=303)
+    if why := _not_ready_to_run(Intake.model_validate(last)):
+        # Don't overwrite real results with a run that can't reach Epic.
+        return RedirectResponse(url=f"/assess/plan?notice={why}", status_code=303)
     plan = build_plan(Intake.model_validate(last))
     _execute_run(plan.config_overrides(), plan.rule_ids, plan.to_dict())
     safe_next = next if next.startswith("/") and not next.startswith("//") else "/"
@@ -442,16 +450,48 @@ async def assess_plan(request: Request) -> Any:
     intake = Intake.from_form(form)
     last = store.get_last_intake()
     env = {k: last[k] for k in RUN_FIELDS if k in last and k not in form}
-    intake = intake.model_copy(update=env)
+    return _render_plan(request, intake.model_copy(update=env), chat_state=str(form.get("state", "")))
+
+
+@app.get("/assess/plan", response_class=HTMLResponse)
+def assess_plan_saved(request: Request, notice: str = "") -> Any:
+    """The test plan for the saved answers (last run, else the saved chat), so
+    the page can be reloaded and Re-run can send you to its setup steps."""
+    intake = _current_intake()
+    if not intake:
+        return RedirectResponse(url="/assess", status_code=303)
+    return _render_plan(request, Intake.model_validate(intake), notice=_NOTICES.get(notice, ""))
+
+
+_NOTICES = {
+    "signin": "Sign in to the Epic sandbox before running. Your last sign-in ended "
+              "(the tool restarted or Epic's token expired).",
+    "patient": "Add a test patient before running, so the clinician workflow checks have a patient to work with.",
+}
+
+
+def _render_plan(request: Request, intake: Intake, chat_state: str = "", notice: str = "") -> HTMLResponse:
     epic = _epic_connection()
     intake.fhir_base_url = intake.fhir_base_url or epic["fhir_base_url"]
     intake.oauth_client_id = intake.oauth_client_id or epic["client_id"]
+    intake.run_mode = "live"
     plan = build_plan(intake)
     return render(
         request, "plan.html", active="assess",
-        intake=intake, plan=plan, labels=_intake_labels(), chat_state=form.get("state", ""),
+        intake=intake, plan=plan, labels=_intake_labels(), chat_state=chat_state, notice=notice,
         run_fields=RUN_FIELDS, live_token=pipeline.get_live_token() is not None,
     )
+
+
+def _not_ready_to_run(intake: Intake) -> str:
+    """Why a live run can't start yet ("" when it can): the key of a notice."""
+    if intake.run_mode != "live":
+        return ""
+    if pipeline.get_live_token() is None:
+        return "signin"
+    if build_plan(intake).launch_profile == "clinician_standalone" and not intake.test_patient_query.strip():
+        return "patient"
+    return ""
 
 
 @app.post("/assess/run")
@@ -461,6 +501,8 @@ async def assess_run(request: Request) -> RedirectResponse:
     store.save_last_intake(intake.model_dump())
     if intake.oauth_client_id:
         store.save_config_defaults({"oauth_client_id": intake.oauth_client_id})
+    if why := _not_ready_to_run(intake):  # the page locks Run too; this covers stale tabs
+        return RedirectResponse(url=f"/assess/plan?notice={why}", status_code=303)
     plan = build_plan(intake)
     report, _ = _execute_run(plan.config_overrides(), plan.rule_ids, plan.to_dict())
     return RedirectResponse(url=f"/runs/{report.run_id}", status_code=303)

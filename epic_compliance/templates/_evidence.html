@@ -1,46 +1,85 @@
 {% import "_macros.html" as m %}
-<section id="evidence-section" class="evidence-section">
-  <h3>Evidence</h3>
-  <p class="muted small">
-    {% if t.type_label == "AI review" %}
-    Back up your answer with proof. Claude reviews it on the next run, and the report lists it with this test.
-    {% else %}
-    Attach proof for the health system's review. It's listed with this test in the report; the result itself comes from the automated check.
+{% set ai = t.type_label == "AI review" %}
+{% set open_form = evidence_error or not evidence_items %}
+<section id="evidence-section" class="ev">
+  <div class="ev-head">
+    <h3>Evidence{% if evidence_items %} <span class="ev-count">{{ evidence_items|length }}</span>{% endif %}</h3>
+    {% if evidence_items %}
+    <button type="button" class="btn secondary small-btn" data-ev-toggle {{ 'hidden' if open_form }}>{{ m.icon("plus") }} Add evidence</button>
     {% endif %}
+  </div>
+  <p class="ev-lead">
+    {% if ai and claude_connected %}Claude reviews this evidence on the next run and cites it in the result. It's also listed with this test in the report.
+    {% elif ai %}Claude isn't connected, so evidence is listed in the report but not reviewed. <a href="/integrations">Integrations</a>
+    {% else %}Listed with this test in the report for the health system's reviewers. The result itself comes from the automated check.{% endif %}
   </p>
 
+  {% if evidence_added %}<div class="ev-flash" role="status">{{ m.icon("check") }} Evidence added. {% if ai and claude_connected %}Re-run tests to have it reviewed.{% else %}It appears in the next report.{% endif %}</div>{% endif %}
+
   {% if evidence_items %}
-  <ul class="evidence-items">
+  <ul class="ev-list">
     {% for e in evidence_items %}
-    <li>
-      <div class="ev-main">
-        {% if e.kind == "note" %}<span class="ev-kind">Statement</span><span class="ev-text">{{ e.text }}</span>
-        {% elif e.kind == "link" %}<span class="ev-kind">Link</span><a href="{{ e.text }}" target="_blank" rel="noopener noreferrer">{{ e.text }}</a>
-        {% else %}<span class="ev-kind">File</span><a href="/evidence/{{ e.id }}/file">{{ e.filename }}</a>
-          <span class="muted small">{{ (e.size / 1024)|round(1) }} KB</span>{% endif %}
-        <span class="muted small">Added {{ e.created_at[:16].replace('T', ' ') }} UTC</span>
+    <li class="ev-item">
+      <span class="ev-icon ev-{{ e.kind }}">{{ m.icon({"note": "quote", "link": "link"}.get(e.kind, "file")) }}</span>
+      <div class="ev-body">
+        {% if e.kind == "note" %}
+          <p class="ev-statement">{{ e.text }}</p>
+          <span class="ev-meta">Statement · {{ e.created_at[:10] }}</span>
+        {% elif e.kind == "link" %}
+          <a class="ev-title" href="{{ e.text }}" target="_blank" rel="noopener noreferrer">{{ e.text.split("//", 1)[-1] }}</a>
+          <span class="ev-meta">Link · not opened by the reviewer · {{ e.created_at[:10] }}</span>
+        {% else %}
+          <a class="ev-title" href="/evidence/{{ e.id }}/file">{{ e.filename }}</a>
+          <span class="ev-meta">{{ e.filename.rsplit(".", 1)[-1]|upper }} · {% if e.size >= 1048576 %}{{ (e.size / 1048576)|round(1) }} MB{% else %}{{ (e.size / 1024)|round(1) }} KB{% endif %} · {{ e.created_at[:10] }}</span>
+        {% endif %}
       </div>
-      <button type="button" class="link-btn small" hx-post="/evidence/{{ e.id }}/delete" hx-target="#evidence-section"
-              hx-swap="outerHTML" hx-confirm="Remove this evidence?">Remove</button>
+      <button type="button" class="icon-btn ev-remove" title="Remove" aria-label="Remove evidence"
+              hx-post="/evidence/{{ e.id }}/delete" hx-target="#evidence-section" hx-swap="outerHTML"
+              hx-confirm="Remove this evidence? Past reports keep their record of it.">{{ m.icon("trash") }}</button>
     </li>
     {% endfor %}
   </ul>
   {% endif %}
 
-  {% if evidence_error %}<div class="callout warn" role="alert">{{ evidence_error }}</div>{% endif %}
-  {% if evidence_added %}<div class="callout ok" role="status">Added. Re-run tests to have it reviewed.</div>{% endif %}
-
-  <form class="evidence-form" hx-post="/tests/{{ t.id }}/evidence" hx-target="#evidence-section"
+  <form class="ev-form" {{ 'hidden' if not open_form }} hx-post="/tests/{{ t.id }}/evidence" hx-target="#evidence-section"
         hx-swap="outerHTML" hx-encoding="multipart/form-data">
-    <label for="ev-note-{{ t.id }}">Statement</label>
-    <textarea id="ev-note-{{ t.id }}" name="note" rows="3" maxlength="5000"
-              placeholder="e.g. Every sign-in, chart read, photo/note write and export is written to CloudWatch; logs are kept 6 years (S3 lifecycle policy)."></textarea>
-    <label for="ev-files-{{ t.id }}">Files</label>
-    <input id="ev-files-{{ t.id }}" type="file" name="files" multiple accept="{{ evidence_accept }}">
-    <p class="muted small">Logs, configs, screenshots or PDFs, up to 10 MB each.</p>
-    <label for="ev-link-{{ t.id }}">Link</label>
-    <input id="ev-link-{{ t.id }}" type="url" name="link" placeholder="https://… (e.g. your logging dashboard or SOC 2 report)">
-    <p class="phi-warning small"><strong>No real patient data.</strong> Use sandbox or de-identified samples only. Evidence is stored on this computer and, for AI-reviewed tests, sent to Claude.</p>
-    <button type="submit" class="btn">Add evidence</button>
+    <div class="ev-tabs" role="tablist">
+      <button type="button" role="tab" class="active" data-ev-tab="note" aria-selected="true">{{ m.icon("quote") }} Statement</button>
+      <button type="button" role="tab" data-ev-tab="file" aria-selected="false">{{ m.icon("upload") }} File</button>
+      <button type="button" role="tab" data-ev-tab="link" aria-selected="false">{{ m.icon("link") }} Link</button>
+    </div>
+
+    <div class="ev-panel" data-ev-panel="note">
+      <label class="sr-only" for="ev-note-{{ t.id }}">Statement</label>
+      <textarea id="ev-note-{{ t.id }}" name="note" rows="4" maxlength="5000"
+                placeholder="Describe what's in place, specifically. e.g. Every sign-in, chart read, photo/note write and export is logged to CloudWatch; an S3 lifecycle policy keeps logs for 6 years."></textarea>
+    </div>
+
+    <div class="ev-panel" data-ev-panel="file" hidden>
+      <label class="ev-drop" for="ev-files-{{ t.id }}">
+        <input id="ev-files-{{ t.id }}" type="file" name="files" multiple accept="{{ evidence_accept }}" class="sr-only">
+        <span class="ev-drop-icon">{{ m.icon("upload") }}</span>
+        <span class="ev-drop-title">Drop files here or <u>browse</u></span>
+        <span class="ev-drop-sub">Log samples, configs, screenshots or PDFs · up to 10 MB each</span>
+        <span class="ev-drop-files" aria-live="polite"></span>
+      </label>
+    </div>
+
+    <div class="ev-panel" data-ev-panel="link" hidden>
+      <label class="sr-only" for="ev-link-{{ t.id }}">Link</label>
+      <input id="ev-link-{{ t.id }}" type="url" name="link" placeholder="https://… your logging dashboard, SOC 2 report or policy page">
+      <p class="ev-note">Claude doesn't open links, so a link alone isn't proof. Add a statement or file with it.</p>
+    </div>
+
+    {% if evidence_error %}<div class="ev-error" role="alert">{{ evidence_error }}</div>{% endif %}
+
+    <div class="ev-foot">
+      <span class="ev-privacy">{{ m.icon("lock") }} No real patient data. Sandbox or de-identified samples only.
+        {% if ai and claude_connected %}Sent to Claude for review; stored on this computer.{% else %}Stored on this computer.{% endif %}</span>
+      <div class="ev-actions">
+        {% if evidence_items %}<button type="button" class="btn secondary small-btn" data-ev-toggle>Cancel</button>{% endif %}
+        <button type="submit" class="btn small-btn">Save evidence</button>
+      </div>
+    </div>
   </form>
 </section>

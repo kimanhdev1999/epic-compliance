@@ -9,6 +9,7 @@
   </div>
   {% if w.run %}<div class="actions">{{ m.rerun_button("/frameworks") }}</div>{% endif %}
 </div>
+{{ m.stale_banner(w, "/frameworks") }}
 
 <div class="fw-list">
   {% for fw in w.frameworks %}
