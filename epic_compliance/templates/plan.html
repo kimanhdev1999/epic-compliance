@@ -41,8 +41,8 @@
       <div class="step-body">
         <label for="test_patient_query">Test patient search</label>
         <input type="text" id="test_patient_query" name="test_patient_query" value="{{ intake.test_patient_query }}"
-               placeholder="family=Cadence&amp;given=Anna" autocomplete="off" required>
-        <p class="hint">A FHIR Patient search that finds exactly one Epic sandbox patient, the way a clinician would look them up.
+               placeholder="identifier=203713" autocomplete="off" required>
+        <p class="hint">A FHIR Patient search that finds exactly one Epic sandbox patient. Search by MRN (<code>identifier=203713</code> is Camila Lopez) — a name search can match several patients or none if misspelled.
           Pick one from Epic's <a href="https://fhir.epic.com/Documentation?docId=testpatients" target="_blank" rel="noopener">sandbox test data</a>.
           Without it, the clinician workflow checks that need a patient (finding them, filing photos and notes) are skipped.</p>
       </div>

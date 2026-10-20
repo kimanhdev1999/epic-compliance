@@ -136,6 +136,22 @@ def test_ambiguous_patient_search_is_not_a_pass():
     assert _finding("CLIN-001", ev).verdict == "needs_human"
 
 
+def test_patient_search_with_no_matches_blames_the_query_not_incoming_apis():
+    ev = {"clinician": {"patient_search": {"query": "family=Lopez&given=Camilla", "status_code": 200,
+                                           "match_count": 0}}}
+    finding = _finding("CLIN-001", ev)
+    assert finding.verdict == "fail"
+    assert "No patient matching 'family=Lopez&given=Camilla' exists" in finding.remediation_hint
+    assert "Add Patient.Search" not in finding.remediation_hint
+
+
+def test_patient_search_refused_points_to_incoming_apis():
+    ev = {"clinician": {"patient_search": {"query": "identifier=203713", "status_code": 403, "match_count": 0}}}
+    finding = _finding("CLIN-001", ev)
+    assert finding.verdict == "fail"
+    assert "Incoming APIs" in finding.remediation_hint and "403" in finding.remediation_hint
+
+
 # ─── honest verdicts on evidence never collected ────────────────────────────
 
 
