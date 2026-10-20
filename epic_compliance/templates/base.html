@@ -76,6 +76,11 @@
     if (e.target.closest('[data-toggle-sidebar]')) document.getElementById('shell').classList.toggle('sb-open');
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !drawer.hidden) closeDrawer(); });
+  // ?open=<test id> reopens that test's drawer, e.g. after re-running just that test.
+  var reopen = new URLSearchParams(location.search).get('open');
+  if (reopen) document.addEventListener('DOMContentLoaded', function () {
+    htmx.ajax('GET', '/tests/' + encodeURIComponent(reopen), {target: '#drawer-panel'});
+  });
 
   // Evidence section (in the test drawer, loaded by HTMX): tabs, show/hide, file names.
   document.addEventListener('click', function (e) {

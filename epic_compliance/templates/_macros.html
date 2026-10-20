@@ -154,9 +154,10 @@
 {% endif %}
 {% endmacro %}
 
-{% macro rerun_button(next, label="Re-run tests", cls="btn secondary") %}
+{% macro rerun_button(next, label="Re-run tests", cls="btn secondary", rule_id="") %}
 <form method="post" action="/assess/rerun" class="inline-form" onsubmit="this.querySelector('button').disabled=true; this.querySelector('.spinner').hidden=false">
   <input type="hidden" name="next" value="{{ next }}">
+  {% if rule_id %}<input type="hidden" name="rule_id" value="{{ rule_id }}">{% endif %}
   <button type="submit" class="{{ cls }}">{{ icon("refresh") }}{{ label }}<span class="spinner dark" hidden></span></button>
 </form>
 {% endmacro %}

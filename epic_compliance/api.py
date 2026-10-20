@@ -136,11 +136,14 @@ def _execute_run(
     overrides: dict[str, str],
     rule_ids: set[str] | None = None,
     assessment: dict[str, Any] | None = None,
+    base: dict[str, Any] | None = None,
 ) -> tuple[Report, dict[str, Any]]:
     """Run the pipeline with per-run overrides, persist it, return (report, cfg).
 
     ``rule_ids``/``assessment`` come from an assessment plan: the checks to run,
     and the intake + scope stored with the run so its report can show them.
+    ``base`` is the run a single-test re-run updates: every other test keeps
+    its result from it.
     """
     global _last_report
     config = config_with_overrides(overrides)
@@ -151,11 +154,31 @@ def _execute_run(
     snapshot["rules_fingerprint"] = rules_fingerprint()
     if assessment is not None:
         snapshot["assessment"] = assessment
+    if base is not None:
+        report, snapshot = _merge_into(base, report, snapshot)
     store.save_run(report, snapshot)
     # Remember non-secret choices to prefill the next form.
     store.save_config_defaults(snapshot)
     _last_report = report
     return report, snapshot
+
+
+def _merge_into(
+    base: dict[str, Any], report: Report, snapshot: dict[str, Any]
+) -> tuple[Report, dict[str, Any]]:
+    """Fold a single-test re-run into ``base``: the re-run tests get their new
+    result and evidence; every other test keeps what ``base`` had."""
+    rerun = {f.rule_id for f in report.findings}
+    fresh = {f.rule_id: f for f in report.findings}
+    findings = [fresh.pop(f.rule_id) if f.rule_id in rerun else f for f in base["report"].findings]
+    findings += fresh.values()
+    cfg = base["config"]
+    snapshot["evidence"] = ([e for e in cfg.get("evidence") or [] if e["rule_id"] not in rerun]
+                            + snapshot["evidence"])
+    # Other tests weren't re-checked against new rules, so keep base's fingerprint.
+    snapshot["rules_fingerprint"] = cfg.get("rules_fingerprint")
+    snapshot["rerun_of"] = {"run_id": base["run_id"], "rule_ids": sorted(rerun)}
+    return Report(run_id=report.run_id, findings=findings), snapshot
 
 
 def _load_run_or_404(run_id: str) -> dict[str, Any]:
@@ -387,8 +410,12 @@ def assess_start(request: Request) -> Any:
 
 
 @app.post("/assess/rerun")
-def assess_rerun(next: str = Form("/")) -> RedirectResponse:
-    """Re-run the current app's plan (last intake) and return to the page."""
+def assess_rerun(next: str = Form("/"), rule_id: str = Form("")) -> RedirectResponse:
+    """Re-run the current app's plan (last intake) and return to the page.
+
+    With ``rule_id``, re-run just that test: the other tests keep their
+    results from the latest run.
+    """
     last = store.get_last_intake()
     if not last:
         return RedirectResponse(url="/assess", status_code=303)
@@ -396,7 +423,11 @@ def assess_rerun(next: str = Form("/")) -> RedirectResponse:
         # Don't overwrite real results with a run that can't reach Epic.
         return RedirectResponse(url=f"/assess/plan?notice={why}", status_code=303)
     plan = build_plan(Intake.model_validate(last))
-    _execute_run(plan.config_overrides(), plan.rule_ids, plan.to_dict())
+    base = store.latest_run() if rule_id else None
+    if base is not None and rule_id in plan.rule_ids:
+        _execute_run(plan.config_overrides(), {rule_id}, plan.to_dict(), base=base)
+    else:
+        _execute_run(plan.config_overrides(), plan.rule_ids, plan.to_dict())
     safe_next = next if next.startswith("/") and not next.startswith("//") else "/"
     return RedirectResponse(url=safe_next, status_code=303)
 

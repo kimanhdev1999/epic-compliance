@@ -239,6 +239,9 @@ def history_of_test(runs: list[dict[str, Any]], rule_id: str) -> list[dict[str, 
     """Status of one test across recent full runs, newest first."""
     out = []
     for run in runs:
+        rerun = run.get("config", {}).get("rerun_of")
+        if rerun and rule_id not in rerun["rule_ids"]:
+            continue  # a single-test re-run of another test: nothing new for this one
         f = next((f for f in run["report"].findings if f.rule_id == rule_id), None)
         status = STATUS_FROM_VERDICT[f.verdict] if f else "not_applicable"
         out.append({"run_id": run["run_id"], "when": run["created_at"][:16].replace("T", " "),
