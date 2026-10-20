@@ -1,6 +1,7 @@
 # Standalone HL7 FHIR validator service.
 #
-# Same image the ONC (g)(10) test kit uses, run on its own so we do not have to
+# The validator service the ONC (g)(10) test kit uses (a newer tag: 1.0.78, the
+# kit's, rejects valid codes; see autostart.py), run on its own so we do not have to
 # modify that repo. The test kit's own compose keeps this service internal (its
 # nginx proxies /hl7validatorapi/ to hl7_validator_service:3500 but publishes no
 # host port), so this file publishes 3500 for us.
@@ -10,9 +11,14 @@
 #   podman compose -f docker/fhir-validator.compose.yml down
 #
 # Matches VALIDATOR_SERVICE_URL in .env (default http://localhost:3500).
+#
+# You normally do not need this file: the app starts the same image itself
+# (container "epic-compliance-fhir-validator") on `serve` / `run` — see
+# epic_compliance/validator/autostart.py and VALIDATOR_AUTOSTART. Keep the image
+# tag in step with VALIDATOR_IMAGE there (tests/test_validator_autostart.py checks).
 services:
   hl7_validator_service:
-    image: infernocommunity/inferno-resource-validator:1.0.78
+    image: infernocommunity/inferno-resource-validator:1.0.84
     ports:
       - "3500:3500"
     environment:
@@ -21,4 +27,5 @@ services:
     volumes:
       # Reuse the IG packages the g10 test kit already downloaded (US Core etc).
       # Comment out if you do not have that repo checked out beside this one.
-      - ../onc-certification-g10-test-kit/lib/onc_certification_g10_test_kit/igs:/home/igs
+      # Relative to this file's folder (docker/), hence two levels up.
+      - ../../onc-certification-g10-test-kit/lib/onc_certification_g10_test_kit/igs:/home/igs

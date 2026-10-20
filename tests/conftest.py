@@ -34,6 +34,10 @@ if _ENV_FILE.exists():
 
     load_dotenv(_ENV_FILE, override=False)
 
+# Tests must never start containers: the app's startup hook would otherwise
+# launch the FHIR validator for every TestClient(app).
+os.environ["VALIDATOR_AUTOSTART"] = "false"
+
 # EPIC_SANDBOX_CLIENT_ID is the explicit test override; OAUTH_CLIENT_ID is the
 # app's own config. Fall back to it so you only fill in one variable.
 if not os.environ.get("EPIC_SANDBOX_CLIENT_ID"):

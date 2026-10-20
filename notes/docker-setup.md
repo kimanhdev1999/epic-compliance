@@ -64,3 +64,16 @@ podman compose logs nginx     # access logs
 - Uses **Podman** (`podman compose`), not Docker
 - Port 80 was in conflict; changed to 8080 in `docker-compose.background.yml`
 - `run.sh` and `setup.sh` call `docker compose` internally — if they break, run the equivalent `podman compose` commands directly
+
+## This tool's own FHIR validator (ADR-021)
+
+The validator above (1.0.78) belongs to the test kit and is internal to the kit's compose.
+This tool runs **its own** container, `epic-compliance-fhir-validator`, using
+`infernocommunity/inferno-resource-validator:1.0.84` on port 3500. 1.0.78 rejects valid codes
+against today's tx.fhir.org.
+
+- The app starts it on `serve`, `run` and `validator` (podman, falling back to docker).
+  It is left running. Turn this off with `VALIDATOR_AUTOSTART=false`.
+- An old container on a different image is replaced automatically.
+- Check it: `curl localhost:3500/validator/version`, or `python -m epic_compliance validator`.
+- Stop it: `podman stop epic-compliance-fhir-validator`.
