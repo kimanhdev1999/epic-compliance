@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Connect to Epic</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#0E5E59}a:hover{color:#0A4743}
+.app{display:flex;flex-wrap:wrap;align-items:stretch;min-height:100vh;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#101828;background:#F5F6F8;font-size:14px;line-height:20px}
+.side{flex:1 1 236px;background:#0F1B2D;color:#D0D5DD;padding:20px 14px;display:flex;flex-direction:column;gap:18px;box-sizing:border-box}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:600;font-size:15px;padding:0 8px}
+.mark{width:28px;height:28px;border-radius:8px;background:#2BB3A9;color:#0F1B2D;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.appsw{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid #2A3A52;border-radius:10px;text-decoration:none}
+.appsw b{color:#fff;font-size:14px}.appsw span{color:#98A2B3;font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:8px;color:#D0D5DD;text-decoration:none;font-weight:500}
+.nav a:hover{background:#18263A;color:#fff}
+.nav a.on{background:#1F3350;color:#fff}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#98A2B3;padding:0 12px 4px;font-weight:600}
+.cnt{font-size:12px;font-weight:600;padding:0 7px;border-radius:999px;background:#D92D20;color:#fff;line-height:18px}
+.conn{margin-top:auto;padding:12px;border-radius:10px;background:#16243A;display:flex;flex-direction:column;gap:4px;font-size:12px;color:#D0D5DD;text-decoration:none}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
+.main{flex:999 1 560px;min-width:0;padding:28px 40px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;text-decoration:none;border:1px solid transparent;box-sizing:border-box;white-space:nowrap}
+.btn-p{background:#0E5E59;color:#fff}.btn-p:hover{background:#0A4743;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#0E5E59}
+.muted{color:#475467}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+h1{font-size:26px;line-height:34px;margin:0;font-weight:600}
+h2{font-size:17px;line-height:24px;margin:0;font-weight:600}
+p{margin:0}
+ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.st{display:flex;gap:16px;align-items:flex-start}
+.sn{flex:none;width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:600}
+.done{background:#ECFDF3;color:#067647;border:1.5px solid #75E0A7}
+.warn{background:#FFFAEB;color:#B54708;border:1.5px solid #FEC84B}
+.copy{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 12px;border:1px solid #D0D5DD;border-radius:8px;background:#F9FAFB}
+.copy .mono{flex:1;font-size:13px}
+.inp{font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid #D0D5DD;border-radius:8px;background:#fff;color:#101828;min-height:40px;box-sizing:border-box;width:100%}
+.api{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 24px;font-size:13px}
+.api span{display:flex;gap:8px;align-items:center}
+.miss{color:#B42318;font-weight:600}
+.pill{display:inline-flex;align-items:center;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600;line-height:20px;white-space:nowrap}
+.p-pass{background:#ECFDF3;color:#067647}
+.p-fail{background:#FEF3F2;color:#B42318}
+.lbl{font-weight:600;font-size:13px}
+.hint{font-size:12.5px;color:#475467}
+.tick{color:#067647}
+</style>
+</helmet>
+<div class="app">
+<nav class="side" aria-label="Main">
+<div class="brand"><span class="mark">E</span>Epic Readiness</div>
+<a class="appsw" href="Profile.dc.html"><b>DermScan</b><span>Advocate Health · Clinician app</span></a>
+<div class="nav">
+<a href="Overview.dc.html">Overview</a>
+<a href="Profile.dc.html">App profile</a>
+<a href="Tests.dc.html">Tests <span class="cnt">3</span></a>
+<a href="RunSetup.dc.html">Run</a>
+<a href="Runs.dc.html">Runs</a>
+<a href="Report.dc.html">Report</a>
+</div>
+<div class="nav"><div class="navlabel">Setup</div><a href="Connections.dc.html" class="on" aria-current="page">Connections</a></div>
+<a class="conn" href="Connect.dc.html"><span style="display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 600"><span class="dot" style="background: #47CD89"></span>Epic sandbox connected</span><span>Clinician sign-in · 41 min left</span></a>
+</nav>
+
+<main class="main">
+<div style="display: flex; flex-direction: column; gap: 6px"><a href="Connections.dc.html" style="font-size: 13px">← Connections</a><div class="eyebrow">Step 2 of 5</div><h1>Connect to Epic's sandbox</h1><p class="muted">The same panel opens from Overview, Run setup and Connections. Steps already done stay collapsed.</p></div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<div style="flex: 3 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+
+<section class="card"><div class="st"><span class="sn done" aria-label="Done">✓</span><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<div><h2>Register this tool in your Epic app</h2><p class="muted">On <a href="https://fhir.epic.com">fhir.epic.com</a> → Build Apps → your app. Do this once; Epic needs both before sign-in works.</p></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">1. Add this tool's sign-in address as a redirect URI</span>
+<div class="copy"><span class="mono">http://localhost:8000/callback</span><button class="btn btn-s" type="button" style="min-height: 32px">Copy</button></div>
+<span class="hint">Keep your app's own redirect URI (<span class="mono">dermscan://callback</span>) too — Epic allows several.</span></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><div style="display: flex; justify-content: space-between; align-items: center"><span class="lbl">2. Turn on the APIs your plan uses (R4)</span><button class="btn btn-s" type="button" style="min-height: 32px">Copy list</button></div>
+<div class="api">
+<span><span class="tick">✓</span>Patient.Read, Patient.Search</span>
+<span><span class="tick">✓</span>Practitioner.Read</span>
+<span><span class="tick">✓</span>Encounter.Search</span>
+<span><span class="tick">✓</span>Media.Create, Media.Read</span>
+<span><span class="tick">✓</span>Binary.Read</span>
+<span><span class="tick">✓</span>Condition.Search</span>
+<span><span class="tick">✓</span>MedicationRequest.Search</span>
+<span class="miss">✕ AllergyIntolerance.Search — not granted</span>
+<span><span class="tick">✓</span>DocumentReference.Create, Read, Search</span>
+</div>
+<span class="hint">Derived from the clinician sign-in scopes for your 29 tests. Ticks come from your last sign-in.</span></div>
+</div></div></section>
+
+<section class="card"><div class="st"><span class="sn done" aria-label="Done">✓</span><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+<h2>Non-production client ID</h2>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><label for="cid" style="position: absolute; left: -9999px">Client ID</label><input class="inp mono" id="cid" value="d1b7c3e0-••••-••••-••••-5f2a91c04e17" style="flex: 1 1 320px"><button class="btn btn-s" type="button">Save</button></div>
+<span class="hint">Copy it from your app's page on fhir.epic.com. Never the production ID.</span>
+</div></div></section>
+
+<section class="card" style="border: 2px solid #0E5E59"><div class="st"><span class="sn done" aria-label="Done">✓</span><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: center"><h2>Sign in to Epic</h2><span class="pill p-pass">Connected · 41 min left</span></div>
+<p>Signed in at 10:31 as a <b>clinician</b> (no patient chosen at login) — matches your profile. The sign-in expires at 11:31; runs need at least 5 minutes left.</p>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn btn-s" type="button">Sign in again</button><button class="btn btn-s" type="button">Disconnect</button></div>
+<span class="hint">Opens Epic in a popup. Use a sandbox clinician login such as FHIRTWO — the password is in Epic's sandbox docs.</span>
+</div></div></section>
+
+<section class="card"><div class="st"><span class="sn warn" aria-label="Warning">!</span><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+<h2>What Epic granted</h2>
+<p>11 of 12 scopes granted. <span class="miss">Missing: user/AllergyIntolerance.read</span></p>
+<p class="muted">CLIN-008 (chart reads) will fail until you turn on AllergyIntolerance.Search in your Epic app and sign in again.</p>
+<details><summary style="cursor: pointer; font-weight: 600; color: #0E5E59; min-height: 32px">Show all scopes</summary><p class="mono" style="padding-top: 8px; line-height: 20px">openid fhirUser user/Patient.read user/Practitioner.read user/Encounter.read user/Media.read user/Media.write user/Binary.read user/Condition.read user/MedicationRequest.read user/DocumentReference.read user/DocumentReference.write</p></details>
+</div></div></section>
+
+<div style="display: flex; justify-content: flex-end"><a class="btn btn-p" href="RunSetup.dc.html">Continue to run setup</a></div>
+</div>
+
+<aside class="card" style="flex: 1 1 280px; background: #F9FAFB">
+<h2>Sign-in not working?</h2>
+<ul>
+<li><b>“redirect_uri is invalid”</b> — the address in step 1 isn't registered exactly (no trailing slash).</li>
+<li><b>“invalid_client”</b> — wrong client ID, or Epic hasn't finished activating a new or edited app yet; try again later.</li>
+<li><b>Nothing happens</b> — your browser blocked the popup. Allow popups for localhost.</li>
+<li><b>Wrong kind of login</b> — clinician apps need a clinician login, not MyChart.</li>
+</ul>
+<p class="muted" style="font-size: 12.5px">The sign-in is kept in memory only. Restarting the tool means signing in again.</p>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

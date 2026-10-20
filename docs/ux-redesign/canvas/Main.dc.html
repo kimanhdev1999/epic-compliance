@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spec: principles, IA and glossary</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#0E5E59}a:hover{color:#0A4743}
+.doc{font-family:'IBM Plex Sans',system-ui,sans-serif;color:#101828;background:#F5F6F8;font-size:15px;line-height:24px;padding:56px 24px 80px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:12px;padding:24px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#0E5E59}
+.muted{color:#475467}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:13px}
+h1{font-size:40px;line-height:48px;margin:0;font-weight:600;letter-spacing:-.01em}
+h2{font-size:24px;line-height:32px;margin:0;font-weight:600}
+h3{font-size:16px;line-height:24px;margin:0;font-weight:600}
+p{margin:0}
+table{width:100%;border-collapse:collapse;font-size:14px;line-height:21px}
+th{text-align:left;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#475467;font-weight:600;padding:10px 14px;border-bottom:1px solid #D0D5DD;background:#F9FAFB}
+td{padding:12px 14px;border-bottom:1px solid #EAECF0;vertical-align:top}
+.scroll{overflow-x:auto;background:#fff;border:1px solid #E4E7EC;border-radius:12px}
+.num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#E6F2F1;color:#0E5E59;font-weight:600;font-size:14px}
+.sev{display:inline-block;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;line-height:20px}
+.s-block{background:#FEF3F2;color:#B42318}
+.s-major{background:#FFFAEB;color:#B54708}
+.s-minor{background:#F2F4F7;color:#475467}
+.tree{display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:21px}
+.tree .n{padding-left:16px;border-left:2px solid #E4E7EC;color:#475467}
+</style>
+</helmet>
+<div class="doc">
+<div class="wrap">
+
+<div style="display: flex; flex-direction: column; gap: 14px; max-width: 880px">
+<div class="eyebrow">Epic Readiness · UX redesign · Spec 1 of 4</div>
+<h1>From “a set of pages” to one guided path to “ready to submit”</h1>
+<p class="muted" style="font-size: 18px; line-height: 28px">The tool already does the hard part: honest verdicts, evidence, a plan with reasons. What confuses people is that the same thing has four names, the app's answers live in three places, Epic can be connected from three screens, and results don't say who they test or what to do next. This redesign keeps every capability and rebuilds the experience around one profile, one connection, one run and one report.</p>
+<p class="muted" style="font-size: 14px">Base: current app on <span class="mono">main</span> (14af8fe), ADR-001 → ADR-016. Persona in all mockups: DermScan, a clinician mobile app integrating with Advocate Health.</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 16px">
+<h2>Design principles</h2>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+<div class="card" style="display: flex; flex-direction: column; gap: 10px"><span class="num">1</span><h3>One source of truth: the App profile</h3><p class="muted">Every answer about the app lives on one editable page. The assistant chat is just a faster way to fill it in. Plan, runs and staleness all read the profile — never a hidden <span class="mono">last_intake</span>.</p></div>
+<div class="card" style="display: flex; flex-direction: column; gap: 10px"><span class="num">2</span><h3>One way to connect to Epic</h3><p class="muted">One “Connect to Epic” flow, reused everywhere, that also tells you what to register on fhir.epic.com. “Connected” means signed in with the right profile — nothing less.</p></div>
+<div class="card" style="display: flex; flex-direction: column; gap: 10px"><span class="num">3</span><h3>Every result answers three questions</h3><p class="muted">What happened (one plain sentence), who it tests (your app or Epic), and what to do next (one button). Raw data sits behind “Technical details”.</p></div>
+<div class="card" style="display: flex; flex-direction: column; gap: 10px"><span class="num">4</span><h3>Honest by default</h3><p class="muted">Kept from ADR-009/015: missing information is never a fail, and nothing passes without proof. New: “Needs input” always names its reason, so it is never a dead end.</p></div>
+<div class="card" style="display: flex; flex-direction: column; gap: 10px"><span class="num">5</span><h3>Same words everywhere</h3><p class="muted">Test, Run, Result, Proof, Report. One glossary (below), enforced in UI, export, JSON and CLI.</p></div>
+<div class="card" style="display: flex; flex-direction: column; gap: 10px"><span class="num">6</span><h3>The report is a deliverable</h3><p class="muted">A health-system reviewer must be able to read it cold: cover, verdict, scope, method and limits, proof index with hashes. Sample-data runs are watermarked.</p></div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 16px">
+<h2>What's confusing today, and what changes</h2>
+<p class="muted">From the UX walkthrough of the current app (empty database → DermScan run → evidence → re-run).</p>
+<div class="scroll">
+<table>
+<thead><tr><th style="width: 90px">Impact</th><th>Today</th><th>Redesign</th><th style="width: 140px">Screen</th></tr></thead>
+<tbody>
+<tr><td><span class="sev s-block">Blocker</span></td><td>Corrections made in chat aren't used by Re-run, Home or the plan — Re-run silently uses old answers.</td><td>App profile is the source of truth and is versioned. Re-run always uses the current profile and shows the plan diff first.</td><td>1.3, 1.5</td></tr>
+<tr><td><span class="sev s-major">Major</span></td><td>“Backend service” starter loops forever on “Who signs in?”</td><td>Starter removed. “No users / backend” gets an explicit “not supported yet” answer with a way out.</td><td>1.2, 3.4</td></tr>
+<tr><td><span class="sev s-major">Major</span></td><td>Out-of-date banner sticks after a re-run (proof on out-of-scope tests counted).</td><td>Staleness compares in-scope tests only; proof can't be added to out-of-scope tests.</td><td>Spec 3</td></tr>
+<tr><td><span class="sev s-major">Major</span></td><td>Raw Python dicts, <span class="mono">[MOCK]</span> and <span class="mono">[Errno 61]</span> shown as the result — and exported to reviewers.</td><td>Each result has a plain summary + a named “Needs input” reason. Raw data behind “Technical details”.</td><td>2.4, 3.2</td></tr>
+<tr><td><span class="sev s-major">Major</span></td><td>Export has no app name, scope or limits; mixes “Needs Human” and “Needs review”.</td><td>New report: cover, verdict, scope, method &amp; limits, proof index, watermark for sample data.</td><td>3.2</td></tr>
+<tr><td><span class="sev s-major">Major</span></td><td>Readiness % is lifted by tests that only test Epic.</td><td>Two numbers: “Your app” readiness (the headline) and “Epic environment” health.</td><td>2.2</td></tr>
+<tr><td><span class="sev s-major">Major</span></td><td>Nobody says to register the tool's callback URL or enable the APIs — first sign-in hits an Epic error.</td><td>Connect flow step 1: copy callback URL + the exact API list derived from your plan's scopes.</td><td>1.4</td></tr>
+<tr><td><span class="sev s-major">Major</span></td><td>Three ways to connect; Integrations signs in with the wrong profile; checklist ticks “Connected” with only a client ID.</td><td>One Connect flow. Connected = signed in, right profile, token valid. Expiry shown everywhere.</td><td>1.4, 3.3</td></tr>
+<tr><td><span class="sev s-major">Major</span></td><td>Chat silently drops “reads the chart” → 6 tests skipped without asking.</td><td>Profile card is editable; data uses are always confirmed as explicit checkboxes.</td><td>1.2, 1.3</td></tr>
+<tr><td><span class="sev s-minor">Minor</span></td><td>Proof half-saves on error → duplicates.</td><td>All-or-nothing save; input kept on error.</td><td>2.4</td></tr>
+<tr><td><span class="sev s-minor">Minor</span></td><td>Run / assessment / report / plan / check / rule / finding all mean overlapping things.</td><td>Glossary below, everywhere.</td><td>All</td></tr>
+<tr><td><span class="sev s-minor">Minor</span></td><td>Raw JSON 404s; Python repr in sign-in messages; dead Settings fields.</td><td>Designed 404 and sign-in error pages; Settings folded into Connections.</td><td>3.3, 3.4</td></tr>
+<tr><td><span class="sev s-minor">Minor</span></td><td>Drawer has no focus trap; tabs lack roles; chat replies not announced.</td><td>Accessibility requirements written into each screen (Spec 3 § Accessibility).</td><td>All</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 16px">
+<h2>Information architecture</h2>
+<p class="muted">Seven destinations, down from eleven. Nav order follows the job: know the app → test it → share the result.</p>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+<div class="card tree"><h3>Overview <span class="mono muted">/</span></h3><div class="n">Verdict + next best action</div><div class="n">Readiness journey (5 steps)</div><div class="n">Your app readiness · Epic environment</div><div class="n">Fix first · Needs input</div><div class="n">Trend across runs</div></div>
+<div class="card tree"><h3>App profile <span class="mono muted">/profile</span></h3><div class="n">Identity · Who signs in · Platform</div><div class="n">What it does with patient data</div><div class="n">Security answers</div><div class="n">Test settings (patient, encounter)</div><div class="n">Assistant <span class="mono">/profile/assistant</span></div><div class="n">Version history</div></div>
+<div class="card tree"><h3>Tests <span class="mono muted">/tests</span></h3><div class="n">Filters: result · who it tests · framework · area</div><div class="n">In plan / Out of plan</div><div class="n">Test detail <span class="mono">/tests/:id</span> (drawer + page)</div><div class="n">Frameworks become a filter + a view toggle</div></div>
+<div class="card tree"><h3>Run <span class="mono muted">/run</span></h3><div class="n">Pre-flight checklist</div><div class="n">Plan summary + diff</div><div class="n">Live progress <span class="mono">/run/:id</span></div></div>
+<div class="card tree"><h3>Runs <span class="mono muted">/runs</span></h3><div class="n">History, verdict per run</div><div class="n">Compare two runs</div><div class="n">Delete</div></div>
+<div class="card tree"><h3>Report <span class="mono muted">/runs/:id/report</span></h3><div class="n">Readiness report (latest by default)</div><div class="n">Download PDF · HTML · JSON</div><div class="n">Proof index</div><div class="n">Later: Submission evidence pack (ADR-009 step 4)</div></div>
+<div class="card tree"><h3>Connections <span class="mono muted">/connections</span></h3><div class="n">Epic sandbox (Connect flow <span class="mono">/connections/epic</span>)</div><div class="n">Claude (AI review)</div><div class="n">HL7 FHIR validator</div><div class="n">ONC (g)(10) test kit</div><div class="n">Tool settings (was /config)</div></div>
+<div class="card tree" style="background: #F9FAFB"><h3>Removed / merged</h3><div class="n">Home → Overview</div><div class="n">Frameworks pages → Tests filter + view</div><div class="n">Describe your app → Profile assistant</div><div class="n">Test plan page → Run setup</div><div class="n">Integrations + Settings → Connections</div><div class="n">Reports nav → Runs + Report</div></div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 16px">
+<h2>Glossary (one word per idea)</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width: 170px">Use</th><th style="width: 260px">Replaces</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><b>App profile</b></td><td>Intake, answers, “Describe your app”, last_intake</td><td>Everything the tool knows about the app: who signs in, platform, data uses, security answers, test settings. Versioned; every run records the version it used.</td></tr>
+<tr><td><b>Test</b></td><td>Rule, check, finding (in UI)</td><td>One requirement the tool can verify, e.g. CLIN-001. Has an ID, area, severity, framework(s) and <i>who it tests</i>.</td></tr>
+<tr><td><b>Plan</b></td><td>Test plan, “checks selected”</td><td>The tests that apply to this profile, each with a reason. Out-of-plan tests also carry a reason.</td></tr>
+<tr><td><b>Run</b></td><td>Assessment, “Run N checks”</td><td>One execution of the plan against Epic at a point in time.</td></tr>
+<tr><td><b>Result</b></td><td>Verdict, status, finding</td><td>A test's outcome in a run: <b>Passed</b>, <b>Failed</b>, <b>Needs input</b>, plus <b>Not run</b> and <b>Out of plan</b> for tests without a result.</td></tr>
+<tr><td><b>Needs input</b></td><td>Needs review, needs_human, Needs Human</td><td>The tool couldn't decide and tells you why: Answer a question · Add proof · Connect a service · Refine test patient · Verify outside the app.</td></tr>
+<tr><td><b>Proof</b></td><td>Evidence (developer-attached)</td><td>Statements, files and links you attach to a test. Kept across runs; each run snapshots hashes.</td></tr>
+<tr><td><b>What we observed</b></td><td>Evidence (collected), “Result” text</td><td>The data the tool collected from Epic for this test. Shown as a plain summary + technical details.</td></tr>
+<tr><td><b>Who it tests</b></td><td>Subject (epic_platform, app_registration…)</td><td><b>Your app</b> (registration, writes, stated answers) or <b>Epic environment</b> (Epic's own behaviour, this tool's login). Only “Your app” drives readiness.</td></tr>
+<tr><td><b>Readiness</b></td><td>Score, % complete</td><td>Passed ÷ (Passed + Failed + Needs input) over in-plan “Your app” tests.</td></tr>
+<tr><td><b>Verdict</b></td><td>(new)</td><td>One word for the whole app: Blocked · Fixes needed · Missing proof · Ready to submit.</td></tr>
+<tr><td><b>Report</b></td><td>Report, export, Reports nav</td><td>The shareable document for one run.</td></tr>
+<tr><td><b>Connection</b></td><td>Integration, sign-in, live token</td><td>An external service the tool uses. Epic's connection = client ID + successful SMART sign-in (time-limited).</td></tr>
+<tr><td><b>Out of date</b></td><td>Stale</td><td>The latest run no longer matches the current profile, proof, test catalog or connection.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2300}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

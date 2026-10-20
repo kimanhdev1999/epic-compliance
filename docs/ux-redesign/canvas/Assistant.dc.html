@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Describe your app</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#0E5E59}a:hover{color:#0A4743}
+.app{display:flex;flex-wrap:wrap;align-items:stretch;min-height:100vh;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#101828;background:#F5F6F8;font-size:14px;line-height:20px}
+.side{flex:1 1 236px;background:#0F1B2D;color:#D0D5DD;padding:20px 14px;display:flex;flex-direction:column;gap:18px;box-sizing:border-box}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:600;font-size:15px;padding:0 8px}
+.mark{width:28px;height:28px;border-radius:8px;background:#2BB3A9;color:#0F1B2D;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.appsw{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid #2A3A52;border-radius:10px;text-decoration:none}
+.appsw b{color:#fff;font-size:14px}.appsw span{color:#98A2B3;font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:8px;color:#D0D5DD;text-decoration:none;font-weight:500}
+.nav a:hover{background:#18263A;color:#fff}
+.nav a.on{background:#1F3350;color:#fff}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#98A2B3;padding:0 12px 4px;font-weight:600}
+.conn{margin-top:auto;padding:12px;border-radius:10px;background:#16243A;display:flex;flex-direction:column;gap:4px;font-size:12px;color:#D0D5DD;text-decoration:none}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
+.main{flex:999 1 560px;min-width:0;padding:28px 40px 40px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;text-decoration:none;border:1px solid transparent;box-sizing:border-box;white-space:nowrap}
+.btn-p{background:#0E5E59;color:#fff}.btn-p:hover{background:#0A4743;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}
+.btn[disabled]{background:#E4E7EC;color:#475467;border-color:#E4E7EC}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#0E5E59}
+.muted{color:#475467}
+h1{font-size:26px;line-height:34px;margin:0;font-weight:600}
+h2{font-size:17px;line-height:24px;margin:0;font-weight:600}
+p{margin:0}
+.msg{max-width:78%;padding:12px 16px;border-radius:14px;font-size:14.5px;line-height:22px}
+.me{align-self:flex-end;background:#0E5E59;color:#fff;border-bottom-right-radius:4px}
+.bot{align-self:flex-start;background:#fff;border:1px solid #E4E7EC;border-bottom-left-radius:4px}
+.chip{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid #0E5E59;color:#0E5E59;background:#fff;font-family:inherit;font-size:13.5px;font-weight:500}
+.row{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid #F2F4F7}
+.ok{flex:none;width:22px;height:22px;border-radius:999px;background:#ECFDF3;color:#067647;display:flex;align-items:center;justify-content:center}
+.wait{flex:none;width:22px;height:22px;border-radius:999px;background:#FFFAEB;color:#B54708;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.derived{font-size:12.5px;color:#475467;background:#F2F4F7;border-radius:6px;padding:2px 8px;display:inline-block;margin-top:4px}
+.cb{display:flex;align-items:center;gap:10px;font-size:14px;min-height:32px}
+.cb input{width:18px;height:18px;accent-color:#0E5E59;margin:0}
+.new{font-size:11px;font-weight:600;color:#B54708;background:#FFFAEB;border-radius:999px;padding:0 8px;line-height:18px}
+</style>
+</helmet>
+<div class="app">
+<nav class="side" aria-label="Main">
+<div class="brand"><span class="mark">E</span>Epic Readiness</div>
+<a class="appsw" href="Profile.dc.html"><b>DermScan</b><span>Advocate Health · Draft</span></a>
+<div class="nav">
+<a href="Welcome.dc.html">Overview</a>
+<a href="Profile.dc.html" class="on" aria-current="page">App profile</a>
+<a href="Tests.dc.html">Tests</a>
+<a href="RunSetup.dc.html">Run</a>
+<a href="Runs.dc.html">Runs</a>
+<a href="Report.dc.html">Report</a>
+</div>
+<div class="nav"><div class="navlabel">Setup</div><a href="Connections.dc.html">Connections</a></div>
+<a class="conn" href="Connect.dc.html"><span style="display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 600"><span class="dot" style="background: #98A2B3"></span>Epic not connected</span><span>Set up in step 2</span></a>
+</nav>
+
+<main class="main">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><div class="eyebrow">Step 1 of 5 · App profile</div><h1>Describe your app</h1></div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><a class="btn btn-s" href="Profile.dc.html">Switch to the form</a><button class="btn btn-s" type="button">Start over</button></div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+<section class="card" style="flex: 3 1 480px; padding: 0; gap: 0; overflow: hidden" aria-label="Conversation">
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 24px; background: #F9FAFB; min-height: 520px" aria-live="polite">
+<div class="msg bot">Tell me about your app in a sentence or two — who uses it and what it does with patient data. I'll fill in the profile on the right as we go; you can edit anything there.</div>
+<div class="msg me">DermScan is a mobile app for Advocate. A clinician signs in through Epic, searches for the patient, photographs the lesion, and a dermatologist files a consult note. Photos go to a third-party AI model for a suggested diagnosis.</div>
+<div class="msg bot">Got it: a clinician mobile app that saves photos and writes notes into the chart, and sends images to an outside AI. I've filled in four answers. One thing you didn't mention: <b>does DermScan read anything from the chart</b> — problem list, medications, allergies?</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; padding-left: 4px"><button class="chip" type="button">Yes, it reads the chart</button><button class="chip" type="button">No, it only writes</button><button class="chip" type="button">Not sure</button></div>
+<div class="msg me">Yes — problem list, meds and allergies before the consult.</div>
+<div class="msg bot">Thanks. Last topic, security: which TLS version does your backend use, do you log every access to patient data, and is a BAA signed? “Not sure” is fine — those tests will simply ask you for proof later instead of failing.</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; padding-left: 4px"><button class="chip" type="button">TLS 1.2+, logging on, BAA signed</button><button class="chip" type="button">Not sure about any of these</button></div>
+</div>
+<form style="display: flex; gap: 10px; padding: 16px; border-top: 1px solid #E4E7EC; background: #fff; align-items: flex-end">
+<label for="say" style="position: absolute; left: -9999px">Message</label>
+<textarea id="say" rows="2" placeholder="Type your answer…  (Enter to send, Shift+Enter for a new line)" style="flex: 1; min-width: 0; font-family: inherit; font-size: 14px; padding: 10px 12px; border: 1px solid #D0D5DD; border-radius: 8px; resize: none"></textarea>
+<button class="btn btn-p" type="button">Send</button>
+</form>
+</section>
+
+<aside class="card" style="flex: 2 1 340px; gap: 0" aria-label="Profile so far">
+<div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px"><h2>DermScan profile</h2><span class="muted" style="font-size: 12.5px">Saved as draft · 3 of 4 topics</span></div>
+<div class="row"><span class="ok" aria-label="Done"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 6.5 L5 9 L10 3"/></svg></span><div style="flex: 1"><b>Who signs in</b><p>Clinicians</p><span class="derived">Clinician sign-in, patient chosen in the app</span></div><a href="Profile.dc.html" style="font-size: 13px">Edit</a></div>
+<div class="row"><span class="ok" aria-label="Done"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 6.5 L5 9 L10 3"/></svg></span><div style="flex: 1"><b>Kind of app</b><p>Mobile app</p><span class="derived">Public client — relies on PKCE, no secret</span></div><a href="Profile.dc.html" style="font-size: 13px">Edit</a></div>
+<div class="row"><span class="ok" aria-label="Done"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 6.5 L5 9 L10 3"/></svg></span><div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><b>What it does with patient data</b><span class="muted" style="font-size: 12.5px">Untick anything that's wrong.</span>
+<label class="cb"><input type="checkbox" checked>Reads the chart <span class="new">just added</span></label>
+<label class="cb"><input type="checkbox" checked>Saves photos to the chart</label>
+<label class="cb"><input type="checkbox" checked>Writes notes or results back</label>
+<label class="cb"><input type="checkbox" checked>Sends patient data to an outside AI</label>
+</div></div>
+<div class="row"><span class="wait" aria-label="Waiting">!</span><div style="flex: 1"><b>Security answers</b><p class="muted">Waiting for your answer — TLS, audit logging, BAA</p></div></div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding-top: 16px; border-top: 1px solid #E4E7EC">
+<p><b>29 tests will apply</b> <span class="muted">· 5 won't (they're for patient apps)</span></p>
+<button class="btn btn-p" type="button" disabled>Save profile &amp; continue</button>
+<p class="muted" style="font-size: 12.5px">Answer the security topic (or say “Not sure”) to continue.</p>
+</div>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

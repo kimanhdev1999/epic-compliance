@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Run setup</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#0E5E59}a:hover{color:#0A4743}
+.app{display:flex;flex-wrap:wrap;align-items:stretch;min-height:100vh;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#101828;background:#F5F6F8;font-size:14px;line-height:20px}
+.side{flex:1 1 236px;background:#0F1B2D;color:#D0D5DD;padding:20px 14px;display:flex;flex-direction:column;gap:18px;box-sizing:border-box}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:600;font-size:15px;padding:0 8px}
+.mark{width:28px;height:28px;border-radius:8px;background:#2BB3A9;color:#0F1B2D;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.appsw{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid #2A3A52;border-radius:10px;text-decoration:none}
+.appsw b{color:#fff;font-size:14px}.appsw span{color:#98A2B3;font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:8px;color:#D0D5DD;text-decoration:none;font-weight:500}
+.nav a:hover{background:#18263A;color:#fff}
+.nav a.on{background:#1F3350;color:#fff}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#98A2B3;padding:0 12px 4px;font-weight:600}
+.cnt{font-size:12px;font-weight:600;padding:0 7px;border-radius:999px;background:#D92D20;color:#fff;line-height:18px}
+.conn{margin-top:auto;padding:12px;border-radius:10px;background:#16243A;display:flex;flex-direction:column;gap:4px;font-size:12px;color:#D0D5DD;text-decoration:none}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
+.main{flex:999 1 560px;min-width:0;padding:28px 40px 0;box-sizing:border-box;display:flex;flex-direction:column;gap:20px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;text-decoration:none;border:1px solid transparent;box-sizing:border-box;white-space:nowrap}
+.btn-p{background:#0E5E59;color:#fff}.btn-p:hover{background:#0A4743;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#0E5E59}
+.muted{color:#475467}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+h1{font-size:26px;line-height:34px;margin:0;font-weight:600}
+h2{font-size:17px;line-height:24px;margin:0;font-weight:600}
+p{margin:0}
+.chk{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-top:1px solid #F2F4F7}
+.ic{flex:none;width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.i-ok{background:#ECFDF3;color:#067647}
+.i-opt{background:#FFFAEB;color:#B54708}
+.req{font-size:11px;font-weight:600;color:#475467;background:#F2F4F7;border-radius:999px;padding:0 8px;line-height:18px}
+.diff{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:10px;background:#F3FAF9;border:1px solid #B7DCD9}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:20px}
+th{text-align:left;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:#475467;font-weight:600;padding:8px 12px;border-bottom:1px solid #E4E7EC}
+td{padding:10px 12px;border-bottom:1px solid #F2F4F7;vertical-align:top}
+.who{display:inline-flex;font-size:12px;font-weight:600;line-height:20px;padding:0 8px;border-radius:6px;white-space:nowrap}
+.w-app{background:#E6F2F1;color:#0E5E59}
+.w-env{background:#EEF4FF;color:#3538CD}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:1px solid #E4E7EC;font-weight:600;min-height:24px}
+.scroll{overflow-x:auto}
+.bar{position:sticky;bottom:0;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;background:#fff;border:1px solid #E4E7EC;border-bottom:0;border-radius:12px 12px 0 0;box-shadow:0 -6px 20px rgba(16,24,40,.06)}
+</style>
+</helmet>
+<div class="app">
+<nav class="side" aria-label="Main">
+<div class="brand"><span class="mark">E</span>Epic Readiness</div>
+<a class="appsw" href="Profile.dc.html"><b>DermScan</b><span>Advocate Health · Clinician app</span></a>
+<div class="nav">
+<a href="Overview.dc.html">Overview</a>
+<a href="Profile.dc.html">App profile</a>
+<a href="Tests.dc.html">Tests <span class="cnt">3</span></a>
+<a href="RunSetup.dc.html" class="on" aria-current="page">Run</a>
+<a href="Runs.dc.html">Runs</a>
+<a href="Report.dc.html">Report</a>
+</div>
+<div class="nav"><div class="navlabel">Setup</div><a href="Connections.dc.html">Connections</a></div>
+<a class="conn" href="Connect.dc.html"><span style="display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 600"><span class="dot" style="background: #47CD89"></span>Epic sandbox connected</span><span>Clinician sign-in · 41 min left</span></a>
+</nav>
+
+<main class="main">
+<div style="display: flex; flex-direction: column; gap: 6px"><div class="eyebrow">Step 3 of 5</div><h1>Run setup</h1><p class="muted">Check everything once, see exactly what will run, then start.</p></div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section class="card" style="flex: 2 1 380px; gap: 0" aria-label="Before you run">
+<h2 style="padding-bottom: 8px">Before you run</h2>
+<div class="chk"><span class="ic i-ok" aria-label="Ready">✓</span><div style="flex: 1"><b>App profile</b> <span class="req">Required</span><p class="muted">Version 5 · all 4 topics answered</p></div><a href="Profile.dc.html">View</a></div>
+<div class="chk"><span class="ic i-ok" aria-label="Ready">✓</span><div style="flex: 1"><b>Epic sandbox</b> <span class="req">Required</span><p class="muted">Clinician sign-in · 41 min left · 1 scope missing</p></div><a href="Connect.dc.html">Manage</a></div>
+<div class="chk"><span class="ic i-ok" aria-label="Ready">✓</span><div style="flex: 1"><b>Test patient</b> <span class="req">Required</span><p class="muted"><span class="mono">identifier=203713</span> → 1 match, Camila Lopez</p></div><a href="Profile.dc.html">Change</a></div>
+<div class="chk"><span class="ic i-ok" aria-label="Ready">✓</span><div style="flex: 1"><b>Claude (AI review)</b> <span class="req">Optional</span><p class="muted">Connected · reviews SEC-001…003</p></div></div>
+<div class="chk"><span class="ic i-opt" aria-label="Warning">!</span><div style="flex: 1; display: flex; flex-direction: column; gap: 4px"><span><b>FHIR validator</b> <span class="req">Optional</span></span><p class="muted">Not reachable on localhost:3500. Without it, <b>CLIN-005</b> and <b>CLIN-009</b> come back as <i>Needs input</i>.</p><a href="Connections.dc.html">How to start it</a></div></div>
+</section>
+
+<section class="card" style="flex: 3 1 520px" aria-label="Plan">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px"><h2>Your plan: 29 tests</h2><span class="muted">17 test your app · 12 test the Epic environment</span></div>
+<div class="diff"><span class="ic i-ok" aria-hidden="true" style="background: #E6F2F1; color: #0E5E59">Δ</span><p><b>Since the last run (yesterday 16:05):</b> your audit-logging answer changed, so SEC-002 will be judged again. No tests added or removed.</p></div>
+
+<details open>
+<summary>Patient selection &amp; chart writes <span class="muted" style="font-weight: 400">10 tests</span></summary>
+<div class="scroll"><table>
+<thead><tr><th style="width: 92px">Test</th><th>What it checks</th><th style="width: 100px">Tests</th><th>Why it's in your plan</th></tr></thead>
+<tbody>
+<tr><td class="mono">CLIN-001</td><td>Clinician can find the right patient</td><td><span class="who w-app">Your app</span></td><td class="muted">Clinicians search after signing in — the top wrong-patient risk.</td></tr>
+<tr><td class="mono">CLIN-002</td><td>Enough detail to confirm the patient</td><td><span class="who w-app">Your app</span></td><td class="muted">The clinician must see enough to confirm it's the right patient.</td></tr>
+<tr><td class="mono">CLIN-005</td><td>A clinical photo is accepted by Epic</td><td><span class="who w-app">Your app</span></td><td class="muted">You save photos into the chart.</td></tr>
+<tr><td class="mono">CLIN-007</td><td>Everything written lands on the confirmed patient</td><td><span class="who w-app">Your app</span></td><td class="muted">Everything you write must land on the patient the clinician confirmed.</td></tr>
+<tr><td colspan="4"><a href="Tests.dc.html">Show 6 more</a></td></tr>
+</tbody></table></div>
+</details>
+<details><summary>Sign-in <span class="muted" style="font-weight: 400">9 tests</span></summary></details>
+<details><summary>Chart data (US Core) <span class="muted" style="font-weight: 400">5 tests</span></summary></details>
+<details><summary>Security answers <span class="muted" style="font-weight: 400">3 tests · AI review</span></summary></details>
+<details><summary>Client set-up <span class="muted" style="font-weight: 400">2 tests</span></summary></details>
+<details><summary><span>Not in your plan <span class="muted" style="font-weight: 400">5 tests</span></span><span class="muted" style="font-weight: 400; font-size: 13px">AUTH-009, WRITE-001…004 — for patient apps</span></summary></details>
+</section>
+</div>
+
+<div class="bar"><span><b>29 tests</b> <span class="muted">· about 1–2 minutes · signs in to Epic's sandbox as your clinician login · writes 1 photo and 1 note to the test patient</span></span><a class="btn btn-p" href="RunProgress.dc.html">Start run</a></div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

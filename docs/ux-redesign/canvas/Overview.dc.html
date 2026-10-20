@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Overview with results</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#0E5E59}a:hover{color:#0A4743}
+.app{display:flex;flex-wrap:wrap;align-items:stretch;min-height:100vh;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#101828;background:#F5F6F8;font-size:14px;line-height:20px}
+.side{flex:1 1 236px;background:#0F1B2D;color:#D0D5DD;padding:20px 14px;display:flex;flex-direction:column;gap:18px;box-sizing:border-box}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:600;font-size:15px;padding:0 8px}
+.mark{width:28px;height:28px;border-radius:8px;background:#2BB3A9;color:#0F1B2D;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.appsw{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid #2A3A52;border-radius:10px;text-decoration:none}
+.appsw b{color:#fff;font-size:14px}.appsw span{color:#98A2B3;font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:8px;color:#D0D5DD;text-decoration:none;font-weight:500}
+.nav a:hover{background:#18263A;color:#fff}
+.nav a.on{background:#1F3350;color:#fff}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#98A2B3;padding:0 12px 4px;font-weight:600}
+.cnt{font-size:12px;font-weight:600;padding:0 7px;border-radius:999px;background:#D92D20;color:#fff;line-height:18px}
+.conn{margin-top:auto;padding:12px;border-radius:10px;background:#16243A;display:flex;flex-direction:column;gap:4px;font-size:12px;color:#D0D5DD;text-decoration:none}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
+.main{flex:999 1 560px;min-width:0;padding:28px 40px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;text-decoration:none;border:1px solid transparent;box-sizing:border-box;white-space:nowrap}
+.btn-p{background:#0E5E59;color:#fff}.btn-p:hover{background:#0A4743;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.btn-sm{min-height:34px;padding:0 12px;font-size:13px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#0E5E59}
+.muted{color:#475467}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+h1{font-size:26px;line-height:34px;margin:0;font-weight:600}
+h2{font-size:17px;line-height:24px;margin:0;font-weight:600}
+p{margin:0}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600;line-height:22px;white-space:nowrap}
+.p-pass{background:#ECFDF3;color:#067647}
+.p-fail{background:#FEF3F2;color:#B42318}
+.p-input{background:#FFFAEB;color:#B54708}
+.seg{display:flex;gap:2px;height:12px}
+.seg div{height:12px}
+.jr{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.js{display:flex;flex-direction:column;gap:4px;padding:12px;border-radius:10px;border:1px solid #E4E7EC;background:#fff;text-decoration:none;color:#101828}
+.js .n{font-size:12px;font-weight:600;color:#475467}
+.js.done .n{color:#067647}
+.js.cur{border:2px solid #0E5E59;background:#F3FAF9;padding:11px}
+.js.cur .n{color:#0E5E59}
+.act{display:flex;gap:14px;align-items:center;padding:12px 0;border-top:1px solid #F2F4F7;flex-wrap:wrap}
+.act .txt{flex:1 1 300px;min-width:0}
+.idt{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#475467}
+.sev{font-size:12px;color:#475467}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+td{padding:8px 0;border-top:1px solid #F2F4F7}
+</style>
+</helmet>
+<div class="app">
+<nav class="side" aria-label="Main">
+<div class="brand"><span class="mark">E</span>Epic Readiness</div>
+<a class="appsw" href="Profile.dc.html"><b>DermScan</b><span>Advocate Health · Clinician app</span></a>
+<div class="nav">
+<a href="Overview.dc.html" class="on" aria-current="page">Overview</a>
+<a href="Profile.dc.html">App profile</a>
+<a href="Tests.dc.html">Tests <span class="cnt">3</span></a>
+<a href="RunSetup.dc.html">Run</a>
+<a href="Runs.dc.html">Runs</a>
+<a href="Report.dc.html">Report</a>
+</div>
+<div class="nav"><div class="navlabel">Setup</div><a href="Connections.dc.html">Connections</a></div>
+<a class="conn" href="Connect.dc.html"><span style="display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 600"><span class="dot" style="background: #47CD89"></span>Epic sandbox connected</span><span>Clinician sign-in · 38 min left</span></a>
+</nav>
+
+<main class="main">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px"><h1>DermScan</h1><p class="muted">Integrating with Advocate Health · last run today 10:46 on Epic's sandbox · profile v5</p></div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><a class="btn btn-s" href="RunSetup.dc.html">Re-run</a><a class="btn btn-s" href="Report.dc.html">View report</a></div>
+</div>
+
+<section class="card" style="flex-direction: row; flex-wrap: wrap; gap: 32px; padding: 24px" aria-label="Verdict">
+<div style="flex: 2 1 340px; display: flex; flex-direction: column; gap: 12px">
+<span class="pill p-fail" style="align-self: flex-start; font-size: 13px; line-height: 26px; padding: 0 12px">✕ Blocked</span>
+<h2 style="font-size: 22px; line-height: 30px">2 failures block submission. Fix those, then 5 tests need your input.</h2>
+<p class="muted">A critical or high-severity failure in your app blocks “Ready to submit”. Everything else can be resolved here.</p>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><a class="btn btn-p" href="TestDetail.dc.html">Start with CLIN-007</a><a class="btn btn-s" href="Tests.dc.html">See all 8 to resolve</a></div>
+</div>
+<div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 10px; padding-left: 24px; border-left: 1px solid #E4E7EC">
+<span class="muted" style="font-weight: 600">Your app readiness</span>
+<div style="display: flex; align-items: baseline; gap: 10px"><span style="font-size: 44px; line-height: 48px; font-weight: 600">53%</span><span class="muted">9 of 17 passed · <span style="color: #067647; font-weight: 600">+6 pts</span> vs last run</span></div>
+<div class="seg" role="img" aria-label="9 passed, 3 failed, 5 need input"><div style="flex: 9; background: #12B76A; border-radius: 4px 0 0 4px"></div><div style="flex: 3; background: #F04438"></div><div style="flex: 5; background: #F79009; border-radius: 0 4px 4px 0"></div></div>
+<div style="display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px"><span><span class="dot" style="background: #12B76A"></span> 9 Passed</span><span><span class="dot" style="background: #F04438"></span> 3 Failed</span><span><span class="dot" style="background: #F79009"></span> 5 Needs input</span></div>
+<p style="font-size: 13px; padding-top: 6px; border-top: 1px solid #F2F4F7"><b>Epic environment:</b> <span class="muted">9 of 12 OK · 3 verify outside the app</span></p>
+</div>
+</section>
+
+<nav class="jr" aria-label="Readiness journey">
+<a class="js done" href="Profile.dc.html"><span class="n">✓ 1 · Profile</span><b>Version 5</b></a>
+<a class="js done" href="Connect.dc.html"><span class="n">✓ 2 · Connect</span><b>38 min left</b></a>
+<a class="js done" href="Runs.dc.html"><span class="n">✓ 3 · Run</span><b>Today 10:46</b></a>
+<a class="js cur" href="Tests.dc.html" aria-current="step"><span class="n">4 · Resolve</span><b>8 to go</b></a>
+<a class="js" href="Report.dc.html"><span class="n">5 · Share</span><b>Report ready</b></a>
+</nav>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section class="card" style="flex: 3 1 560px; gap: 0" aria-label="What to do next">
+<div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px"><h2>What to do next</h2><a href="Tests.dc.html">All tests</a></div>
+<div class="act"><span class="pill p-fail">✕ Failed</span><div class="txt"><span class="idt">CLIN-007 · critical</span><br><b>The photo was filed without the visit</b><br><span class="muted">Epic stored the Media for the right patient but with no encounter reference.</span></div><a class="btn btn-s btn-sm" href="TestDetail.dc.html">How to fix</a></div>
+<div class="act"><span class="pill p-fail">✕ Failed</span><div class="txt"><span class="idt">CLIN-008 · high</span><br><b>Epic refused the allergy list (HTTP 403)</b><br><span class="muted">Turn on AllergyIntolerance.Search in your Epic app, then sign in again.</span></div><a class="btn btn-s btn-sm" href="Connect.dc.html">Open Epic setup</a></div>
+<div class="act"><span class="pill p-fail">✕ Failed</span><div class="txt"><span class="idt">CLIN-010 · medium</span><br><b>The new consult note didn't show up in search</b><br><span class="muted">Not blocking, but fix before you submit.</span></div><a class="btn btn-s btn-sm" href="TestDetail.dc.html">How to fix</a></div>
+<div class="act"><span class="pill p-input">? Needs input</span><div class="txt"><span class="idt">SEC-001, SEC-003</span><br><b>Answer 2 security questions</b><br><span class="muted">TLS version and BAAs are “Not sure” in your profile.</span></div><a class="btn btn-s btn-sm" href="Profile.dc.html">Answer</a></div>
+<div class="act"><span class="pill p-input">? Needs input</span><div class="txt"><span class="idt">SEC-002</span><br><b>Add proof of audit logging</b><br><span class="muted">You said yes; attach your logging policy or a sample log.</span></div><a class="btn btn-s btn-sm" href="TestDetail.dc.html">Add proof</a></div>
+<div class="act"><span class="pill p-input">? Needs input</span><div class="txt"><span class="idt">CLIN-005, CLIN-009</span><br><b>Start the FHIR validator</b><br><span class="muted">Photos and notes were accepted but not checked against US Core.</span></div><a class="btn btn-s btn-sm" href="Connections.dc.html">Connect</a></div>
+</section>
+
+<aside style="flex: 2 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<section class="card" style="gap: 4px" aria-label="Frameworks">
+<div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px"><h2>By framework</h2><a href="Tests.dc.html">View</a></div>
+<table>
+<tbody>
+<tr><td>Epic requirements</td><td style="text-align: right" class="muted">6 of 12</td><td style="text-align: right; width: 56px"><b>50%</b></td></tr>
+<tr><td>SMART App Launch</td><td style="text-align: right" class="muted">2 of 3</td><td style="text-align: right"><b>67%</b></td></tr>
+<tr><td>US Core / FHIR R4</td><td style="text-align: right" class="muted">2 of 4</td><td style="text-align: right"><b>50%</b></td></tr>
+<tr><td>HIPAA Security Rule</td><td style="text-align: right" class="muted">0 of 3</td><td style="text-align: right"><b>0%</b></td></tr>
+<tr><td>Patient safety</td><td style="text-align: right" class="muted">3 of 4</td><td style="text-align: right"><b>75%</b></td></tr>
+<tr><td>ONC (g)(10)</td><td style="text-align: right" class="muted">Epic environment only</td><td style="text-align: right" class="muted">—</td></tr>
+</tbody>
+</table>
+<p class="muted" style="font-size: 12px; padding-top: 6px">Your-app tests only. A test can count toward several frameworks.</p>
+</section>
+<section class="card" style="gap: 4px" aria-label="Recent runs">
+<div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px"><h2>Recent runs</h2><a href="Runs.dc.html">All runs</a></div>
+<table>
+<tbody>
+<tr><td>Today 10:46</td><td class="muted">Blocked</td><td style="text-align: right"><b>53%</b></td></tr>
+<tr><td>Yesterday 16:05</td><td class="muted">Blocked</td><td style="text-align: right"><b>47%</b></td></tr>
+<tr><td>Oct 17 11:20</td><td class="muted">Blocked</td><td style="text-align: right"><b>41%</b></td></tr>
+</tbody>
+</table>
+</section>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

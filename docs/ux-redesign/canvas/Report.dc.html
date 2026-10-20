@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Readiness report</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Serif:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#0E5E59}a:hover{color:#0A4743}
+.app{display:flex;flex-wrap:wrap;align-items:stretch;min-height:100vh;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#101828;background:#F5F6F8;font-size:14px;line-height:20px}
+.side{flex:1 1 236px;background:#0F1B2D;color:#D0D5DD;padding:20px 14px;display:flex;flex-direction:column;gap:18px;box-sizing:border-box}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:600;font-size:15px;padding:0 8px}
+.mark{width:28px;height:28px;border-radius:8px;background:#2BB3A9;color:#0F1B2D;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.appsw{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid #2A3A52;border-radius:10px;text-decoration:none}
+.appsw b{color:#fff;font-size:14px}.appsw span{color:#98A2B3;font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:8px;color:#D0D5DD;text-decoration:none;font-weight:500}
+.nav a:hover{background:#18263A;color:#fff}
+.nav a.on{background:#1F3350;color:#fff}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#98A2B3;padding:0 12px 4px;font-weight:600}
+.cnt{font-size:12px;font-weight:600;padding:0 7px;border-radius:999px;background:#D92D20;color:#fff;line-height:18px}
+.conn{margin-top:auto;padding:12px;border-radius:10px;background:#16243A;display:flex;flex-direction:column;gap:4px;font-size:12px;color:#D0D5DD;text-decoration:none}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
+.main{flex:999 1 560px;min-width:0;padding:28px 40px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;text-decoration:none;border:1px solid transparent;box-sizing:border-box;white-space:nowrap}
+.btn-p{background:#0E5E59;color:#fff}.btn-p:hover{background:#0A4743;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.inp{font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid #D0D5DD;border-radius:8px;background:#fff;min-height:40px}
+.muted{color:#475467}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12px}
+p{margin:0}
+.paper{max-width:920px;width:100%;margin:0 auto;background:#fff;border:1px solid #E4E7EC;box-shadow:0 8px 30px rgba(16,24,40,.08);padding:56px 64px;box-sizing:border-box;display:flex;flex-direction:column;gap:36px}
+.paper h1{font-family:'IBM Plex Serif',Georgia,serif;font-size:34px;line-height:42px;margin:0;font-weight:600}
+.paper h2{font-size:18px;line-height:26px;margin:0;font-weight:600;padding-bottom:8px;border-bottom:2px solid #101828}
+.paper h3{font-size:14px;line-height:20px;margin:0;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#475467}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 32px;font-size:13.5px}
+.kv div{display:flex;flex-direction:column;gap:1px;padding-bottom:8px;border-bottom:1px solid #F2F4F7}
+.kv span{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:#475467;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.stat{padding:14px;border-radius:10px;border:1px solid #E4E7EC;display:flex;flex-direction:column;gap:2px}
+.stat b{font-size:26px;line-height:32px}
+table{width:100%;border-collapse:collapse;font-size:13px;line-height:19px}
+th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#475467;font-weight:600;padding:8px 10px;border-bottom:1px solid #D0D5DD}
+td{padding:10px;border-bottom:1px solid #EAECF0;vertical-align:top}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:0 8px;border-radius:999px;font-size:11.5px;font-weight:600;line-height:20px;white-space:nowrap}
+.p-pass{background:#ECFDF3;color:#067647}
+.p-fail{background:#FEF3F2;color:#B42318}
+.p-input{background:#FFFAEB;color:#B54708}
+.p-out{background:#F2F4F7;color:#475467}
+.scroll{overflow-x:auto}
+ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+</style>
+</helmet>
+<div class="app">
+<nav class="side" aria-label="Main">
+<div class="brand"><span class="mark">E</span>Epic Readiness</div>
+<a class="appsw" href="Profile.dc.html"><b>DermScan</b><span>Advocate Health · Clinician app</span></a>
+<div class="nav">
+<a href="Overview.dc.html">Overview</a>
+<a href="Profile.dc.html">App profile</a>
+<a href="Tests.dc.html">Tests <span class="cnt">3</span></a>
+<a href="RunSetup.dc.html">Run</a>
+<a href="Runs.dc.html">Runs</a>
+<a href="Report.dc.html" class="on" aria-current="page">Report</a>
+</div>
+<div class="nav"><div class="navlabel">Setup</div><a href="Connections.dc.html">Connections</a></div>
+<a class="conn" href="Connect.dc.html"><span style="display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 600"><span class="dot" style="background: #47CD89"></span>Epic sandbox connected</span><span>Clinician sign-in · 38 min left</span></a>
+</nav>
+
+<main class="main">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center"><label for="run" class="muted" style="font-weight: 600">Report for</label><select class="inp" id="run"><option>Today 10:46 (latest)</option><option>Yesterday 16:05</option></select></div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn btn-s" type="button">HTML</button><button class="btn btn-s" type="button">JSON</button><button class="btn btn-p" type="button">Download PDF</button></div>
+</div>
+<p class="muted" style="font-size: 13px">Reviewers don't need this tool — send them the PDF. It contains no patient data.</p>
+
+<article class="paper">
+<header style="display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span class="mono muted">EPIC READINESS REPORT</span><span class="mono muted">Run 7c1e…a904</span></div>
+<h1>DermScan — readiness for Advocate Health's Epic review</h1>
+<div class="kv">
+<div><span>App</span>DermScan · clinician mobile app</div>
+<div><span>Health system</span>Advocate Health</div>
+<div><span>Tested against</span>Epic sandbox (fhir.epic.com, FHIR R4)</div>
+<div><span>Run</span>Oct 20, 2026 10:46 · profile v5</div>
+<div><span>Client ID</span><span class="mono" style="text-transform: none; letter-spacing: 0; color: #101828; font-weight: 400">d1b7c3e0-…-5f2a91c04e17</span></div>
+<div><span>Test catalog</span><span class="mono" style="text-transform: none; letter-spacing: 0; color: #101828; font-weight: 400">34 tests · fingerprint 9f2c41aa0b7d3e15</span></div>
+</div>
+</header>
+
+<section style="display: flex; flex-direction: column; gap: 14px">
+<h2>1 · Verdict</h2>
+<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap"><span class="pill p-fail" style="font-size: 14px; line-height: 28px; padding: 0 14px">✕ Blocked</span><p style="font-size: 15px">Two failures in the app's own behaviour must be fixed before submission: CLIN-007 (critical) and CLIN-008 (high).</p></div>
+<div class="stats">
+<div class="stat"><span class="muted">Your app readiness</span><b>53%</b><span class="muted" style="font-size: 12px">9 of 17</span></div>
+<div class="stat"><span class="muted">Failed</span><b style="color: #B42318">3</b><span class="muted" style="font-size: 12px">2 blocking</span></div>
+<div class="stat"><span class="muted">Needs input</span><b style="color: #B54708">5</b><span class="muted" style="font-size: 12px">proof or answers</span></div>
+<div class="stat"><span class="muted">Epic environment</span><b>9/12</b><span class="muted" style="font-size: 12px">3 verified outside</span></div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 14px">
+<h2>2 · Scope</h2>
+<p>DermScan is a clinician mobile app: a clinician signs in through Epic, searches for and confirms the patient, photographs a lesion, and a dermatologist files a consult note. It reads the problem list, medications and allergies, and sends images to a third-party AI model.</p>
+<p><b>29 tests in scope.</b> <span class="muted">Not in scope (5): AUTH-009 and WRITE-001…004 — these apply to patient-facing apps, where the patient is the login.</span></p>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 14px">
+<h2>3 · Results for the app</h2>
+<div class="scroll"><table>
+<thead><tr><th style="width: 86px">Test</th><th>Requirement</th><th style="width: 104px">Result</th><th>What we observed</th></tr></thead>
+<tbody>
+<tr><td class="mono">CLIN-007</td><td>Everything written lands on the confirmed patient <span class="muted">· critical</span></td><td><span class="pill p-fail">Failed</span></td><td>Photo stored on the right patient but without the visit reference.</td></tr>
+<tr><td class="mono">CLIN-008</td><td>Problem list, medications and allergies can be read <span class="muted">· high</span></td><td><span class="pill p-fail">Failed</span></td><td>Epic refused AllergyIntolerance.Search (HTTP 403).</td></tr>
+<tr><td class="mono">CLIN-010</td><td>Earlier consult notes can be found <span class="muted">· medium</span></td><td><span class="pill p-fail">Failed</span></td><td>The note written in this run was not returned by search.</td></tr>
+<tr><td class="mono">SEC-002</td><td>Every access to patient data is logged <span class="muted">· high</span></td><td><span class="pill p-input">Needs input</span></td><td>Attested; proof covers writes and exports, not reads. Proof P-1.</td></tr>
+<tr><td class="mono">SEC-001</td><td>Data in transit uses TLS 1.2+ <span class="muted">· critical</span></td><td><span class="pill p-input">Needs input</span></td><td>Not yet answered by the app team.</td></tr>
+<tr><td class="mono">CLIN-001</td><td>Clinician can find the right patient <span class="muted">· critical</span></td><td><span class="pill p-pass">Passed</span></td><td>MRN search returned exactly one patient.</td></tr>
+<tr><td colspan="4" class="muted">+ 11 more rows (all 17 “your app” tests are listed in the PDF)</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 14px">
+<h2>4 · Method and limits</h2>
+<ul>
+<li>Tests ran against Epic's public sandbox, not Advocate Health's own Epic build; behaviour there may differ.</li>
+<li>CLIN-005…010 write this tool's own sample photo and note. They show Epic accepts correct writes; they don't prove the app's own code produces them.</li>
+<li>CLIN-011, CLIN-012 and SEC-001…003 judge the app team's stated answers and attached proof. SEC tests are reviewed by an AI model and every verdict cites the evidence it relied on.</li>
+<li>Missing information is never counted as a failure; it is reported as “Needs input”.</li>
+<li>AUTH-007, 008 and 010 test Epic itself and were verified separately with the tool's launch test suite.</li>
+</ul>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 14px">
+<h2>5 · Proof index</h2>
+<div class="scroll"><table>
+<thead><tr><th>ID</th><th>Test</th><th>Kind</th><th>Added</th><th>SHA-256</th></tr></thead>
+<tbody>
+<tr><td class="mono">P-1</td><td>SEC-002</td><td>Statement (412 chars)</td><td>Oct 18</td><td class="mono">3a9f…e21c</td></tr>
+</tbody>
+</table></div>
+<p class="muted" style="font-size: 12.5px">Appendix A: Epic environment results (12 tests). Appendix B: full technical detail per test, as JSON.</p>
+</section>
+</article>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

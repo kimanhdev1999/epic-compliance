@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spec: release plan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+.doc{font-family:'IBM Plex Sans',system-ui,sans-serif;color:#101828;background:#F5F6F8;font-size:14px;line-height:22px;padding:56px 24px 80px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#0E5E59}
+.muted{color:#475467}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+h1{font-size:36px;line-height:44px;margin:0;font-weight:600}
+h2{font-size:22px;line-height:30px;margin:0;font-weight:600}
+h3{font-size:16px;line-height:24px;margin:0;font-weight:600}
+p{margin:0}
+ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:20px}
+th{text-align:left;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:#475467;font-weight:600;padding:9px 12px;border-bottom:1px solid #D0D5DD;background:#F9FAFB}
+td{padding:10px 12px;border-bottom:1px solid #EAECF0;vertical-align:top}
+.scroll{overflow-x:auto;background:#fff;border:1px solid #E4E7EC;border-radius:12px}
+.tag{display:inline-flex;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600;line-height:20px;background:#E6F2F1;color:#0E5E59;white-space:nowrap}
+.phase{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+</style>
+</helmet>
+<div class="doc">
+<div class="wrap">
+
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 900px">
+<div class="eyebrow">Spec 4 of 4 · Delivery</div>
+<h1>Release plan: ship clarity first, structure second</h1>
+<p class="muted" style="font-size: 16px; line-height: 26px">Five small releases. Each one is usable on its own and removes a class of confusion. Phase 1 needs no new screens — it fixes words, results and dead ends inside the current layout.</p>
+</div>
+
+<div class="phase">
+<div class="card"><span class="tag">Phase 1 · ~1 week</span><h3>Say it clearly</h3><ul><li>Glossary rename across UI, export, JSON</li><li><span class="mono">summary</span> + <span class="mono">needs_reason</span> on results; raw text behind Technical details</li><li>Split readiness: Your app / Epic environment</li><li>Remove Backend starter; unsupported message</li><li>HTML 404 + sign-in error pages</li><li>All-or-nothing proof save; no proof on out-of-plan</li><li>Staleness: in-plan only</li></ul></div>
+<div class="card"><span class="tag">Phase 2 · 1–2 weeks</span><h3>One source of truth</h3><ul><li><span class="mono">profiles</span> table (versioned)</li><li>App profile page (1.3) + assistant writes to it (1.2)</li><li>Data uses always confirmed</li><li>Re-run uses current profile; plan diff</li><li>Run stores <span class="mono">profile_version</span></li></ul></div>
+<div class="card"><span class="tag">Phase 3 · 1 week</span><h3>One connection</h3><ul><li>Connect to Epic flow (1.4) used everywhere</li><li>Callback URL copy + required API list from scopes</li><li>Persist connection metadata + expiry</li><li>Test patient “Check” (exactly 1 match)</li><li>Integrations + Settings → Connections (3.3); drop unused SMART URL fields</li></ul></div>
+<div class="card"><span class="tag">Phase 4 · 1–2 weeks</span><h3>Run &amp; share</h3><ul><li>Run setup pre-flight (1.5)</li><li>Background run + live progress (2.1)</li><li>New Overview with verdict + journey (2.2)</li><li>Report redesign + PDF (3.2)</li><li>Runs compare (3.1)</li><li>Single-test re-run for AI tests</li></ul></div>
+<div class="card" style="background: #F9FAFB"><span class="tag">Later · ADR-009</span><h3>Grow the scope</h3><ul><li>Step 2 Verify mode → new “Your app's writes” area in Tests</li><li>Step 3 App probes → “Your app's backend” connection in 3.3</li><li>Step 4 Submission pack → Report tab “Evidence pack”</li><li>Multi-app switcher; reviewer share links</li><li>ONC test kit results import</li></ul></div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 14px">
+<h2>Routes: old → new</h2>
+<div class="scroll">
+<table>
+<thead><tr><th>Today</th><th>New</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td><span class="mono">GET /</span> Home</td><td><span class="mono">GET /</span> Overview</td><td>First-visit and with-results states (1.1, 2.2)</td></tr>
+<tr><td><span class="mono">GET /assess</span>, <span class="mono">POST /assess/chat|edit|new|resume</span></td><td><span class="mono">GET /profile/assistant</span>, <span class="mono">POST /profile/assistant/*</span></td><td>Assistant now writes profile fields as it learns them</td></tr>
+<tr><td>— (chat summary card)</td><td><span class="mono">GET|POST /profile</span>, <span class="mono">GET /profile/versions</span></td><td>New editable profile</td></tr>
+<tr><td><span class="mono">POST /assess/plan</span>, <span class="mono">GET /assess/plan</span></td><td><span class="mono">GET /run</span></td><td>Run setup = pre-flight + plan + diff</td></tr>
+<tr><td><span class="mono">POST /assess/run</span>, <span class="mono">/assess/rerun</span></td><td><span class="mono">POST /run</span> → <span class="mono">GET /run/:id</span> (+ <span class="mono">/status</span>, <span class="mono">/cancel</span>)</td><td>Background run with progress</td></tr>
+<tr><td><span class="mono">GET /frameworks</span>, <span class="mono">/frameworks/:key</span></td><td><span class="mono">GET /tests?view=frameworks</span>, <span class="mono">?framework=</span></td><td>Old URLs redirect</td></tr>
+<tr><td><span class="mono">GET /tests</span>, <span class="mono">/tests/:id</span></td><td>same + <span class="mono">?who=app|env</span>, <span class="mono">POST /tests/:id/answer</span>, <span class="mono">POST /tests/:id/recheck</span></td><td>Inline answer + single-test re-check</td></tr>
+<tr><td><span class="mono">POST /tests/:id/evidence</span></td><td><span class="mono">POST /tests/:id/proof</span></td><td>Atomic; 409 for out-of-plan tests</td></tr>
+<tr><td><span class="mono">GET /integrations</span>, <span class="mono">GET|POST /config</span></td><td><span class="mono">GET /connections</span>, <span class="mono">/connections/epic</span>, <span class="mono">POST /connections/settings</span></td><td>Old URLs redirect</td></tr>
+<tr><td><span class="mono">GET /launch</span>, <span class="mono">/launch/status</span>, <span class="mono">/callback</span></td><td>unchanged; <span class="mono">/launch</span> requires <span class="mono">profile</span>; errors render a page</td><td>No more bare 400 / 500</td></tr>
+<tr><td><span class="mono">GET /runs</span>, <span class="mono">/runs/:id</span>, <span class="mono">/export</span>, <span class="mono">/print</span></td><td><span class="mono">GET /runs</span>, <span class="mono">/runs/compare?a=&amp;b=</span>, <span class="mono">/runs/:id/report</span> (+ <span class="mono">.pdf</span>, <span class="mono">.html</span>, <span class="mono">.json</span>)</td><td>One report template for screen, print and export</td></tr>
+<tr><td><span class="mono">/api/*</span>, CLI</td><td>unchanged + <span class="mono">--profile</span> flag reads current profile</td><td>CLI/API today ignore the plan; align later</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 14px">
+<h2>Acceptance checks (one per confusion fixed)</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width: 34%">Given</th><th style="width: 33%">When</th><th>Then</th></tr></thead>
+<tbody>
+<tr><td>DermScan run exists; profile says mobile</td><td>User changes platform to web server on the profile and clicks Re-run</td><td>Run setup shows the plan diff and the new run uses client type confidential</td></tr>
+<tr><td>No Claude key</td><td>SEC-001 runs with an answer present</td><td>Result = Needs input · reason “Connect a service” · button “Connect Claude”; no dict dump visible</td></tr>
+<tr><td>Proof on WRITE-001 (out of plan)</td><td>User re-runs</td><td>No out-of-date banner afterwards</td></tr>
+<tr><td>Client ID saved, never signed in</td><td>User opens Overview</td><td>Journey step 2 shows “Ready to sign in”, not done</td></tr>
+<tr><td>Clinician app, query matches 2 patients</td><td>User clicks Check on Run setup</td><td>“2 patients match — use an MRN, e.g. identifier=203713”; Start run disabled</td></tr>
+<tr><td>User picks “no one signs in”</td><td>Assistant processes the answer</td><td>Explains backend services aren't supported yet; offers to pick clinicians or patients; no loop</td></tr>
+<tr><td>Sample-data run in history</td><td>Report opened or downloaded</td><td>Watermark on every page; excluded from verdict and trend</td></tr>
+<tr><td>Any finding</td><td>Exported to PDF</td><td>Contains no <span class="mono">needs_human</span>, <span class="mono">[MOCK]</span>, <span class="mono">Errno</span> or Python dict text</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

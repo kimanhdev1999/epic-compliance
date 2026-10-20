@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Test detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#0E5E59}a:hover{color:#0A4743}
+.stage{position:relative;min-height:100vh;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#101828;background:#F5F6F8;font-size:14px;line-height:20px;overflow:hidden}
+.behind{display:flex;flex-wrap:wrap;min-height:100vh}
+.side{flex:1 1 236px;background:#0F1B2D;box-sizing:border-box;padding:20px 14px;color:#D0D5DD;display:flex;flex-direction:column;gap:12px}
+.ghost{flex:999 1 560px;min-width:0;padding:28px 40px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px}
+.gl{height:44px;border-radius:8px;background:#fff;border:1px solid #E4E7EC}
+.scrim{position:absolute;left:0;top:0;right:0;bottom:0;background:rgba(15,27,45,.45)}
+.drawer{position:absolute;top:0;right:0;bottom:0;width:680px;max-width:100%;background:#fff;box-shadow:-12px 0 40px rgba(16,24,40,.18);display:flex;flex-direction:column;box-sizing:border-box}
+.dh{padding:20px 28px 16px;border-bottom:1px solid #E4E7EC;display:flex;flex-direction:column;gap:10px}
+.db{padding:20px 28px 32px;display:flex;flex-direction:column;gap:22px;overflow-y:auto;flex:1}
+.df{padding:14px 28px;border-top:1px solid #E4E7EC;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;background:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;text-decoration:none;border:1px solid transparent;box-sizing:border-box;white-space:nowrap;cursor:pointer}
+.btn-p{background:#0E5E59;color:#fff}.btn-p:hover{background:#0A4743;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.icon{width:40px;padding:0}
+.muted{color:#475467}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+h1{font-size:22px;line-height:30px;margin:0;font-weight:600}
+h2{font-size:15px;line-height:22px;margin:0;font-weight:600}
+p{margin:0}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600;line-height:22px;white-space:nowrap}
+.p-input{background:#FFFAEB;color:#B54708}
+.p-meta{background:#F2F4F7;color:#344054}
+.who{display:inline-flex;font-size:12px;font-weight:600;line-height:22px;padding:0 8px;border-radius:6px;background:#E6F2F1;color:#0E5E59}
+.reason{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:12px;background:#FFFAEB;border:1px solid #FEDF89}
+.reason .k{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#B54708}
+.sec{display:flex;flex-direction:column;gap:8px}
+.chg{display:inline-flex;font-size:12px;font-weight:600;color:#3538CD;background:#EEF4FF;border-radius:999px;padding:0 9px;line-height:22px;align-self:flex-start}
+details{border:1px solid #E4E7EC;border-radius:10px}
+summary{cursor:pointer;padding:10px 14px;font-weight:600;color:#344054;min-height:24px}
+pre{margin:0;padding:12px 14px;border-top:1px solid #E4E7EC;background:#F9FAFB;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:19px;white-space:pre-wrap;color:#344054;border-radius:0 0 10px 10px}
+.proof{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid #E4E7EC;border-radius:10px}
+.kind{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#475467}
+.tabs{display:flex;gap:4px;border-bottom:1px solid #E4E7EC}
+.tab{font-family:inherit;font-size:13.5px;font-weight:600;color:#475467;background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;margin-bottom:-1px;min-height:40px;cursor:pointer}
+.tab[aria-selected="true"]{color:#0E5E59;border-bottom-color:#0E5E59}
+.drop{display:flex;flex-direction:column;align-items:center;gap:6px;padding:22px;border:1.5px dashed #98A2B3;border-radius:10px;background:#F9FAFB;text-align:center}
+.hist{display:flex;gap:6px;flex-wrap:wrap}
+.hist a{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:4px 10px;border-radius:999px;border:1px solid #E4E7EC;text-decoration:none;color:#344054}
+</style>
+</helmet>
+<div class="stage">
+<div class="behind" aria-hidden="true">
+<div class="side"><div style="height: 28px"></div></div>
+<div class="ghost"><div style="height: 34px; width: 120px; border-radius: 6px; background: #E4E7EC"></div><div class="gl"></div><div class="gl"></div><div class="gl"></div><div class="gl"></div><div class="gl"></div><div class="gl"></div><div class="gl"></div></div>
+</div>
+<div class="scrim"></div>
+
+<section class="drawer" role="dialog" aria-modal="true" aria-labelledby="dt">
+<div class="dh">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+<span class="mono muted">SEC-002 · Security answers</span>
+<div style="display: flex; gap: 6px; align-items: center"><span class="muted" style="font-size: 12.5px">5 of 11 to resolve</span><button class="btn btn-s icon" type="button" aria-label="Previous test">‹</button><button class="btn btn-s icon" type="button" aria-label="Next test">›</button><a class="btn btn-s icon" href="Tests.dc.html" aria-label="Close">✕</a></div>
+</div>
+<h1 id="dt">Every access to patient data is logged</h1>
+<div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="pill p-input">? Needs input</span><span class="who">Your app · your answers</span><span class="pill p-meta">High</span><span class="pill p-meta">AI review</span></div>
+</div>
+
+<div class="db">
+<div class="reason">
+<span class="k">What's needed · Add proof</span>
+<p style="font-size: 15px; line-height: 23px">Claude reviewed your answer. It says audit logging is on and kept 6 years, but not whether <b>reads</b> of patient data are logged — only that logging exists. Attach your audit-logging policy, a sample log entry for a chart read, or the logging config.</p>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><a class="btn btn-p" href="#proof">Add proof</a><a class="btn btn-s" href="Profile.dc.html">Edit my answer</a></div>
+</div>
+
+<span class="chg">Your answer changed since this run (profile v4 → v5)</span>
+
+<div class="sec">
+<h2>What we observed</h2>
+<p>Your profile: audit logging <b>Yes</b>, retention <b>2,190 days</b>. One statement attached as proof. AI verdict: can't confirm reads are logged.</p>
+<details><summary>Technical details</summary><pre>check_type: llm (claude-sonnet-4-6)
+inputs: app_config.audit_logging_enabled=true
+        app_config.audit_log_retention_days=2190
+        developer_evidence[1]: statement (412 chars)
+verdict: needs_human
+citation: "Statement covers write and export events;
+  no mention of PHI read events."</pre></details>
+</div>
+
+<div class="sec" id="proof">
+<h2>Proof <span class="muted" style="font-weight: 400">· kept across runs, snapshotted per run</span></h2>
+<div class="proof"><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px"><span class="kind">Statement · Oct 18</span><p>“DermScan's backend writes an audit record for every create and export of patient data to CloudWatch, retained for 6 years.”</p></div><button class="btn btn-s" type="button" style="min-height: 34px">Remove</button></div>
+<div class="tabs" role="tablist" aria-label="Kind of proof"><button class="tab" role="tab" aria-selected="false" type="button">Statement</button><button class="tab" role="tab" aria-selected="true" type="button">File</button><button class="tab" role="tab" aria-selected="false" type="button">Link</button></div>
+<div class="drop"><b>Drop files here or <a href="#proof">choose files</a></b><span class="muted" style="font-size: 12.5px">PDF, images, or text files (.txt .log .json .yaml .csv .md …) · up to 10 MB each</span></div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center"><button class="btn btn-p" type="button">Save proof</button><span class="muted" style="font-size: 12.5px">Saved together or not at all. After saving you can re-check this test on its own (about 10 s).</span></div>
+</div>
+
+<div class="sec">
+<h2>How to pass</h2>
+<p>Log authentication events, every read of patient data and every export. Keep logs at least 6 years (HIPAA minimum).</p>
+</div>
+
+<div class="sec">
+<h2>Why it's in your plan</h2>
+<p class="muted">General requirement for every Epic app.</p>
+</div>
+
+<div class="sec">
+<h2>The requirement</h2>
+<p>Application must implement audit logging for all PHI access events.</p>
+<p class="muted" style="font-size: 13px">Source: HIPAA §164.312(a)(2)(i); Epic Showroom requirements · Frameworks: HIPAA Security Rule, Epic requirements</p>
+</div>
+
+<div class="sec">
+<h2>History</h2>
+<div class="hist"><a href="Runs.dc.html">Today 10:46 · Needs input</a><a href="Runs.dc.html">Yesterday · Needs input</a><a href="Runs.dc.html">Oct 17 · Needs input</a></div>
+</div>
+</div>
+
+<div class="df"><a href="Tests.dc.html">Open as full page</a><div style="display: flex; gap: 8px"><button class="btn btn-s" type="button">Re-check this test</button><a class="btn btn-s" href="RunSetup.dc.html">Full re-run</a></div></div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Connections</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#0E5E59}a:hover{color:#0A4743}
+.app{display:flex;flex-wrap:wrap;align-items:stretch;min-height:100vh;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#101828;background:#F5F6F8;font-size:14px;line-height:20px}
+.side{flex:1 1 236px;background:#0F1B2D;color:#D0D5DD;padding:20px 14px;display:flex;flex-direction:column;gap:18px;box-sizing:border-box}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:600;font-size:15px;padding:0 8px}
+.mark{width:28px;height:28px;border-radius:8px;background:#2BB3A9;color:#0F1B2D;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.appsw{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid #2A3A52;border-radius:10px;text-decoration:none}
+.appsw b{color:#fff;font-size:14px}.appsw span{color:#98A2B3;font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:8px;color:#D0D5DD;text-decoration:none;font-weight:500}
+.nav a:hover{background:#18263A;color:#fff}
+.nav a.on{background:#1F3350;color:#fff}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#98A2B3;padding:0 12px 4px;font-weight:600}
+.cnt{font-size:12px;font-weight:600;padding:0 7px;border-radius:999px;background:#D92D20;color:#fff;line-height:18px}
+.conn{margin-top:auto;padding:12px;border-radius:10px;background:#16243A;display:flex;flex-direction:column;gap:4px;font-size:12px;color:#D0D5DD;text-decoration:none}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
+.main{flex:999 1 560px;min-width:0;padding:28px 40px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;text-decoration:none;border:1px solid transparent;box-sizing:border-box;white-space:nowrap}
+.btn-p{background:#0E5E59;color:#fff}.btn-p:hover{background:#0A4743;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.muted{color:#475467}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+h1{font-size:26px;line-height:34px;margin:0;font-weight:600}
+h2{font-size:17px;line-height:24px;margin:0;font-weight:600}
+p{margin:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600;line-height:22px;white-space:nowrap}
+.p-pass{background:#ECFDF3;color:#067647}
+.p-input{background:#FFFAEB;color:#B54708}
+.p-meta{background:#F2F4F7;color:#344054}
+.hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.uses{font-size:12.5px;color:#475467;padding-top:10px;border-top:1px solid #F2F4F7}
+.code{display:block;font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:#0F1B2D;color:#E4E7EC;border-radius:8px;padding:10px 12px}
+.field{display:flex;flex-direction:column;gap:6px}
+.lbl{font-weight:600;font-size:13px}
+.inp{font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid #D0D5DD;border-radius:8px;background:#fff;color:#101828;min-height:40px;box-sizing:border-box;width:100%}
+.hint{font-size:12.5px;color:#475467}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+</style>
+</helmet>
+<div class="app">
+<nav class="side" aria-label="Main">
+<div class="brand"><span class="mark">E</span>Epic Readiness</div>
+<a class="appsw" href="Profile.dc.html"><b>DermScan</b><span>Advocate Health · Clinician app</span></a>
+<div class="nav">
+<a href="Overview.dc.html">Overview</a>
+<a href="Profile.dc.html">App profile</a>
+<a href="Tests.dc.html">Tests <span class="cnt">3</span></a>
+<a href="RunSetup.dc.html">Run</a>
+<a href="Runs.dc.html">Runs</a>
+<a href="Report.dc.html">Report</a>
+</div>
+<div class="nav"><div class="navlabel">Setup</div><a href="Connections.dc.html" class="on" aria-current="page">Connections</a></div>
+<a class="conn" href="Connect.dc.html"><span style="display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 600"><span class="dot" style="background: #47CD89"></span>Epic sandbox connected</span><span>Clinician sign-in · 38 min left</span></a>
+</nav>
+
+<main class="main">
+<div style="display: flex; flex-direction: column; gap: 4px"><h1>Connections</h1><p class="muted">Services the tool uses, and what each one unlocks. Replaces Integrations and Settings.</p></div>
+
+<div class="grid">
+<section class="card">
+<div class="hd"><div><h2>Epic sandbox</h2><p class="muted">Signs in and runs the tests against Epic.</p></div><span class="pill p-pass">✓ Connected</span></div>
+<p>Clinician sign-in · expires 11:31 (38 min) · 11 of 12 scopes granted</p>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><a class="btn btn-p" href="Connect.dc.html">Manage connection</a><button class="btn btn-s" type="button">Sign in again</button></div>
+<p class="uses">Required for every run · all 29 tests</p>
+</section>
+
+<section class="card">
+<div class="hd"><div><h2>Claude</h2><p class="muted">Reviews your security answers and proof.</p></div><span class="pill p-pass">✓ Connected</span></div>
+<p>API key set in <span class="mono">.env</span> · model claude-sonnet-4-6 · last check 10:44 OK</p>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn btn-s" type="button">Test connection</button></div>
+<p class="uses">Unlocks SEC-001, SEC-002, SEC-003 and the profile assistant. Without it they become “Needs input · Connect a service”.</p>
+</section>
+
+<section class="card" style="border: 2px solid #FEC84B">
+<div class="hd"><div><h2>HL7 FHIR validator</h2><p class="muted">Checks the photo and note against US Core before writing.</p></div><span class="pill p-input">! Not reachable</span></div>
+<p>Tried <span class="mono">http://localhost:3500</span>, then the validator jar — neither answered.</p>
+<span class="code">VALIDATOR_SERVICE_URL=http://localhost:3500</span>
+<p class="hint">Start the validator service on that port, or set <span class="mono">VALIDATOR_JAR_PATH</span> to a local <span class="mono">validator_cli.jar</span> (needs Java).</p>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn btn-p" type="button">Check again</button></div>
+<p class="uses">Unlocks CLIN-005, CLIN-009 (currently Needs input)</p>
+</section>
+
+<section class="card">
+<div class="hd"><div><h2>ONC (g)(10) test kit</h2><p class="muted">The official certification test kit, run separately.</p></div><span class="pill p-meta">Link only</span></div>
+<p><span class="mono">http://localhost:8080</span> · results aren't imported yet</p>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><a class="btn btn-s" href="http://localhost:8080">Open test kit</a></div>
+<p class="uses">Unlocks no tests today. Planned: import its results as ONC-G10 tests.</p>
+</section>
+
+<section class="card" style="background: #F9FAFB; border-style: dashed">
+<div class="hd"><div><h2 style="color: #475467">Your app's staging backend</h2><p class="muted">Coming later (ADR-009 step 3)</p></div><span class="pill p-meta">Planned</span></div>
+<p class="muted">Probe your real sign-in redirect, callback and TLS on staging — never production.</p>
+</section>
+</div>
+
+<section class="card">
+<h2>Tool settings</h2>
+<div class="g2">
+<div class="field"><label class="lbl" for="fb">Epic FHIR base URL</label><input class="inp mono" id="fb" value="https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4"><span class="hint">Sign-in endpoints are discovered from this automatically.</span></div>
+<div class="field"><label class="lbl" for="cb">This tool's sign-in address</label><input class="inp mono" id="cb" value="http://localhost:8000/callback"><span class="hint">Must be registered in your Epic app. Not your app's own redirect URI.</span></div>
+<div class="field"><label class="lbl" for="ok">ONC test kit URL</label><input class="inp mono" id="ok" value="http://localhost:8080"></div>
+<div class="field"><span class="lbl">Where data is kept</span><span class="mono" style="padding: 10px 0">data/runs.db · data/evidence/</span><span class="hint">On this computer only.</span></div>
+</div>
+<div style="display: flex; justify-content: flex-end"><button class="btn btn-p" type="button">Save settings</button></div>
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1600}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
