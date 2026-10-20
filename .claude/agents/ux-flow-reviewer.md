@@ -40,7 +40,7 @@ target the Epic sandbox; sample data ("mock") exists only for the smoke test. Re
 0. **Run the UI harness first.** It walks every page (empty and after a sample run) at desktop and
    phone widths in about 30 seconds, saves screenshots, and checks the honesty rules:
    ```bash
-   UI_SHOTS_DIR="$SP/shots" .venv/bin/python -m pytest tests/ui -q -rxX -p no:cacheprovider
+   UI_SHOTS_DIR="$SP/shots" .venv/bin/python -m pytest -m ui -q -rxX -p no:cacheprovider
    ```
    It starts its own throwaway servers, so it's safe. Read the PNGs in `$SP/shots` instead of
    screenshotting by hand. Any `FAILED` is a regression. `xfail` entries are open findings that are

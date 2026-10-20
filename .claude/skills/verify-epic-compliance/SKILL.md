@@ -23,7 +23,7 @@ this skill applies; run the harness so results are consistent and complete.
 > why step 4b asserts status code *and* a minimum body size *and* an empty traceback
 > count: a page can return 200 and still be blank.
 
-7. **UI harness** (separate, `pytest tests/ui`). A real browser (Playwright/Chromium) drives
+7. **UI harness** (opt-in, `pytest -m ui`; a plain `pytest` skips it). A real browser (Playwright/Chromium) drives
    describe app → plan → sample run → report on throwaway servers. It checks every page at desktop
    and phone width (no errors, no failed requests, no sideways scroll, no dead links) plus the
    honesty rules in `tests/ui/test_honesty.py` (readiness %, sample-data banners, export wording).
@@ -40,7 +40,7 @@ this skill applies; run the harness so results are consistent and complete.
 ```
 
 ```bash
-.venv/bin/python -m pytest tests/ui -q -rxX   # UI harness, ~30s; after any template/CSS/route change
+.venv/bin/python -m pytest -m ui -q -rxX     # UI harness, ~30s; after any template/CSS/route change
 ```
 
 Prereq (first time only): `python3 -m venv .venv && source .venv/bin/activate && pip install -e '.[dev]'`.

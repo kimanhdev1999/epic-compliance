@@ -45,6 +45,8 @@ include = ["epic_compliance*"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# The browser harness is opt-in: `pytest -m ui` (a later -m replaces this one).
+addopts = '-m "not ui"'
 markers = [
     "smoke: whole tool end to end on sample Epic responses; offline, no credentials (CI gate)",
     "live: hits real Epic sandbox endpoints over the network (no credentials needed)",
