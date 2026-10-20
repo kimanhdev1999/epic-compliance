@@ -27,6 +27,9 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "httpx>=0.27.0",
 ]
+ui = [
+    "playwright>=1.44",
+]
 macapp = [
     "pyinstaller>=6.6.0",
     "rumps>=0.4.0",
@@ -42,8 +45,11 @@ include = ["epic_compliance*"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# The browser harness is opt-in: `pytest -m ui` (a later -m replaces this one).
+addopts = '-m "not ui"'
 markers = [
     "smoke: whole tool end to end on sample Epic responses; offline, no credentials (CI gate)",
     "live: hits real Epic sandbox endpoints over the network (no credentials needed)",
+    "ui: browser harness over a throwaway server (needs the ui extra + `playwright install chromium`)",
     "launch: full interactive SMART launch; needs EPIC_SANDBOX_CLIENT_ID + --launch-interactive",
 ]
