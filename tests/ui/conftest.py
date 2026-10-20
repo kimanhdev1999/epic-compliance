@@ -178,19 +178,11 @@ def describe_app(v: Visit, description: str = APP_DESCRIPTION, max_turns: int = 
 
 def run_sample(v: Visit) -> str:
     """From the plan page, run the plan on sample data; return the run id.
-
-    The UI only offers live runs (ADR-014), so this flips the form's hidden
-    run_mode, exactly what the smoke test does over HTTP.
-    """
+    Needs no setup: the plan page offers it next to the Epic run."""
     page = v.page
     page.click("text=Generate test plan")
     page.wait_for_url("**/assess/plan")
-    page.fill("#oauth_client_id", "ui-harness-client")
-    if page.locator("#test_patient_query").count():
-        page.fill("#test_patient_query", "identifier=203713")
-    page.eval_on_selector("#run-form input[name=run_mode]", "el => el.value = 'mock'")
-    page.eval_on_selector("#run-btn", "el => el.disabled = false")
-    page.click("#run-btn")
+    page.click("#run-sample")
     page.wait_for_url(re.compile(r"/runs/[^/]+$"), timeout=60_000)
     return page.url.rsplit("/", 1)[1]
 

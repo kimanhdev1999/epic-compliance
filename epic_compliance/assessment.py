@@ -16,9 +16,13 @@ from typing import Any, Callable, Literal
 
 from pydantic import BaseModel
 
-from .reviewer_questions import PlannedQuestion, select as select_questions
+from .reviewer_questions import TOPICS as REVIEWER_TOPICS, PlannedQuestion, select as select_questions
 from .rules_engine.catalog import Rule, is_reviewer_question, load_rules
 
+
+#: Epic's sandbox test patient (Camila Lopez), used when no other patient is set,
+#: so an Epic run needs no patient setup step.
+SANDBOX_TEST_PATIENT = "identifier=203713"
 
 #: Where/how to run, chosen on the plan page rather than in the chat.
 RUN_FIELDS = ("run_mode", "fhir_base_url", "oauth_client_id", "app_redirect_uri",
@@ -90,6 +94,12 @@ PLAN_SECTIONS = {
 }
 
 
+def _reviewer_label(category: str) -> str:
+    """'rq_images' -> 'Reviewer questions: Clinical photos' ("" if not a reviewer topic)."""
+    topic = category.removeprefix("rq_")
+    return f"Reviewer questions: {REVIEWER_TOPICS[topic]}" if category.startswith("rq_") and topic in REVIEWER_TOPICS else ""
+
+
 @dataclass
 class PlannedCheck:
     rule: Rule
@@ -124,7 +134,7 @@ class Plan:
             groups.setdefault(c.rule.category, []).append(c)
         order = list(PLAN_SECTIONS)
         return [
-            {"key": k, "label": PLAN_SECTIONS.get(k, k.replace("_", " ").title()), "checks": v}
+            {"key": k, "label": PLAN_SECTIONS.get(k) or _reviewer_label(k) or k.replace("_", " ").title(), "checks": v}
             for k, v in sorted(groups.items(), key=lambda kv: order.index(kv[0]) if kv[0] in order else 99)
         ]
 
@@ -149,7 +159,8 @@ class Plan:
             "fhir_base_url": i.fhir_base_url,
             "oauth_client_id": i.oauth_client_id,
             "app_redirect_uri": i.app_redirect_uri,
-            "test_patient_query": i.test_patient_query,
+            # Sample runs use the built-in patient; Epic runs default to the sandbox one.
+            "test_patient_query": (i.test_patient_query or SANDBOX_TEST_PATIENT) if i.run_mode == "live" else "",
             "encounter_required": "true" if i.encounter_required else "false",
             "app_client_type": "confidential" if i.platform == "web_server" else "public",
             "transport_tls_version": i.tls_version,

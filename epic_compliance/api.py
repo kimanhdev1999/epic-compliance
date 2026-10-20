@@ -44,7 +44,7 @@ from fastapi.templating import Jinja2Templates
 
 from . import evidence as dev_evidence
 from . import pipeline, store
-from .assessment import BAA_LABELS, PLATFORM_LABELS, RUN_FIELDS, USERS_LABELS, Intake, build_plan
+from .assessment import BAA_LABELS, PLATFORM_LABELS, RUN_FIELDS, SANDBOX_TEST_PATIENT, USERS_LABELS, Intake, build_plan
 from .intake_chat import ChatState, next_turn, rewind, summary
 from .config import OVERRIDABLE_FIELDS, config_with_overrides, get_config
 from .fix_where import FIX_WHERE
@@ -507,7 +507,6 @@ def assess_plan_saved(request: Request, notice: str = "") -> Any:
 _NOTICES = {
     "signin": "Sign in to the Epic sandbox before running. Your last sign-in ended "
               "(the tool restarted or Epic's token expired).",
-    "patient": "Add a test patient before running, so the clinician workflow checks have a patient to work with.",
 }
 
 
@@ -515,23 +514,24 @@ def _render_plan(request: Request, intake: Intake, chat_state: str = "", notice:
     epic = _epic_connection()
     intake.fhir_base_url = intake.fhir_base_url or epic["fhir_base_url"]
     intake.oauth_client_id = intake.oauth_client_id or epic["client_id"]
-    intake.run_mode = "live"
+    intake.test_patient_query = intake.test_patient_query or SANDBOX_TEST_PATIENT
     plan = build_plan(intake)
     return render(
         request, "plan.html", active="assess",
         intake=intake, plan=plan, labels=_intake_labels(), chat_state=chat_state, notice=notice,
         run_fields=RUN_FIELDS, live_token=pipeline.get_live_token() is not None,
+        sandbox_patient=SANDBOX_TEST_PATIENT,
     )
 
 
 def _not_ready_to_run(intake: Intake) -> str:
-    """Why a live run can't start yet ("" when it can): the key of a notice."""
+    """Why a live run can't start yet ("" when it can): the key of a notice.
+    A sample run needs nothing; an Epic run needs a sign-in (the test patient
+    defaults to Epic's sandbox patient)."""
     if intake.run_mode != "live":
         return ""
     if pipeline.get_live_token() is None:
         return "signin"
-    if build_plan(intake).launch_profile == "clinician_standalone" and not intake.test_patient_query.strip():
-        return "patient"
     return ""
 
 
@@ -666,12 +666,13 @@ def start_launch(request: Request, client_id: str = "", profile: str = "") -> Re
     if client_id.strip():
         store.save_config_defaults({"oauth_client_id": client_id.strip()})
     epic = _epic_connection()
+    intake = _current_intake()
     if not epic["client_id"]:
-        return HTMLResponse(
-            "<p>Add your app's non-production client ID from fhir.epic.com on the test plan "
-            "page or in Settings, then sign in again.</p>", status_code=400)
+        # Send people to where the client ID goes, not to a bare error page.
+        return RedirectResponse(url="/assess/plan#setup" if intake else "/config", status_code=303)
     if profile not in ("clinician_standalone", "patient_launch"):
-        profile = config.launch_profile
+        # Links without a profile (e.g. Integrations) sign in as the current plan needs.
+        profile = build_plan(Intake.model_validate(intake)).launch_profile if intake else config.launch_profile
     smart_config = fetch_smart_configuration(epic["fhir_base_url"], mock=False)
     if not smart_config.authorization_endpoint:
         raise HTTPException(
