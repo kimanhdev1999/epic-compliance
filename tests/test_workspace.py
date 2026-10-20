@@ -50,14 +50,14 @@ class TestRoutes:
         assert "DermScan" in home.text and "Needs attention" in home.text
         assert "Re-run tests" in home.text
 
-        page = client.get("/tests?status=not_applicable")
+        page = client.get("/tests")
         assert page.status_code == 200
-        # A test the plan left out shows as Not applicable, with the plan's reason.
-        assert 'data-status="not_applicable"' in page.text
-        drawer = client.get("/tests/CLIN-009", headers={"HX-Request": "true"})
-        assert "Not applicable" in drawer.text and "write notes back" in drawer.text
+        # Only tests in this app's plan are listed: CLIN-009 (writes notes) isn't.
+        assert 'data-status="not_applicable"' not in page.text and "Not applicable" not in page.text
+        assert "CLIN-009" not in page.text and client.get("/tests/CLIN-009").status_code == 404
+        drawer = client.get("/tests/CLIN-002", headers={"HX-Request": "true"})
         assert "<html" not in drawer.text  # partial for the drawer
-        assert "<html" in client.get("/tests/CLIN-009").text  # full page without HTMX
+        assert "<html" in client.get("/tests/CLIN-002").text  # full page without HTMX
 
         fw = client.get("/frameworks/patient_safety")
         assert fw.status_code == 200 and "CLIN-002" in fw.text

@@ -328,7 +328,8 @@ class TestAssessmentRoutes:
         resp = client.post("/assess/plan", data=self.FORM)
         assert resp.status_code == 200
         assert "CLIN-005" in resp.text and "Why:" in resp.text
-        assert "skipped for this app" in resp.text
+        # Only the tests that apply are shown; the skipped ones aren't listed.
+        assert "skipped for this app" not in resp.text and "CLIN-009" not in resp.text
 
     def test_run_executes_only_planned_checks(self, client):
         resp = client.post("/assess/run", data=self.FORM, follow_redirects=False)
