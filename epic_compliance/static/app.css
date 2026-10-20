@@ -294,7 +294,7 @@ a.chip:hover { color: var(--accent); text-decoration: none; }
 .search input[type=search] { padding-left: 2.1rem; }
 
 .t-table { font-size: 0.88rem; }
-.t-row { display: grid; grid-template-columns: minmax(0, 1fr) 128px 220px 84px 84px; gap: 0.9rem; align-items: center; padding: 0.7rem 1.1rem; border-top: 1px solid var(--border); color: var(--text); }
+.t-row { display: grid; grid-template-columns: minmax(0, 1fr) 128px 200px 84px 180px; gap: 0.9rem; align-items: center; padding: 0.7rem 1.1rem; border-top: 1px solid var(--border); color: var(--text); }
 .t-row:hover:not(.t-head) { background: var(--hover); text-decoration: none; }
 .t-head { border-top: none; background: var(--surface-2); font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; padding-top: 0.5rem; padding-bottom: 0.5rem; }
 .t-name { display: flex; flex-direction: column; min-width: 0; }
@@ -552,3 +552,11 @@ dl.scope dd { margin: 0; }
 .stale-banner .inline-form { flex: none; }
 .changed-chip { margin-left: 0.4rem; font-size: 0.68rem; font-weight: 600; padding: 0.05rem 0.4rem; border-radius: 999px; color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); vertical-align: middle; white-space: nowrap; }
 @media (max-width: 600px) { .stale-banner { flex-wrap: wrap; } }
+
+/* Where to fix it: who must act on a result (ADR-018) */
+.where { display: inline-block; font-size: 0.72rem; font-weight: 600; line-height: 1.5; padding: 0.05rem 0.45rem; border-radius: 6px; border: 1px solid var(--border-strong); color: var(--text); background: var(--surface); white-space: nowrap; vertical-align: middle; }
+.where-epic, .where-sample { border-style: dashed; color: var(--muted); background: var(--surface-2); }
+.drawer-body .where-box { border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 0.85rem 1rem; margin-top: 0.75rem; }
+.drawer-body .where-box p { margin: 0.25rem 0 0; }
+.drawer-body .where-box.where-epic, .drawer-body .where-box.where-sample { border-style: dashed; background: var(--surface-2); }
+.sample-banner { border-color: var(--border-strong); background: var(--surface-2); }

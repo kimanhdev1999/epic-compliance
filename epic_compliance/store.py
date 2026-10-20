@@ -188,9 +188,22 @@ def recent_runs(limit: int = 10) -> list[dict[str, Any]]:
 
 
 def latest_run() -> dict[str, Any] | None:
-    """The newest run with its Report and config — the workspace's current state."""
-    runs = recent_runs(limit=1)
-    return runs[0] if runs else None
+    """The workspace's current state: the newest real run, with its Report and config.
+
+    A sample-data run (mock mode: the smoke test, the CLI, /api/run) never
+    replaces a real one; it's only shown while no real run exists yet.
+    """
+    init_db()
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT run_id FROM runs ORDER BY run_mode = 'mock', created_at DESC LIMIT 1"
+        ).fetchone()
+    return get_run(row["run_id"]) if row else None
+
+
+def is_sample(run: dict[str, Any] | None) -> bool:
+    """True for a run made from the tool's built-in sample responses, not Epic."""
+    return bool(run) and run.get("run_mode") == "mock"
 
 
 def delete_run(run_id: str) -> bool:

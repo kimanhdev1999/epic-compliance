@@ -15,7 +15,13 @@
   {% if t.changed %}
   <div class="callout warn" style="margin-top:0.75rem">Evidence for this test changed after the last run, so the result below doesn't reflect it yet. Re-run tests to have it reviewed.</div>
   {% endif %}
-  {% if t.status == "failing" and t.remediation %}
+  {% if t.fix_where %}
+  <section class="where-box where-{{ t.fix_where }}">
+    <h3>Where to fix it: {{ t.fix_where_label }}</h3>
+    <p>{{ t.fix_where_action }}</p>
+  </section>
+  {% endif %}
+  {% if t.status == "failing" and t.remediation and t.fix_where not in ("epic", "sample") %}
   <section class="fix-box">
     <h3>How to fix</h3>
     <p>{{ t.remediation }}</p>
@@ -46,7 +52,7 @@
   </section>
   {% endif %}
 
-  {% if t.status != "failing" and t.remediation %}
+  {% if t.remediation and (t.status != "failing" or t.fix_where in ("epic", "sample")) %}
   <section>
     <h3>Remediation guidance</h3>
     <p>{{ t.remediation }}</p>

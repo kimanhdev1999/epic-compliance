@@ -17,6 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from . import fix_where as fw
 from .rules_engine.catalog import Rule, load_rules
 from .viewmodel import CATEGORY_LABELS, SEVERITY_ORDER, SUBJECTS
 
@@ -77,6 +78,7 @@ def frameworks_for(rule: Rule) -> list[str]:
 def build_tests(run: dict[str, Any] | None) -> list[dict[str, Any]]:
     """Every catalog rule as a test, with its status in ``run`` (latest run)."""
     findings = {f.rule_id: f for f in run["report"].findings} if run else {}
+    sample = bool(run) and run.get("run_mode") == "mock"
     assessment = (run or {}).get("config", {}).get("assessment") or {}
     in_scope = {c["rule_id"]: c["reason"] for c in assessment.get("included", [])}
     out_of_scope = {c["rule_id"]: c["reason"] for c in assessment.get("excluded", [])}
@@ -91,6 +93,7 @@ def build_tests(run: dict[str, Any] | None) -> list[dict[str, Any]]:
         else:
             status = "not_applicable"
         subject = SUBJECTS.get(rule.subject, ("", ""))
+        where = fw.where_to_fix(rule, f, sample=sample)
         tests.append({
             "id": rule.id,
             "title": rule.description,
@@ -108,6 +111,11 @@ def build_tests(run: dict[str, Any] | None) -> list[dict[str, Any]]:
             "evidence": f.evidence if f else "",
             "citation": f.citation if f else "",
             "remediation": (f.remediation_hint if f else "") or rule.remediation_hint,
+            # Who must act on a failing / needs-review result (ADR-018).
+            "fix_where": where,
+            "fix_where_label": fw.label(where),
+            "fix_where_action": fw.action(where),
+            "blocking": fw.is_blocking(rule.severity, where, f.verdict if f else ""),
             # Why it is (or isn't) part of this app's assessment.
             "reason": in_scope.get(rule.id) or out_of_scope.get(rule.id)
                       or ("" if f or run is None else "Not part of this assessment."),
@@ -152,6 +160,8 @@ def build_workspace(
     progress = _progress(tests)
     counts = progress["counts"]
     attention = [t for t in tests if t["status"] in ("failing", "needs_review")]
+    # What the user can act on first; Epic's own failures and sample data last.
+    attention.sort(key=lambda t: t["fix_where"] in fw.NOT_ACTIONABLE)
 
     checklist = [
         {"title": "Describe your app",
@@ -179,6 +189,8 @@ def build_workspace(
 
     return {
         "run": run,
+        # Built-in sample responses, not Epic: shown only until a real run exists.
+        "sample": bool(run) and run.get("run_mode") == "mock",
         "intake": intake,
         "tests": tests,
         "frameworks": build_frameworks(tests),

@@ -508,7 +508,7 @@ def _check_write_004(evidence: dict[str, Any], rule: Rule) -> Finding:
 # clinician_standalone (ADR-010) — rules/clinician_workflow.json
 # --------------------------------------------------------------------------- #
 def _finding(rule: Rule, verdict: str, evidence: str, citation: str = "",
-             remediation_hint: str = "") -> Finding:
+             remediation_hint: str = "", fix_where: str = "") -> Finding:
     return Finding(
         rule_id=rule.id,
         verdict=verdict,
@@ -517,6 +517,7 @@ def _finding(rule: Rule, verdict: str, evidence: str, citation: str = "",
         severity=rule.severity,
         category=rule.category,
         citation=citation,
+        fix_where=fix_where,
     )
 
 
@@ -570,7 +571,8 @@ def _check_clin_001(evidence: dict[str, Any], rule: Rule) -> Finding:
                                          "system — check the spelling of the name or MRN. Fix the Test patient "
                                          "search on the test plan page, ideally as an MRN search such as "
                                          "identifier=203713 (Camila Lopez in Epic's sandbox). Your app's "
-                                         "Patient.Search access is fine: Epic answered the search.")
+                                         "Patient.Search access is fine: Epic answered the search.",
+                        fix_where="tool_setup")
     if count > 1:
         return _finding(rule, "needs_human", detail,
                         "Query matched several patients — use an identifier (MRN) query to show the lookup is unambiguous.")

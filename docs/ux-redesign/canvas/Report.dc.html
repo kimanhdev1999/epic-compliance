@@ -95,10 +95,10 @@ ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-si
 
 <section style="display: flex; flex-direction: column; gap: 14px">
 <h2>1 · Verdict</h2>
-<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap"><span class="pill p-fail" style="font-size: 14px; line-height: 28px; padding: 0 14px">✕ Blocked</span><p style="font-size: 15px">Two failures in the app's own behaviour must be fixed before submission: CLIN-007 (critical) and CLIN-008 (high).</p></div>
+<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap"><span class="pill p-fail" style="font-size: 14px; line-height: 28px; padding: 0 14px">✕ Blocked</span><p style="font-size: 15px">One failure must be fixed before submission: CLIN-008 (high), in the app's Epic registration. CLIN-007 failed in Epic's sandbox itself and is reported for information.</p></div>
 <div class="stats">
 <div class="stat"><span class="muted">Your app readiness</span><b>53%</b><span class="muted" style="font-size: 12px">9 of 17</span></div>
-<div class="stat"><span class="muted">Failed</span><b style="color: #B42318">3</b><span class="muted" style="font-size: 12px">2 blocking</span></div>
+<div class="stat"><span class="muted">Failed</span><b style="color: #B42318">3</b><span class="muted" style="font-size: 12px">1 blocking</span></div>
 <div class="stat"><span class="muted">Needs input</span><b style="color: #B54708">5</b><span class="muted" style="font-size: 12px">proof or answers</span></div>
 <div class="stat"><span class="muted">Epic environment</span><b>9/12</b><span class="muted" style="font-size: 12px">3 verified outside</span></div>
 </div>
@@ -113,15 +113,15 @@ ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-si
 <section style="display: flex; flex-direction: column; gap: 14px">
 <h2>3 · Results for the app</h2>
 <div class="scroll"><table>
-<thead><tr><th style="width: 86px">Test</th><th>Requirement</th><th style="width: 104px">Result</th><th>What we observed</th></tr></thead>
+<thead><tr><th style="width: 86px">Test</th><th>Requirement</th><th style="width: 104px">Result</th><th>What we observed</th><th style="width: 150px">Where to fix it</th></tr></thead>
 <tbody>
-<tr><td class="mono">CLIN-007</td><td>Everything written lands on the confirmed patient <span class="muted">· critical</span></td><td><span class="pill p-fail">Failed</span></td><td>Photo stored on the right patient but without the visit reference.</td></tr>
-<tr><td class="mono">CLIN-008</td><td>Problem list, medications and allergies can be read <span class="muted">· high</span></td><td><span class="pill p-fail">Failed</span></td><td>Epic refused AllergyIntolerance.Search (HTTP 403).</td></tr>
-<tr><td class="mono">CLIN-010</td><td>Earlier consult notes can be found <span class="muted">· medium</span></td><td><span class="pill p-fail">Failed</span></td><td>The note written in this run was not returned by search.</td></tr>
-<tr><td class="mono">SEC-002</td><td>Every access to patient data is logged <span class="muted">· high</span></td><td><span class="pill p-input">Needs input</span></td><td>Attested; proof covers writes and exports, not reads. Proof P-1.</td></tr>
-<tr><td class="mono">SEC-001</td><td>Data in transit uses TLS 1.2+ <span class="muted">· critical</span></td><td><span class="pill p-input">Needs input</span></td><td>Not yet answered by the app team.</td></tr>
-<tr><td class="mono">CLIN-001</td><td>Clinician can find the right patient <span class="muted">· critical</span></td><td><span class="pill p-pass">Passed</span></td><td>MRN search returned exactly one patient.</td></tr>
-<tr><td colspan="4" class="muted">+ 11 more rows (all 17 “your app” tests are listed in the PDF)</td></tr>
+<tr><td class="mono">CLIN-008</td><td>Problem list, medications and allergies can be read <span class="muted">· high</span></td><td><span class="pill p-fail">Failed</span></td><td>Epic refused AllergyIntolerance.Search (HTTP 403).</td><td>Epic app registration</td></tr>
+<tr><td class="mono">CLIN-010</td><td>Earlier consult notes can be found <span class="muted">· medium</span></td><td><span class="pill p-fail">Failed</span></td><td>The note written in this run was not returned by search.</td><td>Epic app registration</td></tr>
+<tr><td class="mono">CLIN-007</td><td>Everything written lands on the confirmed patient <span class="muted">· critical</span></td><td><span class="pill p-fail">Failed</span></td><td>The tool's sample photo was stored without the visit reference it sent.</td><td class="muted">Epic's sandbox (not blocking)</td></tr>
+<tr><td class="mono">SEC-002</td><td>Every access to patient data is logged <span class="muted">· high</span></td><td><span class="pill p-input">Needs input</span></td><td>Attested; proof covers writes and exports, not reads. Proof P-1.</td><td>App team's answers</td></tr>
+<tr><td class="mono">SEC-001</td><td>Data in transit uses TLS 1.2+ <span class="muted">· critical</span></td><td><span class="pill p-input">Needs input</span></td><td>Not yet answered by the app team.</td><td>App team's answers</td></tr>
+<tr><td class="mono">CLIN-001</td><td>Clinician can find the right patient <span class="muted">· critical</span></td><td><span class="pill p-pass">Passed</span></td><td>MRN search returned exactly one patient.</td><td class="muted">—</td></tr>
+<tr><td colspan="5" class="muted">+ 11 more rows (all 17 “your app” tests are listed in the PDF)</td></tr>
 </tbody>
 </table></div>
 </section>

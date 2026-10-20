@@ -7,6 +7,7 @@
 {% if assessment %}{{ m.stepper(3) }}{% endif %}
 <div class="cat-header" style="margin-top:0">
   <h1 style="margin:0">{{ intake.app_name ~ " — " if intake and intake.app_name }}Epic readiness report</h1>
+  {% if view.sample %}{{ m.sample_banner() }}{% endif %}
 </div>
 <p class="subtitle">
   {% if intake %}{{ labels.users[intake.users] }} &middot; {{ labels.platform[intake.platform] }}{% if intake.health_system %} &middot; {{ intake.health_system }}{% endif %} &middot; {% endif %}

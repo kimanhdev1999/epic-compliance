@@ -57,7 +57,10 @@ td a.t:hover{text-decoration:underline}
 .who{display:inline-flex;font-size:12px;font-weight:600;line-height:20px;padding:0 8px;border-radius:6px;white-space:nowrap}
 .w-app{background:#E6F2F1;color:#0E5E59}
 .w-env{background:#EEF4FF;color:#3538CD}
-.next{font-size:13px;color:#344054}
+.next{display:block;font-size:13px;color:#344054;padding-top:4px}
+.where{display:inline-flex;font-size:12px;font-weight:600;line-height:20px;padding:0 8px;border-radius:6px;border:1px solid #D0D5DD;color:#344054;background:#fff;white-space:nowrap}
+.where-epic{border-style:dashed;color:#475467;background:#F9FAFB}
+tr.epic td{background:#F9FAFB}
 .chg{font-size:11px;font-weight:600;color:#3538CD;background:#EEF4FF;border-radius:999px;padding:0 7px;line-height:18px;margin-left:6px}
 </style>
 </helmet>
@@ -93,7 +96,7 @@ td a.t:hover{text-decoration:underline}
 </div>
 
 <div class="filters">
-<div class="seg" role="group" aria-label="Who it tests"><button type="button" aria-pressed="false">Everything</button><button type="button" aria-pressed="true">Your app</button><button type="button" aria-pressed="false">Epic environment</button></div>
+<label for="wf" style="position: absolute; left: -9999px">Where to fix it</label><select class="inp" id="wf"><option>Fix anywhere</option><option>Your app</option><option>Your Epic app registration</option><option>Your answers or proof</option><option>This tool's setup</option><option>Epic's sandbox (nothing to fix)</option></select>
 <label for="fw" style="position: absolute; left: -9999px">Framework</label><select class="inp" id="fw"><option>All frameworks</option><option>ONC (g)(10)</option><option>SMART App Launch</option><option>US Core / FHIR R4</option><option>Epic requirements</option><option>HIPAA Security Rule</option><option>Patient safety</option></select>
 <label for="ar" style="position: absolute; left: -9999px">Area</label><select class="inp" id="ar"><option>All areas</option><option>Sign-in</option><option>Patient selection &amp; chart writes</option><option>Chart data</option><option>Security answers</option></select>
 <label for="q" style="position: absolute; left: -9999px">Search tests</label><input class="inp" id="q" placeholder="Search by ID or words" style="flex: 1 1 200px">
@@ -101,20 +104,21 @@ td a.t:hover{text-decoration:underline}
 
 <div class="tbl">
 <table>
-<thead><tr><th>Test</th><th>Result</th><th>Tests</th><th>Severity</th><th>Next step</th></tr></thead>
+<thead><tr><th>Test</th><th>Result</th><th>Severity</th><th>Where to fix it</th></tr></thead>
 <tbody>
-<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-007</span>Everything written lands on the confirmed patient</a></td><td><span class="pill p-fail">✕ Failed</span></td><td><span class="who w-app">Your app</span></td><td>Critical</td><td class="next">Fix: file the photo against the visit</td></tr>
-<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-008</span>Problem list, medications and allergies can be read</a></td><td><span class="pill p-fail">✕ Failed</span></td><td><span class="who w-app">Your app</span></td><td>High</td><td class="next">Fix: enable AllergyIntolerance.Search</td></tr>
-<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-010</span>Earlier consult notes can be found</a></td><td><span class="pill p-fail">✕ Failed</span></td><td><span class="who w-app">Your app</span></td><td>Medium</td><td class="next">Fix: check the note's category and status</td></tr>
-<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">SEC-001</span>Data in transit uses TLS 1.2 or higher</a></td><td><span class="pill p-input">? Needs input</span></td><td><span class="who w-app">Your app</span></td><td>Critical</td><td class="next">Answer a question</td></tr>
-<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">SEC-002</span>Every access to patient data is logged<span class="chg">Answer changed</span></a></td><td><span class="pill p-input">? Needs input</span></td><td><span class="who w-app">Your app</span></td><td>High</td><td class="next">Add proof</td></tr>
-<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">SEC-003</span>BAAs cover everyone who handles patient data</a></td><td><span class="pill p-input">? Needs input</span></td><td><span class="who w-app">Your app</span></td><td>High</td><td class="next">Answer a question</td></tr>
-<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-005</span>A clinical photo is accepted by Epic</a></td><td><span class="pill p-input">? Needs input</span></td><td><span class="who w-app">Your app</span></td><td>Critical</td><td class="next">Connect FHIR validator</td></tr>
-<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-009</span>A consult note is accepted by Epic</a></td><td><span class="pill p-input">? Needs input</span></td><td><span class="who w-app">Your app</span></td><td>High</td><td class="next">Connect FHIR validator</td></tr>
+<tr><td><a class="t" href="Connect.dc.html"><span class="idt">CLIN-008</span>Problem list, medications and allergies can be read</a></td><td><span class="pill p-fail">✕ Failed</span></td><td>High · <b>blocking</b></td><td><span class="where">Your Epic app registration</span><span class="next">Turn on AllergyIntolerance.Search on fhir.epic.com</span></td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-010</span>Earlier consult notes can be found</a></td><td><span class="pill p-fail">✕ Failed</span></td><td>Medium</td><td><span class="where">Your Epic app registration</span><span class="next">Check DocumentReference.Search is turned on</span></td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">SEC-001</span>Data in transit uses TLS 1.2 or higher</a></td><td><span class="pill p-input">? Needs input</span></td><td>Critical</td><td><span class="where">Your answers or proof</span><span class="next">Answer a question</span></td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">SEC-002</span>Every access to patient data is logged<span class="chg">Answer changed</span></a></td><td><span class="pill p-input">? Needs input</span></td><td>High</td><td><span class="where">Your answers or proof</span><span class="next">Add proof</span></td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">SEC-003</span>BAAs cover everyone who handles patient data</a></td><td><span class="pill p-input">? Needs input</span></td><td>High</td><td><span class="where">Your answers or proof</span><span class="next">Answer a question</span></td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-005</span>A clinical photo is accepted by Epic</a></td><td><span class="pill p-input">? Needs input</span></td><td>Critical</td><td><span class="where">This tool's setup</span><span class="next">Start the FHIR validator</span></td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-009</span>A consult note is accepted by Epic</a></td><td><span class="pill p-input">? Needs input</span></td><td>High</td><td><span class="where">This tool's setup</span><span class="next">Start the FHIR validator</span></td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">AUTH-010</span>The identity token's signature can be verified</a></td><td><span class="pill p-input">? Needs input</span></td><td>High</td><td><span class="where">This tool's setup</span><span class="next">Only the launch test suite can check this</span></td></tr>
+<tr class="epic"><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-007</span>Everything written lands on the confirmed patient</a></td><td><span class="pill p-fail">✕ Failed</span></td><td>Critical · not blocking</td><td><span class="where where-epic">Epic's sandbox</span><span class="next">Nothing for you to fix: Epic dropped the visit reference the tool sent</span></td></tr>
 </tbody>
 </table>
 </div>
-<p class="muted" style="font-size: 13px">Showing 8 of 11 to resolve — 3 more test the Epic environment (AUTH-007, AUTH-008, AUTH-010: verify outside the app). Switch to “Everything” to see them.</p>
+<p class="muted" style="font-size: 13px">Showing 9 of 11 (AUTH-007 and AUTH-008 also need the launch test suite). “Where to fix it” is worked out from what each test checks and why it didn't pass. Epic's-sandbox and sample-data failures are shown for information and never count as blocking.</p>
 </main>
 </div>
 </x-dc>

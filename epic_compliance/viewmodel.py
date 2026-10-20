@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from . import fix_where as fw
 from .models import Report
 from .rules_engine.catalog import load_rules
 
@@ -58,7 +59,9 @@ def _sort_key(item: dict[str, Any]) -> tuple[int, int]:
     )
 
 
-def build_report_view(report: Report, evidence: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+def build_report_view(
+    report: Report, evidence: list[dict[str, Any]] | None = None, *, sample: bool = False
+) -> dict[str, Any]:
     """Return {run_id, counts, total, score, categories:[{key,label,items,counts}]}.
 
     ``evidence`` is the run's snapshot of developer-attached evidence (ADR-015);
@@ -73,6 +76,7 @@ def build_report_view(report: Report, evidence: list[dict[str, Any]] | None = No
     for f in report.findings:
         rule = rules.get(f.rule_id)
         category = f.category or (rule.category if rule else "other")
+        where = fw.where_to_fix(rule, f, sample=sample)
         item = {
             "rule_id": f.rule_id,
             "verdict": f.verdict,
@@ -89,6 +93,9 @@ def build_report_view(report: Report, evidence: list[dict[str, Any]] | None = No
             "subject_label": SUBJECTS.get(rule.subject, ("", ""))[0] if rule else "",
             "subject_detail": SUBJECTS.get(rule.subject, ("", ""))[1] if rule else "",
             "provided_evidence": provided.get(f.rule_id, []),
+            "fix_where": where,
+            "fix_where_label": fw.label(where),
+            "fix_where_action": fw.action(where),
         }
         categories.setdefault(category, []).append(item)
 
@@ -131,7 +138,9 @@ def build_report_view(report: Report, evidence: list[dict[str, Any]] | None = No
         "failed": failed,
         "review": review,
         "failed_by_severity": failed_by_severity,
-        "blocking": sum(1 for it in failed if it["severity"] in ("critical", "high")),
+        # Failures the user must fix: Epic's own behaviour and sample data never block.
+        "blocking": sum(1 for it in failed if fw.is_blocking(it["severity"], it["fix_where"], "fail")),
+        "sample": sample,
     }
 
 

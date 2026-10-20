@@ -26,11 +26,12 @@ h2{font-size:16px;line-height:22px;margin:0;font-weight:600}
 .dot{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
 .act{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-top:1px solid #F2F4F7;text-decoration:none;color:#101828}
 .idt{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#475467}
+.where{align-self:flex-start;font-size:12px;font-weight:600;line-height:20px;padding:0 8px;border-radius:6px;border:1px solid #D0D5DD;color:#344054;background:#fff}
 .jr{display:flex;gap:6px}
 .jr span{flex:1;height:6px;border-radius:999px}
 </style>
 </helmet>
-<div style="width: 390px; height: 1300px; box-sizing: border-box; background: #F5F6F8; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; font-size: 14px; line-height: 20px; display: flex; flex-direction: column; position: relative">
+<div style="width: 390px; height: 1450px; box-sizing: border-box; background: #F5F6F8; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; font-size: 14px; line-height: 20px; display: flex; flex-direction: column; position: relative">
 <header style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #0F1B2D; color: #fff">
 <button type="button" aria-label="Open menu" style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid #2A3A52; background: transparent; color: #fff; font-size: 18px">≡</button>
 <b style="font-size: 16px">DermScan</b>
@@ -40,8 +41,8 @@ h2{font-size:16px;line-height:22px;margin:0;font-weight:600}
 <div style="display: flex; flex-direction: column; gap: 14px; padding: 16px">
 <div class="card">
 <span class="pill p-fail">✕ Blocked</span>
-<h1>2 failures block submission</h1>
-<p class="muted">Then 5 tests need your input.</p>
+<h1>1 failure blocks submission</h1>
+<p class="muted">Fix it on fhir.epic.com, then 5 tests need your input.</p>
 <div style="display: flex; align-items: baseline; gap: 8px; padding-top: 6px; border-top: 1px solid #F2F4F7"><span style="font-size: 32px; line-height: 38px; font-weight: 600">53%</span><span class="muted">your app · 9 of 17 passed</span></div>
 <div style="display: flex; gap: 2px; height: 10px" role="img" aria-label="9 passed, 3 failed, 5 need input"><div style="flex: 9; background: #12B76A; border-radius: 4px 0 0 4px"></div><div style="flex: 3; background: #F04438"></div><div style="flex: 5; background: #F79009; border-radius: 0 4px 4px 0"></div></div>
 <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 12.5px"><span><span class="dot" style="background: #12B76A"></span> 9 Passed</span><span><span class="dot" style="background: #F04438"></span> 3 Failed</span><span><span class="dot" style="background: #F79009"></span> 5 Needs input</span></div>
@@ -55,12 +56,12 @@ h2{font-size:16px;line-height:22px;margin:0;font-weight:600}
 
 <div class="card" style="gap: 0">
 <h2 style="padding-bottom: 6px">What to do next</h2>
-<a class="act" href="TestDetail.dc.html"><span class="pill p-fail">✕ Failed</span><span class="idt">CLIN-007 · critical</span><b>The photo was filed without the visit</b></a>
-<a class="act" href="TestDetail.dc.html"><span class="pill p-fail">✕ Failed</span><span class="idt">CLIN-008 · high</span><b>Epic refused the allergy list (HTTP 403)</b></a>
-<a class="act" href="TestDetail.dc.html"><span class="pill p-fail">✕ Failed</span><span class="idt">CLIN-010 · medium</span><b>The new consult note didn't show up in search</b></a>
-<a class="act" href="Profile.dc.html"><span class="pill p-input">? Needs input</span><span class="idt">SEC-001, SEC-003</span><b>Answer 2 security questions</b></a>
-<a class="act" href="TestDetail.dc.html"><span class="pill p-input">? Needs input</span><span class="idt">SEC-002</span><b>Add proof of audit logging</b></a>
-<a class="act" href="Connections.dc.html"><span class="pill p-input">? Needs input</span><span class="idt">CLIN-005, CLIN-009</span><b>Start the FHIR validator</b></a>
+<a class="act" href="Connect.dc.html"><span class="pill p-fail">✕ Failed</span><span class="idt">CLIN-008 · high · blocking</span><b>Epic refused the allergy list (HTTP 403)</b><span class="where">Fix in: Your Epic app registration</span></a>
+<a class="act" href="TestDetail.dc.html"><span class="pill p-fail">✕ Failed</span><span class="idt">CLIN-010 · medium</span><b>The new consult note didn't show up in search</b><span class="where">Fix in: Your Epic app registration</span></a>
+<a class="act" href="Profile.dc.html"><span class="pill p-input">? Needs input</span><span class="idt">SEC-001, SEC-003</span><b>Answer 2 security questions</b><span class="where">Fix in: Your answers or proof</span></a>
+<a class="act" href="TestDetail.dc.html"><span class="pill p-input">? Needs input</span><span class="idt">SEC-002</span><b>Add proof of audit logging</b><span class="where">Fix in: Your answers or proof</span></a>
+<a class="act" href="Connections.dc.html"><span class="pill p-input">? Needs input</span><span class="idt">CLIN-005, CLIN-009</span><b>Start the FHIR validator</b><span class="where">Fix in: This tool's setup</span></a>
+<a class="act" href="TestDetail.dc.html"><span class="pill p-fail">✕ Failed</span><span class="idt">CLIN-007 · critical · not blocking</span><b>Epic stored the sample photo without its visit</b><span class="where" style="border-style: dashed">Epic's sandbox — nothing to fix</span></a>
 </div>
 
 <div class="card" style="gap: 6px">
@@ -73,11 +74,11 @@ h2{font-size:16px;line-height:22px;margin:0;font-weight:600}
 
 <div style="margin-top: auto; position: sticky; bottom: 0; display: flex; gap: 8px; padding: 12px 16px; background: #fff; border-top: 1px solid #E4E7EC">
 <a class="btn btn-s" href="Report.dc.html" style="flex: 1">Report</a>
-<a class="btn btn-p" href="TestDetail.dc.html" style="flex: 2">Start with CLIN-007</a>
+<a class="btn btn-p" href="Connect.dc.html" style="flex: 2">Start with CLIN-008</a>
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1300}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1450}}'>
 class Component extends DCLogic {
 renderVals() {
 return {};
