@@ -243,14 +243,14 @@ class TestAssessmentRoutes:
         assert "Back to chat" in resp.text
         assert "Demo data" not in resp.text and 'name="run_mode" value="live"' in resp.text
 
-    def test_plan_offers_a_sample_run_and_an_epic_run(self, client, monkeypatch):
+    def test_plan_offers_only_the_epic_run(self, client, monkeypatch):
         from epic_compliance import pipeline
         monkeypatch.setattr(pipeline, "get_live_token", lambda: None)
         text = client.post("/assess/plan", data=self.FORM).text
-        assert text.index("How to run") < text.index("What will be checked")
-        # The sample run needs no setup; the Epic run waits for a sign-in.
-        assert 'name="run_mode" value="mock" id="run-sample" class="btn big">' in text
-        assert 'id="run-btn" class="btn big secondary" disabled' in text and "Sign in to Epic sandbox" in text
+        assert text.index("Before you run") < text.index("What will be checked")
+        # Sample data is for the test suite only (ADR-014); the page never offers it.
+        assert 'value="mock"' not in text and "sample data" not in text.lower()
+        assert 'id="run-btn" class="btn big" disabled' in text and "Sign in to Epic sandbox" in text
         # No test-patient step: Epic's sandbox patient is the default, editable under More settings.
         assert 'id="step-patient"' not in text and 'value="identifier=203713"' in text
         assert client.get("/launch/status").json() == {"signed_in": False}

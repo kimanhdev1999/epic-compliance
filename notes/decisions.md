@@ -770,3 +770,10 @@ steps and use the built-in patient and clinician.
 - A sample run is one click. Its results show what each check looks at, not
   whether the app works with Epic, and the page says so next to the button.
 - The UI harness now clicks "Run on sample data" instead of rewriting the form.
+
+### Amendment (2026-10-20): the sample run is removed from the UI
+The user asked that the UI not offer testing with sample data. The plan page now
+offers only the Epic run (client ID and sign-in). The test-patient default and
+the `/launch` fixes stay. Sample data is again for the test suite and UI harness
+only (ADR-014). The harness switches the Run button to `run_mode=mock`. Sample
+runs already saved keep their "Sample data" banners (ADR-018).

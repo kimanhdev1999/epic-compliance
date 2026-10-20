@@ -178,11 +178,15 @@ def describe_app(v: Visit, description: str = APP_DESCRIPTION, max_turns: int = 
 
 def run_sample(v: Visit) -> str:
     """From the plan page, run the plan on sample data; return the run id.
-    Needs no setup: the plan page offers it next to the Epic run."""
+
+    The UI only offers Epic runs (ADR-014), so this turns the Run button into
+    a sample run, exactly what the smoke test does over HTTP.
+    """
     page = v.page
     page.click("text=Generate test plan")
     page.wait_for_url("**/assess/plan")
-    page.click("#run-sample")
+    page.eval_on_selector("#run-btn", "el => { el.value = 'mock'; el.disabled = false; }")
+    page.click("#run-btn")
     page.wait_for_url(re.compile(r"/runs/[^/]+$"), timeout=60_000)
     return page.url.rsplit("/", 1)[1]
 
