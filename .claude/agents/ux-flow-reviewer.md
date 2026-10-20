@@ -37,6 +37,16 @@ target the Epic sandbox; sample data ("mock") exists only for the smoke test. Re
 
 ## How to investigate
 
+0. **Run the UI harness first.** It walks every page (empty and after a sample run) at desktop and
+   phone widths in about 30 seconds, saves screenshots, and checks the honesty rules:
+   ```bash
+   UI_SHOTS_DIR="$SP/shots" .venv/bin/python -m pytest tests/ui -q -rxX -p no:cacheprovider
+   ```
+   It starts its own throwaway servers, so it's safe. Read the PNGs in `$SP/shots` instead of
+   screenshotting by hand. Any `FAILED` is a regression. `xfail` entries are open findings that are
+   already known (don't re-report them unless you have something new). Spend your time on what the
+   harness can't judge: wording, flow, trust. If you find a mechanically checkable problem, suggest
+   a rule for `tests/ui/test_honesty.py` in your report.
 1. **Walk the journeys** as a first-time user and as a returning user:
    - First visit → Home → Describe your app (chat, quick replies, edit an answer, new conversation)
      → Generate test plan → plan page (sign-in gate, fields) → (mock) run → report → Home/Tests.
