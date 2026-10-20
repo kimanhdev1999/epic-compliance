@@ -72,6 +72,26 @@ class TestRoutes:
         runs = client.get("/api/runs").json()
         assert len(runs) == before + 1 and runs[0]["app_name"] == "DermScan"
 
+    def test_rerun_one_test_keeps_the_other_results(self, client):
+        from epic_compliance import store
+
+        client.post("/assess/run", data=self.FORM)
+        base = store.latest_run()
+        drawer = client.get("/tests/CLIN-001", headers={"HX-Request": "true"})
+        assert "Re-run this test" in drawer.text and 'name="rule_id" value="CLIN-001"' in drawer.text
+
+        resp = client.post("/assess/rerun", data={"next": "/tests?open=CLIN-001", "rule_id": "CLIN-001"},
+                           follow_redirects=False)
+        assert resp.status_code == 303 and resp.headers["location"] == "/tests?open=CLIN-001"
+        run = store.latest_run()
+        assert run["run_id"] != base["run_id"]
+        assert run["config"]["rerun_of"] == {"run_id": base["run_id"], "rule_ids": ["CLIN-001"]}
+        # Every test from the full run is still there, in the same order.
+        assert [f.rule_id for f in run["report"].findings] == [f.rule_id for f in base["report"].findings]
+        # A test that wasn't re-run gets no new history entry.
+        assert len(ws.history_of_test(store.recent_runs(), "CLIN-002")) == 1
+        assert len(ws.history_of_test(store.recent_runs(), "CLIN-001")) == 2
+
     def test_rerun_rejects_offsite_redirects_and_needs_an_intake(self, client):
         resp = client.post("/assess/rerun", data={"next": "//evil.example"}, follow_redirects=False)
         assert resp.headers["location"] == "/assess"  # no intake yet

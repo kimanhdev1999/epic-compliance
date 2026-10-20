@@ -321,7 +321,7 @@ a.chip:hover { color: var(--accent); text-decoration: none; }
 pre.evidence { margin: 0; max-height: 280px; overflow: auto; font-family: var(--mono); font-size: 0.8rem; background: var(--surface-2); padding: 0.65rem 0.75rem; border-radius: 8px; white-space: pre-wrap; word-break: break-word; }
 .history { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; font-size: 0.85rem; }
 .history li { display: flex; justify-content: space-between; align-items: center; }
-.drawer-foot { padding: 0.9rem 1.4rem; border-top: 1px solid var(--border); display: flex; gap: 0.6rem; }
+.drawer-foot { padding: 0.9rem 1.4rem; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .drawer-page { padding: 0; }
 .drawer-page .drawer-head [data-close-drawer] { display: none; }
 

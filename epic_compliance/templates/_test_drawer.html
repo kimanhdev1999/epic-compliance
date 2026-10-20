@@ -72,7 +72,8 @@
 </div>
 {% if w.run %}
 <div class="drawer-foot">
-  {{ m.rerun_button("/tests", cls="btn") }}
+  {{ m.rerun_button("/tests?open=" ~ t.id, label="Re-run this test", cls="btn", rule_id=t.id) }}
+  {{ m.rerun_button("/tests?open=" ~ t.id, label="Re-run all") }}
   {% if t.status == "needs_review" and ("test patient" in t.evidence or "Not signed in" in t.evidence) %}<a class="btn secondary" href="/assess/plan">Open test plan</a>
   {% elif t.status == "needs_review" and t.subject == "app_attested" %}<a class="btn secondary" href="/assess">Answer in chat</a>{% endif %}
 </div>
