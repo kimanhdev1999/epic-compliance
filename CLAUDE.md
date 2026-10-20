@@ -36,6 +36,10 @@ Before starting any day's work:
 - When making architectural decisions, note the reasoning in `notes/decisions.md`
 - Never commit credentials or `.env` files
 - Prefer `docker compose` (v2 CLI) over `docker-compose` (v1)
+- **One git worktree per session.** Several Claude sessions often run in this folder at once.
+  Before changing any file, call EnterWorktree (or start with `claude --worktree`). To continue an
+  existing branch, run `git worktree add .claude/worktrees/<name> <branch>` and enter that path. Never
+  switch branches, `git stash`, or `git add -A` in the shared checkout; keep it on `main`.
 
 ## MCP Servers Available
 See `.claude/settings.json` for configured MCP servers.
