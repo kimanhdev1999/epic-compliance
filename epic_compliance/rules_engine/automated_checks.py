@@ -507,12 +507,13 @@ def _check_write_004(evidence: dict[str, Any], rule: Rule) -> Finding:
 # --------------------------------------------------------------------------- #
 # clinician_standalone (ADR-010) — rules/clinician_workflow.json
 # --------------------------------------------------------------------------- #
-def _finding(rule: Rule, verdict: str, evidence: str, citation: str = "") -> Finding:
+def _finding(rule: Rule, verdict: str, evidence: str, citation: str = "",
+             remediation_hint: str = "") -> Finding:
     return Finding(
         rule_id=rule.id,
         verdict=verdict,
         evidence=evidence,
-        remediation_hint=rule.remediation_hint,
+        remediation_hint=remediation_hint or rule.remediation_hint,
         severity=rule.severity,
         category=rule.category,
         citation=citation,
@@ -555,8 +556,21 @@ def _check_clin_001(evidence: dict[str, Any], rule: Rule) -> Finding:
     if status is None:
         return _finding(rule, "needs_human", f"{detail}; error={search.get('error')}",
                         "Search request never completed.")
-    if not _ok_status(status) or count == 0:
+    if status in (401, 403):
+        return _finding(rule, "fail", f"{detail}; error={search.get('error', '')}",
+                        remediation_hint=f"Epic refused the search (HTTP {status}). Add Patient.Search (R4) to "
+                                         "the app's Incoming APIs, then sign in to Epic again so the new "
+                                         "token includes it.")
+    if not _ok_status(status):
         return _finding(rule, "fail", f"{detail}; error={search.get('error', '')}")
+    if count == 0:
+        # The API call worked — the query just matched nobody (often a misspelled name).
+        return _finding(rule, "fail", f"{detail}; error={search.get('error', '')}",
+                        remediation_hint=f"No patient matching {search.get('query')!r} exists in this Epic "
+                                         "system — check the spelling of the name or MRN. Fix the Test patient "
+                                         "search on the test plan page, ideally as an MRN search such as "
+                                         "identifier=203713 (Camila Lopez in Epic's sandbox). Your app's "
+                                         "Patient.Search access is fine: Epic answered the search.")
     if count > 1:
         return _finding(rule, "needs_human", detail,
                         "Query matched several patients — use an identifier (MRN) query to show the lookup is unambiguous.")
