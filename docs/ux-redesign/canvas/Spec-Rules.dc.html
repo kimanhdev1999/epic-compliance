@@ -143,6 +143,22 @@ pre{margin:0;background:#0F1B2D;color:#E4E7EC;border-radius:10px;padding:16px;fo
 </div>
 
 <div class="sec">
+<h2><span class="secno">03b</span>Where to fix it <span class="pill p-input">BUILT</span></h2>
+<p class="muted">Every Failed or Needs input result names who must act. Stored as <span class="mono">fix_where</span> on the finding when the check knows the cause (e.g. CLIN-001), otherwise derived by <span class="mono">where_to_fix()</span> from the test's subject and result, which also covers old runs.</p>
+<div class="scroll"><table>
+<thead><tr><th style="width: 200px">Label</th><th>Given when</th><th style="width: 300px">What the user does</th></tr></thead>
+<tbody>
+<tr><td><b>Sample data</b></td><td>The run used the tool's built-in sample responses (<span class="mono">run_mode = mock</span>). Wins over everything else.</td><td>Nothing: not a real result. Never blocking. A sample run never replaces a real run on Home and Tests.</td></tr>
+<tr><td><b>Your app</b></td><td>Failed · subject <span class="mono">app_attested</span> (your answers show non-compliance, e.g. TLS 1.0, client secret in a mobile app)</td><td>Change the app's code or configuration.</td></tr>
+<tr><td><b>Your Epic app registration</b></td><td>Failed · subject <span class="mono">app_registration</span> (scopes not granted, API refused with 401/403) · or <span class="mono">tool_sample</span> refused with 401/403</td><td>Fix it on fhir.epic.com, then sign in to Epic again.</td></tr>
+<tr><td><b>Your answers or proof</b></td><td>Needs input · subject <span class="mono">app_attested</span> (blank / “not sure”, or proof not enough)</td><td>Answer the question or attach proof, then re-run.</td></tr>
+<tr><td><b>This tool's setup</b></td><td>Needs input caused by the tool: not signed in, no or ambiguous test patient, validator unreachable, Claude not connected (<span class="mono">[MOCK]</span> citation), probes only the launch suite runs · or Failed CLIN-001 with 0 matches (wrong test patient)</td><td>Fix the sign-in, test patient, Claude or validator, then re-run.</td></tr>
+<tr><td><b>Epic's sandbox</b></td><td>Failed · subject <span class="mono">epic_platform</span> / <span class="mono">tool_launch</span> · or <span class="mono">tool_sample</span> failing without 401/403 (Epic mishandled the tool's correct sample)</td><td>Nothing to fix in your app. Shown for information; <b>never blocking</b>.</td></tr>
+</tbody></table></div>
+<p class="muted">“Blocking” = Failed, severity critical or high, and Where to fix it is not Epic's sandbox or Sample data.</p>
+</div>
+
+<div class="sec">
 <h2><span class="secno">04</span>Who it tests, readiness and verdict</h2>
 <div class="g3">
 <div class="card">
@@ -173,7 +189,7 @@ epic_health =
 <div class="card">
 <h3>Verdict (one word for the app)</h3>
 <pre>if no complete run:      "Not tested"
-elif any Failed critical/high (app):
+elif any blocking Failed (see 03b):
                          "Blocked"
 elif any Failed (app):   "Fixes needed"
 elif any Needs input (app):
@@ -185,7 +201,7 @@ if out_of_date: append "· out of date"</pre>
 </div>
 <div class="card">
 <h3>Ordering everywhere (kept)</h3>
-<p>Failed → Needs input → Not run → Passed → Out of plan; within a group by severity critical → high → medium → low, then ID. “Blocking” = Failed and severity critical or high.</p>
+<p>Failed → Needs input → Not run → Passed → Out of plan; within a group by severity critical → high → medium → low, then ID. “Blocking” = Failed, severity critical or high, and fixable by the user (not Epic's sandbox or Sample data — see 03b).</p>
 </div>
 </div>
 
@@ -252,7 +268,7 @@ if out_of_date: append "· out of date"</pre>
 </div>
 <div class="card">
 <h3>Sample data</h3>
-<p>Sample-data runs (today's mock mode) stay out of the main UI (ADR-014) but, if one exists in history, it is labelled <b>Sample data</b> in every list and its report is watermarked “SAMPLE DATA — NOT EVIDENCE”. Sample runs never count toward the trend or the verdict.</p>
+<p>Sample-data runs (mock mode: the smoke test, CLI or <span class="mono">/api/run</span>) <b>never replace a real run</b> <span class="pill p-input">BUILT</span>: Home, Tests and the test panel show the newest real run. Only when no real run exists yet do they show the newest sample run, under a “Sample data — not a real result” banner; every failure in it is labelled Sample data and none is blocking. Runs lists them as Sample data. Report watermark: planned.</p>
 </div>
 </div>
 </div>
@@ -343,7 +359,7 @@ if out_of_date: append "· out of date"</pre>
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":3000}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":3700}}'>
 class Component extends DCLogic {
 renderVals() {
 return {};

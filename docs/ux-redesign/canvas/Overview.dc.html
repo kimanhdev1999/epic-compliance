@@ -53,6 +53,8 @@ p{margin:0}
 .act{display:flex;gap:14px;align-items:center;padding:12px 0;border-top:1px solid #F2F4F7;flex-wrap:wrap}
 .act .txt{flex:1 1 300px;min-width:0}
 .idt{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#475467}
+.where{display:inline-flex;font-size:12px;font-weight:600;line-height:20px;padding:0 8px;border-radius:6px;border:1px solid #D0D5DD;color:#344054;background:#fff;margin:4px 6px 0 0}
+.where-epic{border-style:dashed;color:#475467;background:#F9FAFB}
 .sev{font-size:12px;color:#475467}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 td{padding:8px 0;border-top:1px solid #F2F4F7}
@@ -83,9 +85,9 @@ td{padding:8px 0;border-top:1px solid #F2F4F7}
 <section class="card" style="flex-direction: row; flex-wrap: wrap; gap: 32px; padding: 24px" aria-label="Verdict">
 <div style="flex: 2 1 340px; display: flex; flex-direction: column; gap: 12px">
 <span class="pill p-fail" style="align-self: flex-start; font-size: 13px; line-height: 26px; padding: 0 12px">✕ Blocked</span>
-<h2 style="font-size: 22px; line-height: 30px">2 failures block submission. Fix those, then 5 tests need your input.</h2>
-<p class="muted">A critical or high-severity failure in your app blocks “Ready to submit”. Everything else can be resolved here.</p>
-<div style="display: flex; gap: 8px; flex-wrap: wrap"><a class="btn btn-p" href="TestDetail.dc.html">Start with CLIN-007</a><a class="btn btn-s" href="Tests.dc.html">See all 8 to resolve</a></div>
+<h2 style="font-size: 22px; line-height: 30px">1 failure blocks submission. Fix it on fhir.epic.com, then 5 tests need your input.</h2>
+<p class="muted">A critical or high failure that you can fix blocks “Ready to submit”. Failures in Epic's own sandbox are shown, but never block.</p>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><a class="btn btn-p" href="Connect.dc.html">Start with CLIN-008</a><a class="btn btn-s" href="Tests.dc.html">See all to resolve</a></div>
 </div>
 <div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 10px; padding-left: 24px; border-left: 1px solid #E4E7EC">
 <span class="muted" style="font-weight: 600">Your app readiness</span>
@@ -107,12 +109,12 @@ td{padding:8px 0;border-top:1px solid #F2F4F7}
 <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
 <section class="card" style="flex: 3 1 560px; gap: 0" aria-label="What to do next">
 <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px"><h2>What to do next</h2><a href="Tests.dc.html">All tests</a></div>
-<div class="act"><span class="pill p-fail">✕ Failed</span><div class="txt"><span class="idt">CLIN-007 · critical</span><br><b>The photo was filed without the visit</b><br><span class="muted">Epic stored the Media for the right patient but with no encounter reference.</span></div><a class="btn btn-s btn-sm" href="TestDetail.dc.html">How to fix</a></div>
-<div class="act"><span class="pill p-fail">✕ Failed</span><div class="txt"><span class="idt">CLIN-008 · high</span><br><b>Epic refused the allergy list (HTTP 403)</b><br><span class="muted">Turn on AllergyIntolerance.Search in your Epic app, then sign in again.</span></div><a class="btn btn-s btn-sm" href="Connect.dc.html">Open Epic setup</a></div>
-<div class="act"><span class="pill p-fail">✕ Failed</span><div class="txt"><span class="idt">CLIN-010 · medium</span><br><b>The new consult note didn't show up in search</b><br><span class="muted">Not blocking, but fix before you submit.</span></div><a class="btn btn-s btn-sm" href="TestDetail.dc.html">How to fix</a></div>
-<div class="act"><span class="pill p-input">? Needs input</span><div class="txt"><span class="idt">SEC-001, SEC-003</span><br><b>Answer 2 security questions</b><br><span class="muted">TLS version and BAAs are “Not sure” in your profile.</span></div><a class="btn btn-s btn-sm" href="Profile.dc.html">Answer</a></div>
-<div class="act"><span class="pill p-input">? Needs input</span><div class="txt"><span class="idt">SEC-002</span><br><b>Add proof of audit logging</b><br><span class="muted">You said yes; attach your logging policy or a sample log.</span></div><a class="btn btn-s btn-sm" href="TestDetail.dc.html">Add proof</a></div>
-<div class="act"><span class="pill p-input">? Needs input</span><div class="txt"><span class="idt">CLIN-005, CLIN-009</span><br><b>Start the FHIR validator</b><br><span class="muted">Photos and notes were accepted but not checked against US Core.</span></div><a class="btn btn-s btn-sm" href="Connections.dc.html">Connect</a></div>
+<div class="act"><span class="pill p-fail">✕ Failed</span><div class="txt"><span class="idt">CLIN-008 · high · blocking</span><br><b>Epic refused the allergy list (HTTP 403)</b><br><span class="where">Fix in: Your Epic app registration</span> <span class="muted">Turn on AllergyIntolerance.Search on fhir.epic.com, then sign in again.</span></div><a class="btn btn-s btn-sm" href="Connect.dc.html">Open Epic setup</a></div>
+<div class="act"><span class="pill p-fail">✕ Failed</span><div class="txt"><span class="idt">CLIN-010 · medium</span><br><b>The new consult note didn't show up in search</b><br><span class="where">Fix in: Your Epic app registration</span> <span class="muted">Check DocumentReference.Search is turned on.</span></div><a class="btn btn-s btn-sm" href="TestDetail.dc.html">How to fix</a></div>
+<div class="act"><span class="pill p-input">? Needs input</span><div class="txt"><span class="idt">SEC-001, SEC-003</span><br><b>Answer 2 security questions</b><br><span class="where">Fix in: Your answers or proof</span> <span class="muted">TLS version and BAAs are “Not sure”.</span></div><a class="btn btn-s btn-sm" href="Profile.dc.html">Answer</a></div>
+<div class="act"><span class="pill p-input">? Needs input</span><div class="txt"><span class="idt">SEC-002</span><br><b>Add proof of audit logging</b><br><span class="where">Fix in: Your answers or proof</span> <span class="muted">Attach your logging policy or a sample log.</span></div><a class="btn btn-s btn-sm" href="TestDetail.dc.html">Add proof</a></div>
+<div class="act"><span class="pill p-input">? Needs input</span><div class="txt"><span class="idt">CLIN-005, CLIN-009</span><br><b>Start the FHIR validator</b><br><span class="where">Fix in: This tool's setup</span> <span class="muted">Writes were accepted but not checked against US Core.</span></div><a class="btn btn-s btn-sm" href="Connections.dc.html">Connect</a></div>
+<div class="act" style="background: #F9FAFB; margin: 0 -20px; padding: 12px 20px"><span class="pill p-fail">✕ Failed</span><div class="txt"><span class="idt">CLIN-007 · critical · not blocking</span><br><b>Epic stored the sample photo without its visit</b><br><span class="where where-epic">Epic's sandbox — nothing for you to fix</span> <span class="muted">The tool sent the visit reference; Epic's sandbox dropped it.</span></div><a class="btn btn-s btn-sm" href="TestDetail.dc.html">Details</a></div>
 </section>
 
 <aside style="flex: 2 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
