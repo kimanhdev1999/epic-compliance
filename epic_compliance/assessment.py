@@ -16,7 +16,8 @@ from typing import Any, Callable, Literal
 
 from pydantic import BaseModel
 
-from .rules_engine.catalog import Rule, load_rules
+from .reviewer_questions import PlannedQuestion, select as select_questions
+from .rules_engine.catalog import Rule, is_reviewer_question, load_rules
 
 
 #: Where/how to run, chosen on the plan page rather than in the chat.
@@ -101,6 +102,8 @@ class Plan:
     intake: Intake
     launch_profile: str
     checks: list[PlannedCheck] = field(default_factory=list)
+    # What a reviewer will ask the vendor (ADR-019), next to the automated tests.
+    questions: list[PlannedQuestion] = field(default_factory=list)
 
     @property
     def included(self) -> list[PlannedCheck]:
@@ -165,6 +168,10 @@ class Plan:
             "excluded": [
                 {"rule_id": c.rule.id, "reason": c.reason, "description": c.rule.description}
                 for c in self.excluded
+            ],
+            "questions": [
+                {"id": q.question.id, "text": q.wording, "reason": q.reason, "ai_suggested": q.ai_suggested}
+                for q in self.questions if q.included
             ],
         }
 
@@ -256,7 +263,9 @@ SELECTORS: dict[str, Callable[[Intake], Decision]] = {
 def build_plan(intake: Intake) -> Plan:
     launch_profile = "clinician_standalone" if intake.users == "clinicians" else "patient_launch"
     plan = Plan(intake=intake, launch_profile=launch_profile)
-    for rule in load_rules():
+    rules = load_rules()
+    automated = [r for r in rules if not is_reviewer_question(r)]
+    for rule in automated:
         selector = SELECTORS.get(rule.id)
         if selector is None:
             included, reason = True, "General requirement for every Epic app."
@@ -266,4 +275,9 @@ def build_plan(intake: Intake) -> Plan:
         if included and not rule.applies_to(launch_profile):
             included, reason = False, "Doesn't apply to this kind of app."
         plan.checks.append(PlannedCheck(rule=rule, included=included, reason=reason))
+    # Reviewer questions (ADR-019): included by the library's tags, run as tests.
+    plan.questions = select_questions(intake, covered=plan.rule_ids)
+    by_id = {r.id: r for r in rules}
+    for q in plan.questions:
+        plan.checks.append(PlannedCheck(rule=by_id[q.question.id], included=q.included, reason=q.reason))
     return plan

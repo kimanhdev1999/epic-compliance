@@ -1,0 +1,3261 @@
+[
+ {
+  "id": "EPIC-BACKEND-JKU",
+  "topic": "epic_app",
+  "question": "For backend (system-to-system) access, do you publish a JWK Set URL (JKU), not a static public key? Which signing algorithm do you use?",
+  "why": "Starting with the May 2026 Epic version, backend OAuth apps must use a JKU. Static keys are no longer supported in customer environments. Epic supports RS256/384/512 and ES256/384 (ES384 only with a JKU).",
+  "tags": [
+   "backend"
+  ],
+  "requires": [
+   "backend"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: SMART Backend Services (Backend OAuth 2.0)",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: Implementing a Backend FHIR App",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: JWT Authentication Troubleshooting",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-BACKEND-USER",
+  "topic": "epic_app",
+  "question": "Which background user should the backend client ID map to, and which security points does it need?",
+  "why": "Epic backend OAuth needs a customer-mapped background user before it issues tokens.",
+  "tags": [
+   "backend"
+  ],
+  "requires": [
+   "backend"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: SMART Backend Services",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: Implementing a Backend FHIR App",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-CLIENT-TYPE",
+  "topic": "epic_app",
+  "question": "Is your app registered as a public or confidential client? If confidential, do you use a client secret or JWT (JWK Set URL) authentication?",
+  "why": "Epic requires the confidential client profile for refresh tokens. The client type decides how credentials must be protected.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines, Creating/Activating an App > Registering an App",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: OAuth 2.0 Tutorial 'Access Token Request: Frontend Confidential Clients'",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-CREATE-CODING",
+  "topic": "epic_app",
+  "question": "In FHIR create requests, do you code values with the OID/URL coding-system format that Epic expects?",
+  "why": "Epic's guidance for FHIR Create operations.",
+  "tags": [
+   "writes_back"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: Patient-Facing Apps Using FHIR / Implementing sections (FHIR Create coding)",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-EMBED-LOAD",
+  "topic": "epic_app",
+  "question": "What is your embedded app's average load time inside Hyperspace? Do you show a branded loading indicator?",
+  "why": "Epic targets about 1.5 s on average for embedded apps.",
+  "tags": [
+   "clinician_app"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §5 Reasonable Initial Load Response Time",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-EMBEDDED-REFRESH",
+  "topic": "epic_app",
+  "question": "For EHR-embedded launches, do you need refresh tokens at all? If so, do you use online_access, scoped to the Hyperspace session?",
+  "why": "Epic says refresh tokens are usually unnecessary for embedded launches, and recommends online_access from Aug 2026.",
+  "tags": [
+   "clinician_app"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: Standalone/EHR Launch refresh token guidance",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "FHIRcast Tutorial > Duration of Application Access",
+    "url": "",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-EXCHANGE-METHOD",
+  "topic": "epic_app",
+  "question": "Do all reads and writes use Epic-approved or standard APIs (FHIR, HL7v2), with no screen scraping or UI automation?",
+  "why": "Epic Data Integrity: Appropriate Methods of Data Exchange.",
+  "tags": [
+   "writes_back"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §6 Data Integrity",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-IDTOKEN",
+  "topic": "epic_app",
+  "question": "If you use OpenID Connect (openid/fhirUser), do you verify the id_token signature against Epic's published keys and use a nonce?",
+  "why": "Epic's id_token is signed but not encrypted, so the app must validate it.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: OAuth 2.0 Tutorial > 'OpenID Connect id_tokens' / 'Validating the OpenID Connect JSON Web Token'",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-KEY-SEGREGATION",
+  "topic": "epic_app",
+  "question": "Do you use separate key pairs or client secrets for each Epic customer and for non-production vs production? How do you rotate keys?",
+  "why": "Epic asks for a unique credential per community member and per environment, and describes a key rotation process.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: Managing Customer Specific Configuration > Provisioning Client Credentials",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: Epic as a Backend OAuth 2.0 Client > Key Rotation",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-NATIVE-OFFLINE",
+  "topic": "epic_app",
+  "question": "If your native or browser app needs long-lived access, do you use dynamic client registration with a per-install key pair (JWT bearer flow) instead of a client secret embedded in the app?",
+  "why": "A native or browser app cannot keep a secret. Epic strongly recommends the JWT bearer flow for these apps.",
+  "tags": [
+   "mobile",
+   "patient_app"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: OAuth 2.0 Tutorial > 'Offline Access for Native and Browser-Based Applications'",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-NATIVE-PKCE",
+  "topic": "epic_app",
+  "question": "Does your native mobile app use PKCE with code_challenge_method=S256 on every authorization request?",
+  "why": "Epic recommends PKCE for native mobile apps (supported from Aug 2019). S256 is the only method Epic supports.",
+  "tags": [
+   "mobile"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: Testing with Epic Customers > 'Mobile App Launches and Native Apps'",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: Standalone Launch Step 1",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "RFC 8252 §6, §8.1",
+    "url": "",
+    "verified": true
+   },
+   {
+    "name": "SMART App Launch 2.2.0",
+    "url": "https://hl7.org/fhir/smart-app-launch/app-launch.html",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-NO-CUSTOM-CRYPTO",
+  "topic": "epic_app",
+  "question": "Which crypto and OAuth libraries do you use? Are they maintained, and do they have a vulnerability-reporting process? Do you have any custom crypto or auth code?",
+  "why": "Epic strongly discourages custom cryptography or authentication.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §2.8 Software Implementation of Cryptography and Authentication",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-NON-OAUTH",
+  "topic": "epic_app",
+  "question": "Does any part of the integration use authentication other than OAuth 2.0 (basic auth, client certificates, SAML)?",
+  "why": "Epic prefers OAuth 2.0. Other mechanisms are discouraged and get case-by-case review.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §2.4",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: Testing with Epic Customers",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-NONPROD-PROD",
+  "topic": "epic_app",
+  "question": "Give your non-production and production client IDs. Confirm that the non-production client is used only against our non-production environments.",
+  "why": "Every Epic app has separate prod and non-prod client IDs. The Epic Sandbox requires the non-prod ID.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: Registering an App / Provisioning Client IDs",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: JWT Authentication Troubleshooting",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-NONPROD-TEST",
+  "topic": "epic_app",
+  "question": "Give your test plan and results for workflows and edge cases in our non-production environment, testing each API at our site.",
+  "why": "Epic System Integrity: Testing in Non-Production. FHIR responses may be filtered differently at each customer.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §7",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: Patient-Facing Apps Using FHIR",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-REDIRECT-URI",
+  "topic": "epic_app",
+  "question": "List every redirect URI. Are they all HTTPS in production with no fragment? Does the mobile app use Universal Links / App Links rather than custom URL schemes?",
+  "why": "Epic requires HTTPS redirect URIs in production and forbids fragments. It recommends Universal Links/App Links over custom schemes for native apps.",
+  "tags": [
+   "mobile",
+   "web"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: OAuth 2.0 Tutorial > EHR Launch / redirect_uri guidance",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "RFC 8252 §7.1–7.3",
+    "url": "https://www.rfc-editor.org/rfc/rfc8252",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-REFRESH-PERSIST",
+  "topic": "epic_app",
+  "question": "Does your app use refresh tokens or other persistent access? If so, do you have a HIPAA-compliant BAA with us, or do you tell patients the authorization period and get their consent?",
+  "why": "Epic's guidelines require one of these two for persistent connections. Customers set the refresh-token lifetime when they download the app.",
+  "tags": [
+   "patient_app",
+   "stores_phi"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §3 Privacy and Data Use (persistent access)",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: Managing Customer Specific Configuration > Downloading Client Records",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-SCOPE-MIN",
+  "topic": "epic_app",
+  "question": "List each FHIR API/scope you request and the use case it supports. Are any requested 'just in case'?",
+  "why": "Epic says to 'Scope narrowly and intentionally' and to request or store no more PHI than needed.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: Recommendations for Scoping APIs to your App > Best Practices for API Scoping",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §2.3 Minimize Use of PHI",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-SECRET-STORAGE",
+  "topic": "epic_app",
+  "question": "Where and how are client secrets, private keys and access/refresh tokens stored (e.g., KMS/HSM, iOS Keychain, Android Keystore)? Who can reach them?",
+  "why": "Epic requires authentication credentials to be stored only in approved secure storage and used only with Epic APIs.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "critical",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §2 Security items 5 'Client IDs' and 6 'Handling Authentication Credentials'",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "MASVS-CRYPTO-2",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   },
+   {
+    "name": "SMART App Launch 2.2.0, app-launch",
+    "url": "https://hl7.org/fhir/smart-app-launch/app-launch.html",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-SESSION",
+  "topic": "epic_app",
+  "question": "How do you handle token invalidation, rotation and inactivity timeouts? What happens at logout or when a user switches?",
+  "why": "Epic best practice under Single Sign-On and Authentication. For embedded launches, Epic ties refresh tokens to the Hyperspace session.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §2.4 Single Sign-On and Authentication",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "FHIRcast Tutorial > Duration of Application Access",
+    "url": "",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-SMART-VERSION",
+  "topic": "epic_app",
+  "question": "Do you use SMART v1 (.read/.write) or SMART v2 (CRUDS) scopes?",
+  "why": "The scope syntax must match how the client record is configured.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: CMS-0057 Prior Authorization Playbook / FHIRcast Tutorial > 'Additional Settings'",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-STATE-ISS",
+  "topic": "epic_app",
+  "question": "Do you send an unpredictable state value (at least 122 bits of entropy) and validate it? Do you keep an allowlist of iss/FHIR base URLs and send aud?",
+  "why": "Epic recommends these controls against CSRF and phishing. aud is required from the May 2023 version for launches with context.",
+  "tags": [
+   "web",
+   "mobile"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: OAuth 2.0 Tutorial > EHR Launch Step 1/3",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: Standalone Launch (aud)",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "SMART App Launch 2.2.0",
+    "url": "https://hl7.org/fhir/smart-app-launch/app-launch.html",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-SYSTEM-IMPACT",
+  "topic": "epic_app",
+  "question": "What API call volume do you expect, including peak hours? Can you throttle it? Give the documented performance impact before go-live.",
+  "why": "Epic Scalability: System Impact and Document Expected Performance Impact.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §5 Scalability",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-USER-EXPECT",
+  "topic": "epic_app",
+  "question": "Does the UI make clear exactly what is saved to Epic and which downstream workflows (e.g., in-basket, orders) the write does or does not trigger?",
+  "why": "Epic System Integrity principle 'Manage User Assumptions and Expectations'.",
+  "tags": [
+   "writes_back",
+   "clinician_app"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §7 System Integrity",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "NATIVE-01",
+  "topic": "epic_app",
+  "question": "Does sign-in happen in the system browser (ASWebAuthenticationSession / Custom Tabs), never in an embedded WebView?",
+  "why": "RFC 8252: native apps MUST use an external user-agent (§5) and MUST NOT use embedded user-agents (§8.12).",
+  "tags": [
+   "mobile"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "RFC 8252 §5, §8.12",
+    "url": "https://www.rfc-editor.org/rfc/rfc8252",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "NATIVE-04",
+  "topic": "epic_app",
+  "question": "Is the app registered as a public client? Confirm no static client secret is embedded in the app binary.",
+  "why": "RFC 8252 §8.5: secrets embedded in distributed apps are not confidential. SMART: a native app that can only distribute a secret statically is a public client.",
+  "tags": [
+   "mobile"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "RFC 8252 §8.5",
+    "url": "",
+    "verified": true
+   },
+   {
+    "name": "SMART App Launch 2.2.0 (client types)",
+    "url": "https://hl7.org/fhir/smart-app-launch/app-launch.html",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "NATIVE-06",
+  "topic": "epic_app",
+  "question": "Which scopes do you request, and do you request offline_access or refresh tokens? How long do the tokens live?",
+  "why": "SMART recommends access tokens of no more than one hour and shorter lifetimes for public clients. Refresh tokens SHALL be bound to the client_id.",
+  "tags": [
+   "mobile",
+   "writes_back"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "SMART App Launch 2.2.0",
+    "url": "https://hl7.org/fhir/smart-app-launch/app-launch.html",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "IMG-01",
+  "topic": "patient_safety",
+  "question": "How does the app confirm the right patient before capture? Is identity confirmed with at least two identifiers, and are images bound to the patient context at capture time rather than assigned later?",
+  "why": "Joint Commission requires at least two patient identifiers when providing care, treatment or services. A photo filed to the wrong chart is a patient-safety event.",
+  "tags": [
+   "images",
+   "writes_back",
+   "clinician_app"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "critical",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Joint Commission NPSG.01.01.01 (2026 program documents seen via search; jointcommission.org returned 403; hospital chapter may be renumbered as National Performance Goals)",
+    "url": "",
+    "verified": false
+   },
+   {
+    "name": "Epic on FHIR developer documentation: Playbooks > Wound Care Apps",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "IMG-02",
+  "topic": "patient_safety",
+  "question": "Can a user change patients mid-session? What stops images captured for patient A from being filed to patient B (e.g., clearing the queue on patient switch, showing a patient banner on the camera screen)?",
+  "why": "Same patient-identification rationale. Batch capture is a known wrong-chart risk.",
+  "tags": [
+   "images",
+   "writes_back",
+   "mobile"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "critical",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Joint Commission NPSG.01.01.01 (not loaded directly)",
+    "url": "",
+    "verified": false
+   }
+  ]
+ },
+ {
+  "id": "IMG-11",
+  "topic": "patient_safety",
+  "question": "How are wrong-patient or wrong-site images corrected after filing (entered-in-error status, replacement via relatesTo), and who can do it?",
+  "why": "Media.status is a modifier (EventStatus). DocumentReference supports docStatus and relatesTo 'replaces'.",
+  "tags": [
+   "writes_back",
+   "images"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FHIR R4 Media.status",
+    "url": "",
+    "verified": true
+   },
+   {
+    "name": "FHIR R4 DocumentReference relatesTo/docStatus",
+    "url": "https://hl7.org/fhir/R4/documentreference.html",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-IMG-FILING",
+  "topic": "images",
+  "question": "How exactly are photos filed: which API or interface (e.g., the Incoming Scanned Document Link HL7v2 interface plus Observation.Create (LDA-W)), which encounter, and which flowsheet rows/IDs do you need from us?",
+  "why": "Epic's Wound Care playbook files images through an HL7v2 scanned-document interface and links them with Observation.Create. Row IDs vary by customer.",
+  "tags": [
+   "images",
+   "writes_back",
+   "mobile"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: Playbooks > Wound Care Apps ('File a wound image in Epic')",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-INTEGRITY",
+  "topic": "images",
+  "question": "How do you prevent ePHI, including images, from being altered or swapped between capture and filing to the chart (hashes, checksums)?",
+  "why": "Integrity standard: mechanism to authenticate ePHI.",
+  "tags": [
+   "images",
+   "writes_back"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.312(c)(1)-(2)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.312",
+    "verified": true
+   },
+   {
+    "name": "HIPAA, 45 CFR 164.312(c)(1)–(2) and (e)(2)(i)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.312",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "IMG-03",
+  "topic": "images",
+  "question": "How is patient consent for clinical photography captured and recorded in the chart? Is consent for teaching or research separate from consent for clinical care?",
+  "why": "Guidance requires consent before photos are taken, covering purpose, use and who will see the images. Posing is not consent.",
+  "tags": [
+   "images",
+   "clinician_app"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "RACGP, Using personal mobile devices for clinical photos",
+    "url": "https://www.racgp.org.au/running-a-practice/technology/mobile-devices-to-support-care/using-personal-mobile-devices-for-clinical-photos",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "IMG-04",
+  "topic": "images",
+  "question": "How are sensitive images (genital or breast areas, minors, intimate regions) handled: extra consent, restricted visibility in the chart, a chaperone prompt, sensitivity labels?",
+  "why": "Clinical photos can capture sensitive detail and cause embarrassment or harm if exposed. DocumentReference supports securityLabel.",
+  "tags": [
+   "images",
+   "writes_back"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "RACGP (as above)",
+    "url": "",
+    "verified": true
+   },
+   {
+    "name": "FHIR R4 DocumentReference.securityLabel",
+    "url": "https://hl7.org/fhir/R4/documentreference.html",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "IMG-05",
+  "topic": "images",
+  "question": "Do you strip EXIF metadata (GPS location, device model, timestamps) before storage or upload, and is geotagging disabled?",
+  "why": "Photo metadata, including GPS location, can identify a person. Guidance advises turning off its automatic generation.",
+  "tags": [
+   "images",
+   "mobile"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "RACGP (as above)",
+    "url": "",
+    "verified": true
+   },
+   {
+    "name": "MASVS-PRIVACY-1",
+    "url": "",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "IMG-06",
+  "topic": "images",
+  "question": "Does the app encourage or enforce capturing only the relevant region (cropping, framing guidance) to avoid faces, tattoos and other identifying features?",
+  "why": "Guidance warns against gratuitous detail and notes that eyes, scars, tattoos and birthmarks can identify patients. Full-face images are HIPAA identifiers.",
+  "tags": [
+   "images",
+   "ai_vendor"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "RACGP (as above)",
+    "url": "",
+    "verified": true
+   },
+   {
+    "name": "HIPAA, 45 CFR 164.514(b)(2)(i)(Q)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.514",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "IMG-07",
+  "topic": "images",
+  "question": "Which FHIR resource do you write images as (Media, DocumentReference + Binary, or both)? Which Epic endpoints and document types do you use, and how do the images appear in Media Manager or Chart Review?",
+  "why": "R4 Media is the image-specific resource. DocumentReference covers any mime-typed document, including JPEG. The choice affects where clinicians find the image.",
+  "tags": [
+   "writes_back",
+   "images"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FHIR R4 Media",
+    "url": "https://hl7.org/fhir/R4/media.html",
+    "verified": true
+   },
+   {
+    "name": "FHIR R4 DocumentReference scope,  (Epic write support not verified)",
+    "url": "https://hl7.org/fhir/R4/documentreference.html",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "IMG-08",
+  "topic": "images",
+  "question": "Does every filed image carry body site (SNOMED CT), laterality, view, capture time, operator and capturing device?",
+  "why": "Media defines bodySite (typically SNOMED CT), view, created, operator, device and deviceName. Lesion follow-up needs exact site.",
+  "tags": [
+   "images",
+   "writes_back"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FHIR R4 Media elements",
+    "url": "https://hl7.org/fhir/R4/media.html",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "IMG-09",
+  "topic": "images",
+  "question": "Is each image linked to the correct encounter and, where relevant, to the order (ServiceRequest) that prompted it?",
+  "why": "Media has encounter and basedOn. DocumentReference has context.encounter. US Core marks context.encounter as Must Support.",
+  "tags": [
+   "writes_back",
+   "images"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FHIR R4 Media",
+    "url": "",
+    "verified": true
+   },
+   {
+    "name": "US Core DocumentReference Profile v9.0.0",
+    "url": "https://hl7.org/fhir/us/core/StructureDefinition-us-core-documentreference.html",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "IMG-10",
+  "topic": "images",
+  "question": "If you use DocumentReference, do your resources conform to US Core DocumentReference: status, LOINC type, category, subject and content.attachment with contentType, and url or data?",
+  "why": "US Core requires status, type, category, subject and content. Attachment url or data SHALL be present. type is bound to LOINC document codes.",
+  "tags": [
+   "writes_back",
+   "images"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "US Core DocumentReference Profile v9.0.0",
+    "url": "https://hl7.org/fhir/us/core/StructureDefinition-us-core-documentreference.html",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "IMG-12",
+  "topic": "images",
+  "question": "What happens when an upload fails or the device is offline? Where are pending images queued, are they encrypted, how long are they kept, and how is the user told about images that were not filed?",
+  "why": "A failed or silent upload means the clinical record is missing. Queued images are PHI at rest on the device.",
+  "tags": [
+   "mobile",
+   "images",
+   "writes_back",
+   "stores_phi"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-STORAGE-1",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   },
+   {
+    "name": "RACGP: store in the record 'as soon as is practicable' and delete from the device",
+    "url": "",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "IMG-13",
+  "topic": "images",
+  "question": "Is the local copy deleted from the device once the EHR confirms filing? What retention applies on your backend?",
+  "why": "Guidance: clinical photos should be deleted from the device after being stored in the record. HIPAA disposal applies.",
+  "tags": [
+   "mobile",
+   "images",
+   "backend",
+   "stores_phi"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "RACGP (as above)",
+    "url": "",
+    "verified": true
+   },
+   {
+    "name": "HIPAA, 45 CFR 164.310(d)(2)(i)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.310",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "IMG-14",
+  "topic": "images",
+  "question": "What image-quality controls exist (resolution, focus, lighting, scale or ruler, color calibration, consistent orientation for serial comparison)? Do you reject blurry captures?",
+  "why": "An ISIC Delphi consensus set skin-imaging standards for lighting, background, field of view, orientation, focus, resolution, scale and color calibration.",
+  "tags": [
+   "images",
+   "ai_analysis"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Katragadda et al., 'Technique Standards for Skin Lesion Imaging: A Delphi Consensus Statement', JAMA Dermatology 2017 (abstract via search; full text not read)",
+    "url": "",
+    "verified": false
+   }
+  ]
+ },
+ {
+  "id": "IMG-15",
+  "topic": "images",
+  "question": "Do you store or exchange images as DICOM (e.g., VL Photographic) for PACS or enterprise imaging, or only as JPEG through FHIR?",
+  "why": "Health-system enterprise-imaging teams often want dermatology photos in DICOM. Media.content.url can point to WADO-RS for DICOM.",
+  "tags": [
+   "images",
+   "writes_back"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FHIR R4 Media (WADO-RS note)",
+    "url": "https://hl7.org/fhir/R4/media.html",
+    "verified": false
+   },
+   {
+    "name": "DICOM WG-19 / Supplement 250 (search snippets only)",
+    "url": "",
+    "verified": false
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-MOBILE-STORE",
+  "topic": "device",
+  "question": "Is the mobile app distributed only through trusted stores (App Store / Google Play)? Does it collect location/GPS data, including EXIF in photos?",
+  "why": "Mobile distribution and location privacy.",
+  "tags": [
+   "mobile",
+   "images"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Infrastructure APPL-13, APPL-04",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-01",
+  "topic": "device",
+  "question": "Where on the device are captured images and patient data stored before upload? Are they encrypted in app-private storage, never in shared or public folders?",
+  "why": "MASVS-STORAGE-1: 'The app securely stores sensitive data.' It distinguishes app-private storage from public storage.",
+  "tags": [
+   "mobile",
+   "stores_phi",
+   "images"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "OWASP MASVS v2, MASVS-STORAGE-1",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-02",
+  "topic": "device",
+  "question": "Does the app ever write photos to the system Camera Roll / Photo Library or to shared media storage? If the user picks an existing photo, how is the source copy handled?",
+  "why": "Public storage is readable by the user and other apps. Clinical-photo guidance says to delete photos from the device once they are filed to the record.",
+  "tags": [
+   "mobile",
+   "images",
+   "stores_phi"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-STORAGE-1/2",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   },
+   {
+    "name": "RACGP, Using personal mobile devices for clinical photos",
+    "url": "https://www.racgp.org.au/running-a-practice/technology/mobile-devices-to-support-care/using-personal-mobile-devices-for-clinical-photos",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-03",
+  "topic": "device",
+  "question": "Are app data and cached images excluded from iCloud/Google device backups and from photo cloud sync?",
+  "why": "MASVS-STORAGE-2 covers unintended leaks through backups. RACGP advises turning off automatic cloud backup on devices used for clinical photos.",
+  "tags": [
+   "mobile",
+   "images",
+   "stores_phi"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-STORAGE-2 and MASWE-0006 'Sensitive data not excluded from backup'",
+    "url": "https://mas.owasp.org/MASVS/05-MASVS-STORAGE/",
+    "verified": true
+   },
+   {
+    "name": "RACGP (as above)",
+    "url": "",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-04",
+  "topic": "device",
+  "question": "Do logs, crash reports or analytics events ever contain PHI, tokens or image data?",
+  "why": "MASVS-STORAGE-2 covers leaks via logs. MASWE lists 'sensitive data inserted into logs'.",
+  "tags": [
+   "mobile",
+   "stores_phi"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-STORAGE-2",
+    "url": "https://mas.owasp.org/MASVS/05-MASVS-STORAGE/",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-06",
+  "topic": "device",
+  "question": "Does the app hide PHI and images in the app-switcher snapshot, and block or detect screenshots and screen recording on sensitive screens?",
+  "why": "MASVS-PLATFORM-3 targets leaks through 'auto-generated screenshots' and shoulder surfing.",
+  "tags": [
+   "mobile",
+   "images"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-PLATFORM-3",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-07",
+  "topic": "device",
+  "question": "Do push notifications or lock-screen content ever include patient names, MRNs, findings or image thumbnails?",
+  "why": "MASVS-PLATFORM-3 names notifications as a UI leak channel, and the storage section lists app notifications.",
+  "tags": [
+   "mobile",
+   "clinician_app"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-PLATFORM-3",
+    "url": "",
+    "verified": true
+   },
+   {
+    "name": "MASVS-STORAGE platform knowledge 'App notifications'",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-08",
+  "topic": "device",
+  "question": "List every third-party SDK (analytics, crash reporting, ads, attribution) and the data each receives. Which have a BAA?",
+  "why": "MASVS-PRIVACY-1 says data goes to third parties only when necessary. The privacy section has tests on SDK APIs that handle sensitive data.",
+  "tags": [
+   "mobile",
+   "stores_phi"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-PRIVACY-1, MASVS-PRIVACY-3",
+    "url": "https://mas.owasp.org/MASVS/12-MASVS-PRIVACY/",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-09",
+  "topic": "device",
+  "question": "Which OS permissions does the app request (camera, photos, location, microphone, contacts), and why is each needed? Is location ever requested?",
+  "why": "MASVS-PRIVACY-1 calls for data minimization and minimal permissions (MASTG-TEST-0255).",
+  "tags": [
+   "mobile",
+   "images"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-PRIVACY-1",
+    "url": "https://mas.owasp.org/MASVS/12-MASVS-PRIVACY/",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-10",
+  "topic": "device",
+  "question": "Is all traffic TLS with platform defaults intact (no ATS or cleartext exceptions), and do you pin certificates or public keys for your own backend?",
+  "why": "MASVS-NETWORK-1 covers secure traffic. MASVS-NETWORK-2 covers identity pinning for endpoints under the developer's control.",
+  "tags": [
+   "mobile",
+   "backend"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-NETWORK-1/2",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   },
+   {
+    "name": "HIPAA, 45 CFR 164.312(e)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.312",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-11",
+  "topic": "device",
+  "question": "Does the app support app-level lock (biometric or PIN) and automatic logoff or session timeout after inactivity?",
+  "why": "MASVS-AUTH-2 covers local authentication. HIPAA lists automatic logoff as an addressable implementation spec.",
+  "tags": [
+   "mobile",
+   "clinician_app"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-AUTH-2",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   },
+   {
+    "name": "HIPAA, 45 CFR 164.312(a)(2)(iii)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.312",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-12",
+  "topic": "device",
+  "question": "Is re-authentication required for sensitive actions, such as filing to the chart, switching patients, or viewing or exporting sensitive images?",
+  "why": "MASVS-AUTH-3: 'The app secures sensitive operations with additional authentication.'",
+  "tags": [
+   "mobile",
+   "writes_back"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-AUTH-3",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-13",
+  "topic": "device",
+  "question": "What minimum OS versions do you support, and can you force users onto a fixed version after a security issue?",
+  "why": "MASVS-CODE-1 requires an up-to-date platform. MASVS-CODE-2 requires a mechanism to enforce updates.",
+  "tags": [
+   "mobile"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-CODE-1/2",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-14",
+  "topic": "device",
+  "question": "Do you scan dependencies for known vulnerabilities (SCA/SBOM), and how quickly do you patch?",
+  "why": "MASVS-CODE-3: only components without known vulnerabilities.",
+  "tags": [
+   "mobile",
+   "backend"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-CODE-3",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-15",
+  "topic": "device",
+  "question": "Does the app detect jailbroken or rooted devices and tampered builds? What does it do when it finds one (block, warn, wipe local data)?",
+  "why": "MASVS-RESILIENCE-1 covers platform integrity. MASVS-RESILIENCE-2 covers anti-tampering.",
+  "tags": [
+   "mobile"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-RESILIENCE-1/2",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-16",
+  "topic": "device",
+  "question": "Is the app supported under our MDM/EMM (managed app config, Intune or AppConfig, app protection policies)? Can IT selectively wipe app data on lost, stolen or BYOD devices?",
+  "why": "HIPAA requires disposal and media re-use procedures and addressable accountability for hardware and media. Remote wipe is the usual control for phones.",
+  "tags": [
+   "mobile",
+   "stores_phi"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.310(d)(1)–(2),  (MDM itself is not named in the rule)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.310",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-17",
+  "topic": "device",
+  "question": "Does the app use WebViews? If so, for what? Is JavaScript or a native bridge enabled, and is any PHI loaded in them?",
+  "why": "MASVS-PLATFORM-2: WebViews configured to prevent data leakage and exposure of functionality.",
+  "tags": [
+   "mobile"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-PLATFORM-2",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "MOB-18",
+  "topic": "device",
+  "question": "What deep links, URL schemes, share extensions or intents does the app expose? How are their inputs validated?",
+  "why": "MASVS-PLATFORM-1 covers IPC security. MASVS-CODE-4 covers validation of untrusted inputs.",
+  "tags": [
+   "mobile"
+  ],
+  "requires": [
+   "mobile"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "MASVS-PLATFORM-1, MASVS-CODE-4",
+    "url": "https://mas.owasp.org/MASVS/",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-NONPROD-PHI",
+  "topic": "access",
+  "question": "Do your non-production connections to our environments get production-level access controls, protection and change control?",
+  "why": "Epic notes that customer non-production environments can contain PHI.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §2.10 PHI-safe Non-Production Customer Connections",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-LOCKOUT-MFA",
+  "topic": "access",
+  "question": "Does the app lock accounts after failed logins and support MFA where SSO isn't used?",
+  "why": "Account security.",
+  "tags": [
+   "web",
+   "patient_app"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Case-Specific HIPA-12",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": false
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Product AAAI-17",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": false
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-TENANCY",
+  "topic": "access",
+  "question": "How is our data separated from other customers' data (single vs multi-tenant)?",
+  "why": "Prevents cross-customer exposure.",
+  "tags": [
+   "stores_phi"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Product DATA-19",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-ACCESS-MGMT",
+  "topic": "access",
+  "question": "How are staff granted, reviewed and changed in their access to production PHI? Is access least-privilege and need-to-know?",
+  "why": "Information access management standard.",
+  "tags": [
+   "stores_phi"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.308(a)(4)(ii)(B)-(C)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.308",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT DATA-17, APPL-14",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-AUTHN",
+  "topic": "access",
+  "question": "How do you verify the identity of people and systems accessing ePHI (MFA for admins, SSO)?",
+  "why": "Person or entity authentication standard.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.312(d)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.312",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT AAAI-01, AAAI-17",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-AUTO-LOGOFF",
+  "topic": "access",
+  "question": "Do the app and admin consoles log users off or lock automatically after inactivity? After how long?",
+  "why": "Addressable implementation specification.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.312(a)(2)(iii)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.312",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT HIPA-13, AAAI-18",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-FACILITY",
+  "topic": "access",
+  "question": "Where is PHI physically hosted? How is facility access controlled (or inherited from your cloud provider's SOC 2)?",
+  "why": "Facility access controls standard.",
+  "tags": [
+   "stores_phi"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.310(a)(1)-(a)(2)(iv)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.310",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT DCTR-02",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-SEC-OFFICER",
+  "topic": "access",
+  "question": "Name your designated security official and privacy official.",
+  "why": "Assigned security responsibility standard.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.308(a)(2)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.308",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT HIPA-06",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-UNIQUE-ID",
+  "topic": "access",
+  "question": "Is every user (clinician, patient, vendor admin) uniquely identified, with no shared or service accounts used interactively?",
+  "why": "Required implementation specification.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.312(a)(2)(i) Unique user identification (Required)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.312",
+    "verified": true
+   },
+   {
+    "name": "HIPAA, 45 CFR 164.312(a)(2)(i) and 164.312(d)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.312",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-WORKFORCE",
+  "topic": "access",
+  "question": "Describe workforce clearance (background checks), how PHI access is authorized, and how access is removed at termination.",
+  "why": "Workforce security standard and its implementation specifications.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.308(a)(3)(ii)(A)-(C)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.308",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT PPPR-06, DOCU-07",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-WORKSTATION",
+  "topic": "access",
+  "question": "What controls protect the workstations and devices your staff use to reach PHI (MDM, disk encryption, screen lock)?",
+  "why": "Workstation use and workstation security standards.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.310(b), 164.310(c)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.310",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT CHNG-16",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-ENC-REST",
+  "topic": "encryption",
+  "question": "Is all data in non-volatile storage, including on-device caches and photos, encrypted with AES-128 or stronger? Are the keys held in the platform key store?",
+  "why": "Epic guideline 'Protect Data at Rest'.",
+  "tags": [
+   "stores_phi",
+   "mobile",
+   "images"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §2.1 Protect Data at Rest",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-TLS",
+  "topic": "encryption",
+  "question": "Is every connection TLS 1.2 or higher, with server-certificate validation (no disabled validation in mobile or backend code)?",
+  "why": "Epic guideline 'Protect Data in Transit'.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §2.2 Protect Data in Transit",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ],
+  "covered_by": "SEC-001"
+ },
+ {
+  "id": "HIPAA-ENCRYPT",
+  "topic": "encryption",
+  "question": "Is ePHI encrypted at rest (databases, object storage, backups, devices)? Which algorithms are used, and who holds the keys?",
+  "why": "Addressable implementation specification, and the basis for breach safe harbor.",
+  "tags": [
+   "stores_phi",
+   "images"
+  ],
+  "requires": [],
+  "severity": "critical",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.312(a)(2)(iv)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.312",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT DATA-03, DATA-14, DATA-23, DCTR-16",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-TRANSMISSION",
+  "topic": "encryption",
+  "question": "Is every ePHI transmission encrypted and integrity-protected, including uploads from mobile devices and calls to third-party APIs?",
+  "why": "Transmission security standard.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.312(e)(1)-(2)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.312",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT DATA-02",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-AUDIT-TRAIL",
+  "topic": "audit",
+  "question": "Does every significant action, especially each write to the chart, leave a trail (logs, audit records or UI confirmation)?",
+  "why": "Epic Reliability principle 'No surprises'.",
+  "tags": [
+   "writes_back"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §4 Reliability",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-RECORD-USE",
+  "topic": "audit",
+  "question": "Can you produce, on request, a record of who used, retained or distributed our data, when, and why?",
+  "why": "Epic guideline 'Record Use'.",
+  "tags": [
+   "stores_phi"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §3 Record Use",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-ACTIVITY-REVIEW",
+  "topic": "audit",
+  "question": "How often do you review system activity (audit logs, access reports, security incident tracking), and who does it?",
+  "why": "Required implementation specification.",
+  "tags": [
+   "stores_phi",
+   "backend"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.308(a)(1)(ii)(D) Information system activity review (Required)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.308",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-AUDIT-CONTROLS",
+  "topic": "audit",
+  "question": "Do your logs record PHI access (user, date/time, source IP/device, action)? How long are logs kept, how are they protected, and can we get them?",
+  "why": "Audit controls standard.",
+  "tags": [
+   "stores_phi",
+   "writes_back"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.312(b)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.312",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT HIPA-21, HIPA-22, HIPA-23, AAAI-09, AAAI-11",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ],
+  "covered_by": "SEC-002"
+ },
+ {
+  "id": "EPIC-CONNHUB",
+  "topic": "vendors",
+  "question": "Are you listed on Epic Connection Hub? Which Epic organizations are you live with today?",
+  "why": "A listing requires at least one live connection. It is self-reported, not an Epic endorsement.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: Connection Hub > Eligibility / Listing Request Steps",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: Requesting a Listing on Showroom",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-TRANSPARENCY",
+  "topic": "vendors",
+  "question": "State your relationship with Epic, the app's regulatory clearances (e.g., FDA), its implementation status, and the total cost to us and to end users.",
+  "why": "Epic Transparency & Honesty principle. Epic does not endorse, certify or verify apps.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §8",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: Marking an App as Ready for Production",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-CYBER-INS",
+  "topic": "vendors",
+  "question": "Do you carry cyber-risk insurance covering outages, lost or stolen data and security incidents? Give the coverage limits.",
+  "why": "Risk transfer for breach costs.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Infrastructure HFIH-04",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-THIRD-PARTY",
+  "topic": "vendors",
+  "question": "Do you security-assess the third parties you share data with, and do your contracts cover data access and breach liability?",
+  "why": "Subprocessor risk.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Organization THRD-01..04",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-BAA",
+  "topic": "vendors",
+  "question": "Will you sign our Business Associate Agreement? Will you report any security incident you become aware of, including breaches of unsecured PHI?",
+  "why": "BA contracts must require incident reporting.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "critical",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.314(a)(2)(i)(A),(C)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.314",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT HIPA-28",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-SUBCONTRACTOR-BAA",
+  "topic": "vendors",
+  "question": "List every subcontractor or subprocessor that creates, receives, keeps or sends our ePHI (hosting, logging, crash reporting, LLM API, SMS/email), and confirm a BAA is in place with each.",
+  "why": "BAs must get satisfactory written assurances from subcontractors.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.308(b)(1)-(3)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.308",
+    "verified": true
+   },
+   {
+    "name": "HIPAA, 45 CFR 164.314(a)(2)(i)(B)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.314",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT HIPA-04",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ],
+  "covered_by": "SEC-003"
+ },
+ {
+  "id": "EPIC-CEASE-DELETE",
+  "topic": "data_lifecycle",
+  "question": "How can a patient or our organization stop your access and have retained data deleted or corrected? What is the turnaround?",
+  "why": "Epic guideline 'Cease Use, Delete or Correct Data'.",
+  "tags": [
+   "stores_phi",
+   "patient_app"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §3",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: Design Strategies to Increase Patient Data Sharing",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-CONSENT",
+  "topic": "data_lifecycle",
+  "question": "How do users grant, decline and revoke consent for you to read, write back and retain their data?",
+  "why": "Epic requires consent to obtain, write or retain data, with the ability to revoke it.",
+  "tags": [
+   "patient_app",
+   "writes_back"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §3 Obtain Consent",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-DATA-USE-POLICY",
+  "topic": "data_lifecycle",
+  "question": "Give us the URL of your published data use policy. Does it state what data you access, how you use it, how long you keep it, and any secondary use?",
+  "why": "Epic guideline 'Data Use Policy'.",
+  "tags": [
+   "patient_app",
+   "stores_phi"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §3 Privacy and Data Use",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-DUQ",
+  "topic": "data_lifecycle",
+  "question": "Have you completed the Epic Data Use Questionnaire for the patient-facing client ID, and will you update it when practices change?",
+  "why": "Epic requires this. The answers are shown to patients during authorization.",
+  "tags": [
+   "patient_app"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §3 Data Use Questionnaire",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   },
+   {
+    "name": "Epic on FHIR developer documentation: Patient-Facing / Consumer Health Apps playbook > Client Record Registration and Distribution",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-NO-SALE",
+  "topic": "data_lifecycle",
+  "question": "Do you share, sell or use PHI for anything beyond the disclosed purpose (advertising, analytics, model training)?",
+  "why": "Epic guideline 'Appropriate Use'.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §3 Appropriate Use",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-BIOMETRIC",
+  "topic": "data_lifecycle",
+  "question": "Do you capture or create biometric data (e.g., facial images used for recognition), or combine our data with other sources?",
+  "why": "Clinical photos may contain identifiable faces.",
+  "tags": [
+   "images",
+   "stores_phi"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Privacy PDAT-02, PDAT-03",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-DEID",
+  "topic": "data_lifecycle",
+  "question": "Do you or your subprocessors use de-identified or anonymized data for any purpose not in our agreement?",
+  "why": "Secondary use.",
+  "tags": [
+   "stores_phi",
+   "ai_vendor"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Privacy DRPV-12, DRPV-13",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-LAW-ENF",
+  "topic": "data_lifecycle",
+  "question": "Do you have a policy for law-enforcement requests? Do you ever share data without a warrant or subpoena?",
+  "why": "Privacy.",
+  "tags": [
+   "stores_phi"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Privacy PRPO-11, PRPO-12",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-RESIDENCY",
+  "topic": "data_lifecycle",
+  "question": "Does any of our data (including backups and support access) leave the United States? Where do employees with access work?",
+  "why": "Data residency and offshore access.",
+  "tags": [
+   "stores_phi"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Privacy PDAT-04",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Infrastructure DCTR-03",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Product DATA-07",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: START HERE GNRL-09",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-RETENTION",
+  "topic": "data_lifecycle",
+  "question": "How long do you keep PHI and images? At contract end, will all data be returned and/or deleted from every system and archive, and certified?",
+  "why": "Retention, minimization and exit.",
+  "tags": [
+   "stores_phi",
+   "images"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Product DATA-09, DATA-10",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Privacy DRPV-06, DRPV-14",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-TRACKING",
+  "topic": "data_lifecycle",
+  "question": "Does the app or website use tracking pixels, cookies, analytics SDKs, or capture device identifiers?",
+  "why": "Tracking tech can disclose PHI to third parties.",
+  "tags": [
+   "patient_app",
+   "web",
+   "mobile"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Privacy PDAT-05, PDAT-06",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-MEDIA-DISPOSAL",
+  "topic": "data_lifecycle",
+  "question": "How is ePHI removed from media and devices before disposal or re-use, including photos cached on clinicians' or patients' phones?",
+  "why": "Disposal and media re-use are Required.",
+  "tags": [
+   "mobile",
+   "images",
+   "stores_phi"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.310(d)(2)(i)-(ii)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.310",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-SAFETY-ISSUES",
+  "topic": "incident",
+  "question": "How do you handle critical issues, including potential patient-safety concerns, and how fast do you notify us?",
+  "why": "Epic Safety principle.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §1 Safety",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-PRIOR-BREACH",
+  "topic": "incident",
+  "question": "Have you had a personal data breach in the past three years that required regulatory or individual notice?",
+  "why": "Track record.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Privacy PCOM-01",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-BREACH-NOTIFY",
+  "topic": "incident",
+  "question": "After discovering a breach of unsecured PHI, how soon will you notify us (the legal maximum is 60 calendar days)? Will the notice identify each affected individual?",
+  "why": "Business associate breach notification rule. Contracts usually set a much shorter window.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.410(a)(2), (b), (c)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.410",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-INCIDENT-PROC",
+  "topic": "incident",
+  "question": "Give your security incident response procedure: detection, containment, documentation and reporting to customers.",
+  "why": "Required implementation specification.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.308(a)(6)(ii) Response and reporting (Required)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.308",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT HFIH-01..03",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-MONITOR-BC",
+  "topic": "continuity",
+  "question": "What health checks, monitoring, alerting and redundancy do you have? What is your uptime target (Epic's guideline is under 1% downtime)?",
+  "why": "Epic Reliability: Monitoring & alerting and Business Continuity.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §4 Reliability",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-CONTINGENCY",
+  "topic": "continuity",
+  "question": "Describe your data backup, disaster recovery and emergency-mode operation plans, and when they were last tested.",
+  "why": "Contingency plan specifications A-C are Required; D-E are Addressable.",
+  "tags": [
+   "stores_phi",
+   "backend"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.308(a)(7)(ii)(A)-(E)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.308",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT DOCU-01, DOCU-02",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-EMERGENCY-ACCESS",
+  "topic": "continuity",
+  "question": "What is your emergency access procedure for ePHI if normal systems are down?",
+  "why": "Required implementation specification.",
+  "tags": [
+   "stores_phi"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.312(a)(2)(ii) (Required)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.312",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "EPIC-OWASP",
+  "topic": "assurance",
+  "question": "How do you address the OWASP Top 10, including input validation and XSS?",
+  "why": "Epic guideline 'Addresses Security Risks'.",
+  "tags": [
+   "web",
+   "backend"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "Epic on FHIR developer documentation: App Developer Guidelines §2.9",
+    "url": "https://fhir.epic.com/Documentation?docId=oauth2",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-ARCH",
+  "topic": "assurance",
+  "question": "Give architecture and data-flow diagrams covering every component that touches PHI.",
+  "why": "Reviewers trace where PHI flows.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Organization DOCU-05",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-CHANGE-NOTIFY",
+  "topic": "assurance",
+  "question": "Will you notify us of major changes to your environment that could affect our security posture?",
+  "why": "Ongoing risk.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Organization CHNG-01",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-FRAMEWORK",
+  "topic": "assurance",
+  "question": "Which security framework do you conform to (NIST CSF, CIS, ISO 27001)?",
+  "why": "Shows the maturity of the security program.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Organization DOCU-04",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-PENTEST",
+  "topic": "assurance",
+  "question": "Have your systems and app had a third-party security assessment or penetration test in the last year? Will you share the results, and let us run our own testing at an agreed time?",
+  "why": "Independent testing evidence.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Infrastructure VULN-02, VULN-03, VULN-04, VULN-05",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-SDLC",
+  "topic": "assurance",
+  "question": "Do you have a documented SDLC with secure-coding training and software supply-chain (dependency) management?",
+  "why": "Application security.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Organization PPPR-05",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Infrastructure APPL-10, APPL-11, APPL-12",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-SOC2",
+  "topic": "assurance",
+  "question": "Give your most recent SOC 2 Type II report (yours and your hosting provider's). Does it include the Privacy criteria?",
+  "why": "Independent attestation of controls.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Organization DOCU-03",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Infrastructure DCTR-02",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Privacy PDOC-01",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-DOCS-6YR",
+  "topic": "assurance",
+  "question": "Are your security policies and required records kept for 6 years and reviewed periodically?",
+  "why": "Time limit, availability and updates are Required.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.316(b)(2)(i)-(iii)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.316",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-EVALUATION",
+  "topic": "assurance",
+  "question": "When did you last run a periodic technical and non-technical evaluation of your safeguards (internal or third party)?",
+  "why": "Evaluation standard.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.308(a)(8)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.308",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-RISK-ANALYSIS",
+  "topic": "assurance",
+  "question": "Give the date and summary of your most recent HIPAA Security Rule risk analysis covering this app.",
+  "why": "Required implementation specification.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.308(a)(1)(ii)(A) Risk analysis (Required)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.308",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT HIPA-08",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-RISK-MGMT",
+  "topic": "assurance",
+  "question": "How do you track identified risks to remediation (risk register, owners, deadlines)?",
+  "why": "Required implementation specification.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.308(a)(1)(ii)(B) Risk management (Required)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.308",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-SANCTION",
+  "topic": "assurance",
+  "question": "Do you have a workforce sanction policy for security or privacy violations?",
+  "why": "Required implementation specification.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.308(a)(1)(ii)(C) Sanction policy (Required)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.308",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HIPAA-TRAINING",
+  "topic": "assurance",
+  "question": "Do all workforce members take regular HIPAA security awareness training (malware protection, log-in monitoring, password management)?",
+  "why": "Security awareness and training standard.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HIPAA, 45 CFR 164.308(a)(5)(ii)(A)-(D)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.308",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: HECVAT HIPA-01, PPPR-12",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HITRUST-CERT",
+  "topic": "assurance",
+  "question": "Do you hold a HITRUST certification (e1/i1/r2)? If so, what is its scope and expiry date?",
+  "why": "Health systems often accept it in place of a long questionnaire. HECVAT DOCU-04 does not name HITRUST.",
+  "tags": [
+   "stores_phi"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "HITRUST CSF certification, as health systems commonly accept it (source to confirm)",
+    "url": "",
+    "verified": false
+   }
+  ]
+ },
+ {
+  "id": "AI-01",
+  "topic": "ai",
+  "question": "Where does AI output appear in Epic (a note, a Media/DocumentReference note, an Observation)? Is it clearly labeled as AI-generated, with model name and version?",
+  "why": "HTI-1 (b)(11)(iv)(B) source attributes cover intervention details, output, developer and updates. Reviewers want provenance even when the vendor is not a certified EHR developer.",
+  "tags": [
+   "ai_analysis",
+   "writes_back"
+  ],
+  "requires": [
+   "ai_analysis"
+  ],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "ONC Certification Companion Guide §170.315(b)(11)",
+    "url": "https://www.healthit.gov/test-method/decision-support-interventions",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "AI-02",
+  "topic": "ai",
+  "question": "Can you supply a model card covering purpose, intended users and population, out-of-scope uses, training data and input features, fairness approach, external validation, performance including fairness, ongoing monitoring, and update schedule?",
+  "why": "These match the nine predictive-DSI source attributes in 170.315(b)(11)(iv)(B)(1)–(9). They are required of certified EHR developers for their own DSIs, and health systems ask third parties for the same set.",
+  "tags": [
+   "ai_analysis",
+   "ai_vendor"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "ONC CCG §170.315(b)(11)(iv)(B)",
+    "url": "https://www.healthit.gov/test-method/decision-support-interventions",
+    "verified": true
+   },
+   {
+    "name": "note the HTI-5 proposed rule (Jan 2026) would remove these requirements",
+    "url": "",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "AI-03",
+  "topic": "ai",
+  "question": "What risk analysis and mitigation have you done for validity, reliability, robustness, fairness, intelligibility, safety, security and privacy, and what governance controls data acquisition and use?",
+  "why": "These mirror the (b)(11)(vi)(A)–(C) intervention risk management requirements. The guide cites the NIST AI RMF as an example framework.",
+  "tags": [
+   "ai_analysis",
+   "ai_vendor"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "ONC CCG §170.315(b)(11)(vi)",
+    "url": "https://www.healthit.gov/test-method/decision-support-interventions",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "AI-04",
+  "topic": "ai",
+  "question": "How was performance validated across Fitzpatrick skin types, ages, sexes, body sites and image-capture conditions? Which subgroups were untested?",
+  "why": "FDA Criterion 4 asks whether the data represents the user's population (sex, ethnicity, collection sites) and asks for disclosure of sub-populations with untested performance. ONC asks for fairness measures.",
+  "tags": [
+   "ai_analysis"
+  ],
+  "requires": [
+   "ai_analysis"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FDA CDS guidance (Jan 2026) §IV(4)(c)(ii)–(iii)",
+    "url": "",
+    "verified": true
+   },
+   {
+    "name": "ONC CCG (b)(11)(iv)(B)(5)–(7)",
+    "url": "",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "AI-07",
+  "topic": "ai",
+  "question": "Can clinicians give feedback on AI outputs (agree, disagree, override)? Can we export that feedback with user, date and action taken?",
+  "why": "(b)(11)(ii)(C) requires feedback capture and export including the intervention, action taken, feedback, user, date and location.",
+  "tags": [
+   "ai_analysis"
+  ],
+  "requires": [
+   "ai_analysis"
+  ],
+  "severity": "medium",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "ONC CCG §170.315(b)(11)(ii)(C)",
+    "url": "https://www.healthit.gov/test-method/decision-support-interventions",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "AI-08",
+  "topic": "ai",
+  "question": "How do you monitor model performance after go-live at our site (drift, local validity), and how are we told about model updates?",
+  "why": "Source attributes (B)(8)–(9) cover ongoing local monitoring and update schedules. FDA's AI draft takes a lifecycle and monitoring approach.",
+  "tags": [
+   "ai_analysis",
+   "ai_vendor"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "ONC CCG (b)(11)(iv)(B)(8)–(9)",
+    "url": "",
+    "verified": true
+   },
+   {
+    "name": "FDA AI-enabled device draft guidance (Jan 2025, landing page only)",
+    "url": "",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "AI-09",
+  "topic": "ai",
+  "question": "Does the AI tell the user when inputs are missing, poor quality or out of distribution (wrong body site, blurry, non-skin image), rather than returning a confident answer?",
+  "why": "FDA Criterion 4(d) asks the output to show knowns and unknowns, such as missing, corrupted or unexpected input data.",
+  "tags": [
+   "ai_analysis",
+   "images"
+  ],
+  "requires": [
+   "ai_analysis"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FDA CDS guidance (Jan 2026) §IV(4)(d)",
+    "url": "https://www.fda.gov/media/109618/download",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-AI-AGREEMENTS",
+  "topic": "ai",
+  "question": "Do you have agreements with AI subprocessors covering data protection and AI use (e.g., zero data retention and a BAA with the LLM provider)?",
+  "why": "HECVAT asks about the agreements; the BAA and zero-retention examples come from HIPAA practice.",
+  "tags": [
+   "ai_vendor"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Privacy DPAI-03",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   },
+   {
+    "name": "HIPAA, 45 CFR 164.314(a)(2)(i)(B)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.314",
+    "verified": true
+   },
+   {
+    "name": "MASVS-PRIVACY-1 (third-party sharing)",
+    "url": "https://mas.owasp.org/MASVS/12-MASVS-PRIVACY/",
+    "verified": false
+   },
+   {
+    "name": "HIPAA BAA rule 45 CFR 164.308(b)/164.502(e) (not re-read in this session)",
+    "url": "",
+    "verified": false
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-AI-CONTROLS",
+  "topic": "ai",
+  "question": "Do your AI features log user, date and action? Can they be disabled quickly during an incident? Can users opt out of AI? Do business rules stop sensitive data from reaching the model?",
+  "why": "AI governance.",
+  "tags": [
+   "ai_vendor"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: AI AISC-03, AIPL-03, AIGN-05",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Privacy DPAI-07, DPAI-08",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-AI-TRAINING",
+  "topic": "ai",
+  "question": "Are user inputs or our data used to train or influence the AI model? Is any data retained in AI processing? Can it be removed from the model on request?",
+  "why": "PHI used in model training cannot easily be withdrawn.",
+  "tags": [
+   "ai_vendor"
+  ],
+  "requires": [],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: AI AISC-01, AISC-02",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Privacy DPAI-02",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   },
+   {
+    "name": "HIPAA, 45 CFR 164.514(b)(2)(i)(Q)",
+    "url": "https://www.law.cornell.edu/cfr/text/45/164.514",
+    "verified": true
+   },
+   {
+    "name": "MASVS-PRIVACY-1/2",
+    "url": "",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "HECVAT-AI-USE",
+  "topic": "ai",
+  "question": "Does the solution use ML or an LLM? Is institutional data processed by a third-party AI provider? Is that provider a fully licensed commercial enterprise service, not a shared or consumer service?",
+  "why": "Identifies AI subprocessors handling PHI.",
+  "tags": [
+   "ai_vendor"
+  ],
+  "requires": [],
+  "severity": "medium",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: AI AIQU-01, AIQU-02",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   },
+   {
+    "name": "EDUCAUSE HECVAT 4.1.4: Privacy DPAI-01, DPAI-04, DPAI-05, DPAI-06",
+    "url": "https://www.educause.edu/hecvat",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "FDA-01",
+  "topic": "regulatory",
+  "question": "State the app's intended use. Is it limited to capturing, transmitting and filing photos to the chart, or does any function analyze, measure, enhance, classify or risk-score the images?",
+  "why": "FDA puts capture-and-transmit photo apps under enforcement discretion. Image-analysis functions are device functions under oversight.",
+  "tags": [
+   "all"
+  ],
+  "requires": [],
+  "severity": "critical",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FDA, Policy for Device Software Functions and Mobile Medical Applications (Sep 2022), §V.B item 2 and Appendix C",
+    "url": "https://www.fda.gov/media/80958/download",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "FDA-02",
+  "topic": "regulatory",
+  "question": "If the app analyzes a skin-lesion image and returns a malignancy or risk assessment, what is its FDA status (510(k), De Novo or PMA number, product code)?",
+  "why": "The guidance names 'Software functions that analyze an image of a skin lesion using mathematical algorithms... and provide the user with an assessment of the risk of the lesion' as a focus of FDA oversight.",
+  "tags": [
+   "ai_analysis",
+   "images"
+  ],
+  "requires": [
+   "ai_analysis"
+  ],
+  "severity": "critical",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FDA MMA guidance (Sep 2022), Appendix C",
+    "url": "https://www.fda.gov/media/80958/download",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "FDA-03",
+  "topic": "regulatory",
+  "question": "Do you claim any AI image feature is Non-Device CDS under FD&C Act 520(o)(1)(E)? If so, explain how it meets Criterion 1, given that FDA counts dermatology images as 'medical images'.",
+  "why": "Criterion 1 excludes software that acquires, processes or analyzes a medical image. FDA's definition includes images acquired for dermatology, and images not originally medical but analyzed for a medical purpose.",
+  "tags": [
+   "ai_analysis",
+   "images"
+  ],
+  "requires": [
+   "ai_analysis"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FDA, Clinical Decision Support Software guidance (Jan 29, 2026), §IV(1)",
+    "url": "https://www.fda.gov/media/109618/download",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "FDA-04",
+  "topic": "regulatory",
+  "question": "Does any feature measure lesion size or area, enhance images, or identify normal or abnormal structures, even as a 'helper'?",
+  "why": "FDA lists enhancement, manipulation, making measurements and identifying normal/abnormal structures as processing or analysis that fails Criterion 1. The software stays a device.",
+  "tags": [
+   "ai_analysis",
+   "images"
+  ],
+  "requires": [
+   "ai_analysis"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FDA CDS guidance (Jan 2026), §IV(1)",
+    "url": "https://www.fda.gov/media/109618/download",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "FDA-05",
+  "topic": "regulatory",
+  "question": "Does the AI give a specific diagnosis (e.g., malignant vs. benign) or a single directive output?",
+  "why": "FDA's device example 6 (fractal analysis of a lesion giving a malignant or benign diagnosis) fails Criteria 1–3 because it 'provides a specific diagnostic output'.",
+  "tags": [
+   "ai_analysis",
+   "images"
+  ],
+  "requires": [
+   "ai_analysis"
+  ],
+  "severity": "high",
+  "proof": "document",
+  "sources": [
+   {
+    "name": "FDA CDS guidance (Jan 2026), §V.C example 6",
+    "url": "https://www.fda.gov/media/109618/download",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "FDA-06",
+  "topic": "regulatory",
+  "question": "For any decision support you consider non-device, what plain-language labeling describes the intended users and population, required inputs, how the algorithm was developed and validated, and how representative the training data is?",
+  "why": "FDA's Criterion 4 recommendations (a)–(d) call for these disclosures so a clinician can independently review the basis of a recommendation.",
+  "tags": [
+   "ai_analysis"
+  ],
+  "requires": [
+   "ai_analysis"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FDA CDS guidance (Jan 2026), §IV(4) recommendations a–d",
+    "url": "https://www.fda.gov/media/109618/download",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "FDA-07",
+  "topic": "regulatory",
+  "question": "Is any recommendation meant for a time-critical decision, or for clinicians to act on without reviewing the basis?",
+  "why": "FDA says functions for critical, time-sensitive decisions do not meet Criterion 4.",
+  "tags": [
+   "ai_analysis"
+  ],
+  "requires": [
+   "ai_analysis"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FDA CDS guidance (Jan 2026), §IV(4)(a)",
+    "url": "https://www.fda.gov/media/109618/download",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "FDA-08",
+  "topic": "regulatory",
+  "question": "Does your backend only transfer, store, convert formats and display the images without modifying them? Confirm no compression, cropping or color change alters diagnostic content.",
+  "why": "Software solely for transfer, storage, format conversion or display of device data is Non-Device-MDDS and not a device. Modifying the data falls outside that category.",
+  "tags": [
+   "images",
+   "backend"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FDA, Medical Device Data Systems, Medical Image Storage Devices, and Medical Image Communications Devices (Sep 2022)",
+    "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/medical-device-data-systems-medical-image-storage-devices-and-medical-image-communications-devices",
+    "verified": true
+   },
+   {
+    "name": "MMA guidance Appendix A items 16–18",
+    "url": "",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "FDA-09",
+  "topic": "regulatory",
+  "question": "If images are shown for viewing but not diagnostic review, does the app display a persistent 'not intended for diagnostic use' notice?",
+  "why": "FDA's example of a non-device image display includes a persistent on-screen notice of this kind.",
+  "tags": [
+   "images",
+   "mobile"
+  ],
+  "requires": [
+   "images"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FDA MMA guidance (Sep 2022), Appendix A item 18 examples",
+    "url": "https://www.fda.gov/media/80958/download",
+    "verified": true
+   }
+  ]
+ },
+ {
+  "id": "FDA-10",
+  "topic": "regulatory",
+  "question": "For a regulated AI function, do you have a lifecycle plan covering data management, model description, validation across subgroups, post-market performance monitoring and a predetermined change control plan (PCCP) for model updates?",
+  "why": "FDA's draft guidance on AI-enabled device software functions takes a total-product-lifecycle approach to marketing submissions.",
+  "tags": [
+   "ai_analysis"
+  ],
+  "requires": [
+   "ai_analysis"
+  ],
+  "severity": "high",
+  "proof": "answer",
+  "sources": [
+   {
+    "name": "FDA, AI-Enabled Device Software Functions: Lifecycle Management and Marketing Submission Recommendations (draft, Jan 2025),  (landing page only; section list not read)",
+    "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/artificial-intelligence-enabled-device-software-functions-lifecycle-management-and-marketing",
+    "verified": false
+   }
+  ]
+ }
+]

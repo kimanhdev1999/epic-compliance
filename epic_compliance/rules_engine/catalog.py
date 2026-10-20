@@ -36,15 +36,23 @@ def rules_fingerprint() -> str:
     """Short hash of the rule files, stored with each run so the UI can tell
     when results predate a rule change."""
     h = hashlib.sha256()
-    for f in sorted(RULES_DIR.glob("*.json")):
+    for f in sorted(RULES_DIR.glob("*.json")) + sorted(RULES_DIR.glob("reviewer/*.json")):
         h.update(f.name.encode() + b"\0" + f.read_bytes())
     return h.hexdigest()[:16]
 
 
 def load_rules() -> list[Rule]:
+    """The automated tests, then the reviewer questions (ADR-019) as tests."""
+    from ..reviewer_questions import load_library
+
     rules: list[Rule] = []
     for f in sorted(RULES_DIR.glob("*.json")):
         data = json.loads(f.read_text())
         for item in data:
             rules.append(Rule(**item))
+    rules += [Rule(**q.as_rule()) for q in load_library()]
     return rules
+
+
+def is_reviewer_question(rule: Rule) -> bool:
+    return rule.category.startswith("rq_")
