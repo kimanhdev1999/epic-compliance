@@ -5,7 +5,7 @@ import uuid
 from typing import Any
 
 from ..models import Finding, Report
-from .catalog import load_rules, Rule
+from .catalog import is_reviewer_question, load_rules, Rule
 from .automated_checks import AUTOMATED_CHECKS
 from .llm_evaluator import evaluate_with_llm
 from .. import evidence as dev_evidence
@@ -13,6 +13,10 @@ from .. import evidence as dev_evidence
 
 def _build_evidence_for_llm(rule: Rule, evidence: dict[str, Any]) -> str:
     """Build a human-readable evidence string for LLM rules from collected data."""
+    if is_reviewer_question(rule):
+        # Judged only on what the developer attached; Epic's data says nothing about it.
+        return "\n".join([f"Reviewer question: {rule.description}", f"Sources: {rule.source}",
+                          f"Expected proof: {rule.evidence_needed}", rule.remediation_hint])
     # For security rules we summarize available config context
     parts = [f"Rule: {rule.description}", f"Evidence needed: {rule.evidence_needed}"]
     # Include any relevant top-level evidence keys
@@ -46,6 +50,18 @@ def _attested_fields(rule: Rule) -> list[str]:
 def _nothing_to_judge(rule: Rule, evidence: dict[str, Any], attached: list[dict[str, Any]]) -> Finding | None:
     """needs_human, without asking Claude, when an attested rule has no answer
     and no attached evidence. Missing information is unknown, not a failure."""
+    if is_reviewer_question(rule) and not attached:
+        return Finding(
+            rule_id=rule.id,
+            verdict="needs_human",
+            evidence=("Not answered yet. A health-system or Epic reviewer will ask this. Answer it under "
+                      "Evidence with a statement, file or link, then re-run."),
+            remediation_hint=rule.remediation_hint,
+            check_type="llm",
+            severity=rule.severity,
+            category=rule.category,
+            citation="Not evaluated: no answer attached yet.",
+        )
     fields = _attested_fields(rule)
     app_config = evidence.get("app_config") or {}
     if not fields or attached or any(app_config.get(f) for f in fields):

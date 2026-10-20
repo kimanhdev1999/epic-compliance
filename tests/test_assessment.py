@@ -5,7 +5,7 @@ import pytest
 
 from epic_compliance.assessment import SELECTORS, Intake, build_plan
 from epic_compliance.intake_chat import ChatState, next_turn
-from epic_compliance.rules_engine.catalog import load_rules
+from epic_compliance.rules_engine.catalog import is_reviewer_question, load_rules
 
 
 def _ids(plan) -> set[str]:
@@ -15,8 +15,9 @@ def _ids(plan) -> set[str]:
 class TestBuildPlan:
     def test_every_catalog_rule_has_a_selector(self):
         # A new rule without a selector is included by default, but it should be
-        # a deliberate choice — keep SELECTORS in step with the catalog.
-        assert {r.id for r in load_rules()} <= set(SELECTORS)
+        # a deliberate choice — keep SELECTORS in step with the catalog. Reviewer
+        # questions are selected by their library tags instead (ADR-019).
+        assert {r.id for r in load_rules() if not is_reviewer_question(r)} <= set(SELECTORS)
 
     def test_clinician_mobile_photo_app(self):
         plan = build_plan(Intake(users="clinicians", platform="mobile", saves_images=True))
