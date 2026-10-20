@@ -23,8 +23,7 @@ def _build_evidence_for_llm(rule: Rule, evidence: dict[str, Any]) -> str:
     for key in ["smart_configuration", "token_response", "app_config"]:
         if key in evidence:
             parts.append(f"{key}: {evidence[key]}")
-    # Add a note that this is mock/sandbox data when applicable
-    parts.append("NOTE: Evidence collected from mock/sandbox environment. Actual production configuration must be reviewed.")
+    parts.append("NOTE: Evidence collected from Epic's non-production sandbox. Your production configuration must still be reviewed.")
     return "\n".join(str(p) for p in parts)
 
 

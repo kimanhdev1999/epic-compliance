@@ -11,6 +11,7 @@ import re
 
 from .models import Finding
 from .rules_engine.catalog import Rule
+from .rules_engine.llm_evaluator import NOT_EVALUATED
 
 #: key → (label, what the user does). Order is the order filters list them.
 FIX_WHERE = {
@@ -57,7 +58,8 @@ def where_to_fix(rule: Rule | None, finding: Finding | None, *, sample: bool = F
     subject = rule.subject if rule else ""
 
     if finding.verdict == "needs_human":
-        if finding.citation.startswith("[MOCK]"):
+        # "[MOCK]" is how runs saved before this wording said the same.
+        if finding.citation.startswith((NOT_EVALUATED, "[MOCK]")):
             return "tool_setup"  # Claude isn't connected, so the answer was never judged
         if subject == "app_attested":
             return "your_answers"

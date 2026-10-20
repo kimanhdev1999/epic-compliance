@@ -24,6 +24,10 @@ from epic_compliance.smart.pkce import (
 # The launch tests read os.environ directly, but the project's credentials live
 # in .env. Load it here (conftest is imported before any test module) so there is
 # ONE place to put the client id. Real environment variables always win.
+# Tests drive the tool on sample data, so make sample runs visible to them.
+# The app itself never shows sample runs (store.show_sample_runs).
+os.environ.setdefault("EPIC_COMPLIANCE_SHOW_SAMPLE_RUNS", "1")
+
 _ENV_FILE = Path(__file__).parent.parent / ".env"
 if _ENV_FILE.exists():
     from dotenv import load_dotenv

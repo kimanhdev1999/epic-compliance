@@ -236,8 +236,7 @@ def _integrations() -> dict[str, dict[str, Any]]:
     return {
         "epic": {
             "name": "Epic sandbox", "vendor": "fhir.epic.com", "status": epic,
-            "what": "Real SMART sign-in and real FHIR calls with your non-production client ID, "
-                    "instead of sample responses.",
+            "what": "Real SMART sign-in and real FHIR calls with your non-production client ID.",
             "detail": f"Client ID {client_id}" if epic != "not_connected" else "No client ID yet",
             "unlocks": [r.id for r in rules if r.subject in ("app_registration", "tool_launch", "tool_sample")],
             "actions": [("Sign in with SMART", "/launch"), ("Edit connection", "/config")],

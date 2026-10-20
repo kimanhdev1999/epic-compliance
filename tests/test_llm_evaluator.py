@@ -14,6 +14,7 @@ import pytest
 
 from epic_compliance.rules_engine.catalog import Rule
 from epic_compliance.rules_engine.llm_evaluator import (
+    NOT_EVALUATED,
     _parse_llm_response,
     evaluate_with_llm,
 )
@@ -83,13 +84,14 @@ def test_mock_mode_returns_needs_human_without_api_key():
     assert finding.verdict == "needs_human"
     assert finding.check_type == "llm"
     assert finding.rule_id == "SEC-001"
-    assert "MOCK" in finding.citation
+    # Says what the user can do about it, never "MOCK".
+    assert finding.citation.startswith(NOT_EVALUATED) and "MOCK" not in finding.citation
 
 
 def test_no_api_key_forces_mock_even_if_mock_flag_false():
     finding = evaluate_with_llm(_rule(), "some evidence", api_key="", mock=False)
     assert finding.verdict == "needs_human"
-    assert "MOCK" in finding.citation
+    assert finding.citation.startswith(NOT_EVALUATED)
 
 
 def test_mock_mode_never_calls_anthropic(monkeypatch):
