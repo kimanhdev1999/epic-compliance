@@ -145,15 +145,25 @@ def save_run(report: Report, config_snapshot: dict[str, Any]) -> str:
     return report.run_id
 
 
+def show_sample_runs() -> bool:
+    """Whether sample-data (mock) runs are visible. Only the test suite and UI
+    harness turn this on: the app shows results from real Epic runs only."""
+    return os.environ.get("EPIC_COMPLIANCE_SHOW_SAMPLE_RUNS") == "1"
+
+
+def _visible() -> str:
+    return "" if show_sample_runs() else "WHERE run_mode != 'mock'"
+
+
 def list_runs(limit: int = 100) -> list[dict[str, Any]]:
     """Return run summaries, newest first (no full report payload)."""
     init_db()
     with _connect() as conn:
         rows = conn.execute(
-            """
+            f"""
             SELECT run_id, created_at, run_mode, fhir_base_url,
                    pass_count, fail_count, needs_human_count, config_json
-            FROM runs ORDER BY created_at DESC LIMIT ?
+            FROM runs {_visible()} ORDER BY created_at DESC LIMIT ?
             """,
             (limit,),
         ).fetchall()
@@ -168,13 +178,14 @@ def list_runs(limit: int = 100) -> list[dict[str, Any]]:
 
 
 def get_run(run_id: str) -> dict[str, Any] | None:
-    """Return a single run with its parsed Report and config, or None."""
+    """Return a single run with its parsed Report and config, or None
+    (also for a sample-data run, unless sample runs are visible)."""
     init_db()
     with _connect() as conn:
         row = conn.execute(
             "SELECT * FROM runs WHERE run_id = ?", (run_id,)
         ).fetchone()
-    if row is None:
+    if row is None or (row["run_mode"] == "mock" and not show_sample_runs()):
         return None
     data = dict(row)
     data["report"] = Report.model_validate_json(data.pop("report_json"))
@@ -190,13 +201,14 @@ def recent_runs(limit: int = 10) -> list[dict[str, Any]]:
 def latest_run() -> dict[str, Any] | None:
     """The workspace's current state: the newest real run, with its Report and config.
 
-    A sample-data run (mock mode: the smoke test, the CLI, /api/run) never
-    replaces a real one; it's only shown while no real run exists yet.
+    Sample-data runs (mock mode: the smoke test, the CLI, /api/run) are never
+    shown in the app. Where the test suite makes them visible, they still never
+    replace a real run.
     """
     init_db()
     with _connect() as conn:
         row = conn.execute(
-            "SELECT run_id FROM runs ORDER BY run_mode = 'mock', created_at DESC LIMIT 1"
+            f"SELECT run_id FROM runs {_visible()} ORDER BY run_mode = 'mock', created_at DESC LIMIT 1"
         ).fetchone()
     return get_run(row["run_id"]) if row else None
 

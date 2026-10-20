@@ -62,8 +62,15 @@ def empty_server(tmp_path_factory) -> str:
     yield from _serve(tmp_path_factory.mktemp("ui-empty"))
 
 
-def _serve(work: Path):
-    """Start the web app on a free port against a DB in `work`; yield its base URL."""
+@pytest.fixture(scope="session")
+def app_server(tmp_path_factory) -> str:
+    """The app as users get it: sample-data runs stay invisible."""
+    yield from _serve(tmp_path_factory.mktemp("ui-app"), show_sample=False)
+
+
+def _serve(work: Path, show_sample: bool = True):
+    """Start the web app on a free port against a DB in `work`; yield its base URL.
+    ``show_sample`` makes the harness's sample-data runs visible (test-only)."""
     port = _free_port()
     # Only what the interpreter needs: nothing from the project's .env leaks in.
     env = {k: os.environ[k] for k in ("PATH", "HOME", "LANG", "TMPDIR") if k in os.environ}
@@ -72,6 +79,7 @@ def _serve(work: Path):
         EPIC_COMPLIANCE_DB=str(work / "runs.db"),
         RUN_MODE="mock",
         ANTHROPIC_API_KEY="",
+        EPIC_COMPLIANCE_SHOW_SAMPLE_RUNS="1" if show_sample else "0",
     )
     log = open(work / "server.log", "w")
     proc = subprocess.Popen(

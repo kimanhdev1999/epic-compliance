@@ -9,7 +9,7 @@
     <tr>
       <td><a href="/runs/{{ r.run_id }}">{{ r.created_at[:16].replace('T',' ') }}</a></td>
       <td>{{ r.app_name or "—" }}{% if r.health_system %} <span class="muted">&middot; {{ r.health_system }}</span>{% endif %}</td>
-      <td class="muted" style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ "Demo data" if r.run_mode == 'mock' else r.fhir_base_url }}</td>
+      <td class="muted" style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ r.fhir_base_url }}</td>
       <td class="nums" style="color:var(--fail)">{{ r.fail_count }}</td>
       <td class="nums" style="color:var(--warn)">{{ r.needs_human_count }}</td>
       <td class="nums" style="color:var(--pass)">{{ r.pass_count }}</td>

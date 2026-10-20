@@ -23,7 +23,6 @@
   .badge.pass { background: #dcfce7; } .badge.fail { background: #fee2e2; } .badge.needs_human { background: #fef3c7; }
   .req { font-weight: 600; margin: 0.4rem 0 0.2rem; }
   .src { color: #64748b; font-size: 0.82rem; }
-  .sample { border: 2px dashed #b42318; color: #b42318; padding: 0.6rem 0.9rem; margin: 0.75rem 0; border-radius: 8px; }
   .evidence { font-family: monospace; font-size: 0.8rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 0.5rem; margin: 0.5rem 0; white-space: pre-wrap; }
   .fix { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 0.5rem 0.7rem; font-size: 0.85rem; }
   .toolbar { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.6rem 0.9rem; margin-bottom: 1.5rem; font-size: 0.85rem; }
@@ -34,10 +33,9 @@
   <div class="toolbar">Use your browser's <strong>Print &rarr; Save as PDF</strong> to export this report. <button onclick="window.print()">Print now</button></div>
   <h1>Epic FHIR ONC (g)(10) Compliance Report</h1>
   <div class="meta">
-    Run {{ view.run_id }} &middot; {{ run.created_at[:19].replace('T',' ') }} UTC &middot; {{ run.run_mode }} mode<br>
+    Run {{ view.run_id }} &middot; {{ run.created_at[:19].replace('T',' ') }} UTC &middot; Epic sandbox<br>
     Target: {{ run.fhir_base_url }}
   </div>
-  {% if view.sample %}<div class="sample" role="status"><strong>Sample data — not a real result.</strong> This run used the tool's built-in sample responses, not Epic.</div>{% endif %}
   <div class="summary">
     {% if view.score is not none %}<div class="stat"><div class="n score">{{ view.score }}%</div><div class="l">Readiness</div></div>{% endif %}
     <div class="stat"><div class="n pass">{{ view.counts.pass }}</div><div class="l">Pass</div></div>

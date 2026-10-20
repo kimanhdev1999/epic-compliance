@@ -112,7 +112,8 @@ fi
 # --------------------------------------------------------------------------- #
 if [ "$QUICK" -eq 0 ]; then
   step "4. FastAPI server (/healthz, /api/run, /api/report)"
-  python -m uvicorn epic_compliance.api:app --host 127.0.0.1 --port "$PORT" >/tmp/verify_server.log 2>&1 &
+  # The harness checks pages on sample-data runs, which the app itself never shows.
+  EPIC_COMPLIANCE_SHOW_SAMPLE_RUNS=1 python -m uvicorn epic_compliance.api:app --host 127.0.0.1 --port "$PORT" >/tmp/verify_server.log 2>&1 &
   SERVER_PID=$!
 
   # wait up to 15s for /healthz

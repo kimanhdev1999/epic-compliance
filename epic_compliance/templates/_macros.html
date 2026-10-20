@@ -147,19 +147,7 @@
 {% if item.fix_where %}<span class="where where-{{ item.fix_where }}" title="{{ item.fix_where_action }}">{{ item.fix_where_label }}</span>{% endif %}
 {%- endmacro %}
 
-{% macro sample_banner() %}
-<div class="stale-banner sample-banner" role="status">
-  <div class="stale-text">
-    <strong>Sample data — not a real result.</strong>
-    These results come from the tool's built-in sample responses, not from Epic, so nothing here is about your app
-    or your setup, and no failure is blocking. Run your test plan against the Epic sandbox to replace them.
-  </div>
-  <a class="btn small-btn" href="/assess">Set up a real run</a>
-</div>
-{% endmacro %}
-
 {% macro stale_banner(w, next) %}
-{% if w.sample %}{{ sample_banner() }}{% endif %}
 {% if w.run and w.stale %}
 <div class="stale-banner" role="status">
   <span class="stale-icon">{{ icon("refresh") }}</span>

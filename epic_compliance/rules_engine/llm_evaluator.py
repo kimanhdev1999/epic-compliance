@@ -72,6 +72,10 @@ def _parse_llm_response(content: str) -> LLMVerdict:
     raise ValueError(f"Could not parse LLM response as verdict JSON: {content!r}")
 
 
+#: Citation prefix when Claude never judged the evidence (no API key).
+NOT_EVALUATED = "Not evaluated: Claude isn't connected."
+
+
 def evaluate_with_llm(
     rule: Rule,
     evidence_str: str,
@@ -82,7 +86,7 @@ def evaluate_with_llm(
 ) -> Finding:
     """Call Claude to evaluate a security/narrative rule against collected evidence."""
     if mock or not api_key:
-        # Mock mode: return needs_human so pipeline runs without API key
+        # No Claude: the answer is never judged, so it stays needs_human.
         return Finding(
             rule_id=rule.id,
             verdict="needs_human",
@@ -91,7 +95,7 @@ def evaluate_with_llm(
             check_type="llm",
             severity=rule.severity,
             category=rule.category,
-            citation=f"[MOCK] Evidence not evaluated — run with ANTHROPIC_API_KEY for live assessment. Evidence snippet: {evidence_str[:120]}",
+            citation=f"{NOT_EVALUATED} Connect Claude (set ANTHROPIC_API_KEY), then re-run.",
         )
 
     import anthropic  # import only when needed

@@ -210,7 +210,7 @@ def build_consult_note(
     *,
     encounter_id: str = "",
     practitioner_ref: str = "",
-    text: str = "Dermatology e-consult: compliance-tool sample note. Not clinical content.",
+    text: str = "Dermatology e-consult: compliance-tool test note. Not clinical content.",
 ) -> dict[str, Any]:
     """The derm's assessment, as a Clinical Notes DocumentReference."""
     doc: dict[str, Any] = {
