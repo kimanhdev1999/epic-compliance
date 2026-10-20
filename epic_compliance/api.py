@@ -270,7 +270,9 @@ def _integrations() -> dict[str, dict[str, Any]]:
 
 def _workspace() -> dict[str, Any]:
     run, intake = store.latest_run(), _current_intake()
-    w = ws.build_workspace(run, intake=intake, integrations=_integrations(), history=store.list_runs(limit=30))
+    in_plan = build_plan(Intake.model_validate(intake)).rule_ids if intake else None
+    w = ws.build_workspace(run, intake=intake, integrations=_integrations(), history=store.list_runs(limit=30),
+                           in_plan=in_plan)
     w["stale"], changed = ws.stale_reasons(run, intake=intake, evidence=store.list_evidence(),
                                            rules_fingerprint=rules_fingerprint())
     for t in w["tests"]:
@@ -381,7 +383,11 @@ def evidence_file(evidence_id: str) -> FileResponse:
 
 @app.get("/integrations", response_class=HTMLResponse)
 def integrations_page(request: Request) -> Any:
-    return render(request, "integrations.html", active="integrations", integrations=_integrations())
+    shown = {t["id"] for t in _workspace()["tests"]}
+    integrations = _integrations()
+    for i in integrations.values():  # only link tests that apply to this app
+        i["unlocks"] = [rid for rid in i["unlocks"] if rid in shown]
+    return render(request, "integrations.html", active="integrations", integrations=integrations)
 
 
 def _saved_chat() -> ChatState:

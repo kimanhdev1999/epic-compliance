@@ -8,7 +8,6 @@
 <p class="subtitle">
   {{ plan.included|length }} checks selected for {{ {"mobile": "a native mobile app", "web_browser": "a browser-only web app", "web_server": "a web app with its own backend"}[intake.platform] }}
   used by {{ intake.users }}{% if intake.health_system %} at {{ intake.health_system }}{% endif %}.
-  {{ plan.excluded|length }} checks don't apply and are skipped.
 </p>
 {% if intake.description %}<blockquote class="told">“{{ intake.description }}”</blockquote>{% endif %}
 
@@ -97,19 +96,6 @@
   {% endfor %}
 </div>
 {% endfor %}
-
-{% if plan.excluded %}
-<details class="card skipped">
-  <summary>{{ plan.excluded|length }} checks skipped for this app</summary>
-  {% for c in plan.excluded %}
-  <div class="plan-item muted">
-    <span class="rid">{{ c.rule.id }}</span>
-    <div class="body"><div>{{ c.rule.description }}</div><div class="why">{{ c.reason }}</div></div>
-  </div>
-  {% endfor %}
-</details>
-{% endif %}
-
 
 <div class="actions sticky-actions">
   <form method="post" action="/assess/resume">

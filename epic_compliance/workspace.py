@@ -9,6 +9,8 @@ A test is one catalog rule. Its status comes from the latest run:
   passing / failing / needs_review  — the run's verdict
   not_applicable                    — left out of this app's plan (with why)
   not_run                           — no run yet
+The workspace shows only the tests in this app's plan: a not-applicable test
+never appears in lists or counts, only in the plan it was left out of.
 A rule maps to every framework its ``source`` citation names, so one test can
 count toward ONC (g)(10) and HIPAA at the same time.
 """
@@ -75,8 +77,12 @@ def frameworks_for(rule: Rule) -> list[str]:
 # --------------------------------------------------------------------------- #
 # Tests
 # --------------------------------------------------------------------------- #
-def build_tests(run: dict[str, Any] | None) -> list[dict[str, Any]]:
-    """Every catalog rule as a test, with its status in ``run`` (latest run)."""
+def build_tests(run: dict[str, Any] | None, in_plan: set[str] | None = None) -> list[dict[str, Any]]:
+    """Every catalog rule as a test, with its status in ``run`` (latest run).
+
+    ``in_plan`` is the current plan's test ids. Before any run, a test outside
+    it is not applicable rather than "not run".
+    """
     findings = {f.rule_id: f for f in run["report"].findings} if run else {}
     sample = bool(run) and run.get("run_mode") == "mock"
     assessment = (run or {}).get("config", {}).get("assessment") or {}
@@ -89,7 +95,7 @@ def build_tests(run: dict[str, Any] | None) -> list[dict[str, Any]]:
         if f is not None:
             status = STATUS_FROM_VERDICT[f.verdict]
         elif run is None:
-            status = "not_run"
+            status = "not_run" if in_plan is None or rule.id in in_plan else "not_applicable"
         else:
             status = "not_applicable"
         subject = SUBJECTS.get(rule.subject, ("", ""))
@@ -155,8 +161,10 @@ def build_workspace(
     intake: dict[str, Any],
     integrations: dict[str, dict[str, Any]],
     history: list[dict[str, Any]],
+    in_plan: set[str] | None = None,
 ) -> dict[str, Any]:
-    tests = build_tests(run)
+    # Only the tests that apply to this app: the rest are noise to the user.
+    tests = [t for t in build_tests(run, in_plan) if t["status"] != "not_applicable"]
     progress = _progress(tests)
     counts = progress["counts"]
     attention = [t for t in tests if t["status"] in ("failing", "needs_review")]

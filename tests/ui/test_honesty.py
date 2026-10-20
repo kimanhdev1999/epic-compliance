@@ -161,3 +161,13 @@ def test_signin_never_dead_ends(visit, server, sample_run):
     for href in hrefs:
         resp = httpx.get(server + href)
         assert resp.status_code < 400 or "<nav" in resp.text, f"{href} -> {resp.status_code}: {resp.text[:80]}"
+
+
+@pytest.mark.parametrize("path", ["/", "/tests", "/frameworks", "/runs/{run}", "/assess/plan"])
+def test_only_applicable_tests_are_shown(visit, server, sample_run, path):
+    """The user sees the tests their app is judged on, never the ones that don't apply."""
+    v = visit(server)
+    v.page.goto(path.format(run=sample_run))
+    text = v.text()
+    assert not re.search(r"not applicable|\bN/A\b|skipped (for this app|as not applicable)", text, re.I), (
+        f"{path} lists tests that don't apply")
