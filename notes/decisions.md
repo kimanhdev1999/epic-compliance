@@ -602,3 +602,50 @@ flow. Its top findings matched what confused the user:
 - **Evidence UI redesigned.** A list of items and a tabbed form (Statement / File / Link)
   with a drop zone. The form folds away once evidence exists, and the copy
   depends on whether Claude is connected.
+
+## ADR-017: UX redesign: one profile, one connection, one run, one report
+**Date:** 2026-10-20  **Status:** Proposed
+
+### Context
+A second end-to-end UX walkthrough (`ux-flow-reviewer`) found that the verdicts are
+honest but the experience is still confusing:
+- The user's answers live in three places (chat state, `last_intake`, plan page).
+  Re-run uses `last_intake`, so chat corrections are silently ignored.
+- Epic can be connected from three screens that behave differently.
+  Integrations signs in without a launch profile, and the checklist says
+  "connected" when only a client ID is saved.
+- Needs-review results show raw evidence (dict dumps, `[MOCK]`, errno), and the
+  export carries that text to reviewers.
+- Readiness counts `epic_platform` tests, which pass for any app pointed at Epic.
+- One idea has several names: run, assessment, report, plan, check, rule, finding.
+- There are dead ends: the Backend starter loops, the out-of-date banner sticks
+  because proof on out-of-plan tests is counted, and missing pages return raw JSON 404s.
+
+### Decision
+Adopt the redesign in `docs/ux-redesign/` (canvas source and README). Its key rules:
+- **App profile** is the single, versioned source of truth. The chat is one way to
+  fill it in. Each run stores `profile_version`, and Re-run uses the current
+  profile with a plan diff.
+- **One Connect to Epic flow** used everywhere. "Connected" requires all of:
+  - a successful sign-in;
+  - the matching launch profile;
+  - at least 5 minutes before the sign-in expires.
+
+  Connection metadata (not the token) is persisted, so a restart shows "Expired".
+- **Results** gain `summary` (one plain sentence) and `needs_reason`
+  (answer | proof | connect | patient | external). Raw evidence moves to "Technical details".
+- **Scoring:** "Your app" readiness covers the subjects `app_registration`,
+  `tool_sample` and `app_attested`, and is the headline. "Epic environment"
+  (`epic_platform`, `tool_launch`) is reported separately.
+  The verdict is one of Blocked, Fixes needed, Missing proof or Ready to submit.
+- **Glossary:** Test, Plan, Run, Result, Proof, Report, Connection.
+- **Navigation:** Overview, App profile, Tests, Run, Runs, Report, Connections.
+  Frameworks become a Tests filter; Integrations and Settings merge into Connections.
+- Delivered in four phases (wording first, then profile, connection, run and report);
+  see `docs/ux-redesign/README.md`.
+
+### Consequences
+- New `profiles` table and `runs.profile_version`. `settings.last_intake` is retired.
+- Old routes (`/assess*`, `/frameworks*`, `/integrations`, `/config`) redirect to the new ones.
+- Staleness compares in-plan tests only, and proof is not accepted on out-of-plan tests.
+- The CLI and `/api/run` still ignore the plan. A `--profile` flag is planned so they can use it.
