@@ -47,6 +47,7 @@ from . import pipeline, store
 from .assessment import BAA_LABELS, PLATFORM_LABELS, RUN_FIELDS, USERS_LABELS, Intake, build_plan
 from .intake_chat import ChatState, next_turn, rewind, summary
 from .config import OVERRIDABLE_FIELDS, config_with_overrides, get_config
+from .fix_where import FIX_WHERE
 from .models import Report
 from .fhir.writeback import CLINICIAN_SCOPES
 from .pipeline import run_full_pipeline
@@ -115,12 +116,13 @@ def _current_intake() -> dict[str, Any]:
 def _nav() -> dict[str, Any]:
     """Sidebar context on every page: which app this workspace is, and its open counts."""
     intake = _current_intake()
-    latest = store.list_runs(limit=1)
+    run = store.latest_run()
+    verdicts = [f.verdict for f in run["report"].findings] if run else []
     return {
         "app_name": intake.get("app_name") or "Your app",
         "health_system": intake.get("health_system", ""),
-        "failing": latest[0]["fail_count"] if latest else 0,
-        "review": latest[0]["needs_human_count"] if latest else 0,
+        "failing": verdicts.count("fail"),
+        "review": verdicts.count("needs_human"),
     }
 
 
@@ -297,12 +299,14 @@ def framework_detail(request: Request, key: str) -> Any:
 
 
 @app.get("/tests", response_class=HTMLResponse)
-def tests_page(request: Request, status: str = "", framework: str = "", category: str = "", q: str = "") -> Any:
+def tests_page(request: Request, status: str = "", framework: str = "", category: str = "", where: str = "",
+               q: str = "") -> Any:
     w = _workspace()
     categories = sorted({(t["category"], t["category_label"]) for t in w["tests"]}, key=lambda c: c[1])
     return render(
         request, "tests.html", active="tests", w=w, frameworks=ws.FRAMEWORKS, categories=categories,
-        status_labels=ws.STATUS_LABELS, filters={"status": status, "framework": framework, "category": category, "q": q},
+        status_labels=ws.STATUS_LABELS, fix_where=FIX_WHERE,
+        filters={"status": status, "framework": framework, "category": category, "where": where, "q": q},
     )
 
 
@@ -570,7 +574,7 @@ def history(request: Request) -> Any:
 @app.get("/runs/{run_id}", response_class=HTMLResponse)
 def report_detail(request: Request, run_id: str) -> Any:
     run = _load_run_or_404(run_id)
-    view = build_report_view(run["report"], run["config"].get("evidence"))
+    view = build_report_view(run["report"], run["config"].get("evidence"), sample=store.is_sample(run))
     return render(
         request, "report.html", active="history", view=view, run=run,
         assessment=run["config"].get("assessment"), labels=_intake_labels(),
@@ -586,7 +590,7 @@ def delete_run(request: Request, run_id: str) -> Any:
 @app.get("/runs/{run_id}/export", response_class=HTMLResponse)
 def export_run(request: Request, run_id: str) -> Any:
     run = _load_run_or_404(run_id)
-    view = build_report_view(run["report"], run["config"].get("evidence"))
+    view = build_report_view(run["report"], run["config"].get("evidence"), sample=store.is_sample(run))
     html = templates.get_template("export.html").render(
         request=request, view=view, run=run
     )
@@ -601,7 +605,7 @@ def export_run(request: Request, run_id: str) -> Any:
 @app.get("/runs/{run_id}/print", response_class=HTMLResponse)
 def print_run(request: Request, run_id: str) -> Any:
     run = _load_run_or_404(run_id)
-    view = build_report_view(run["report"], run["config"].get("evidence"))
+    view = build_report_view(run["report"], run["config"].get("evidence"), sample=store.is_sample(run))
     return render(request, "export.html", view=view, run=run)
 
 

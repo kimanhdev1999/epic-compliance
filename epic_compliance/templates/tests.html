@@ -29,6 +29,10 @@
       <option value="">All frameworks</option>
       {% for f in frameworks %}<option value="{{ f.key }}" {{ 'selected' if filters.framework == f.key }}>{{ f.name }}</option>{% endfor %}
     </select>
+    <select name="where" aria-label="Where to fix it">
+      <option value="">Fix anywhere</option>
+      {% for key, (label, _) in fix_where.items() %}<option value="{{ key }}" {{ 'selected' if filters.where == key }}>{{ label }}</option>{% endfor %}
+    </select>
     <select name="category" aria-label="Category">
       <option value="">All categories</option>
       {% for key, label in categories %}<option value="{{ key }}" {{ 'selected' if filters.category == key }}>{{ label }}</option>{% endfor %}
@@ -39,13 +43,14 @@
 <script>
 (function () {
   var root = document.getElementById('tests-view');
-  var f = { status: {{ filters.status|tojson }}, framework: {{ filters.framework|tojson }}, category: {{ filters.category|tojson }}, q: {{ filters.q|tojson }} };
+  var f = { status: {{ filters.status|tojson }}, framework: {{ filters.framework|tojson }}, category: {{ filters.category|tojson }}, where: {{ filters.where|tojson }}, q: {{ filters.q|tojson }} };
   function apply() {
     var shown = 0;
     root.querySelectorAll('.t-row[data-status]').forEach(function (row) {
       var ok = (!f.status || row.dataset.status === f.status)
         && (!f.framework || row.dataset.frameworks.indexOf(' ' + f.framework + ' ') !== -1)
         && (!f.category || row.dataset.category === f.category)
+        && (!f.where || row.dataset.where === f.where)
         && (!f.q || row.dataset.text.indexOf(f.q.toLowerCase()) !== -1);
       row.hidden = !ok; if (ok) shown++;
     });

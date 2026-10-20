@@ -649,3 +649,44 @@ Adopt the redesign in `docs/ux-redesign/` (canvas source and README). Its key ru
 - Old routes (`/assess*`, `/frameworks*`, `/integrations`, `/config`) redirect to the new ones.
 - Staleness compares in-plan tests only, and proof is not accepted on out-of-plan tests.
 - The CLI and `/api/run` still ignore the plan. A `--profile` flag is planned so they can use it.
+
+## ADR-018: "Where to fix it" on every result; sample runs never replace real ones
+**Date:** 2026-10-20  **Status:** Accepted
+
+### Context
+The user opened Tests, saw two failures (AUTH-010, FHIR-004) and couldn't tell
+whether the mistake was theirs, their Epic registration's or Epic's. In fact:
+- Both tests check Epic's own behaviour.
+- Both came from a sample-data (mock) run made by older code.
+
+The workspace always showed the newest run, sample or real. The "Tests Epic"
+badge said what a test exercises, not who has to act.
+
+### Decision
+- **Where to fix it.** Every Failed or Needs review result carries one of six
+  labels: Your app · Your Epic app registration · Your answers or proof ·
+  This tool's setup · Epic's sandbox · Sample data.
+  - A check that knows the cause sets `Finding.fix_where`. For example, CLIN-001
+    with 0 matches means the test patient is wrong, so it sets `tool_setup`.
+  - Otherwise `fix_where.where_to_fix()` derives the label from the rule's
+    `subject` and the verdict. This also covers runs saved before the field existed.
+  - A failed `tool_sample` write counts as the registration when Epic refused it
+    (401/403), and as Epic's sandbox otherwise. The tool's own sample is valid
+    by construction.
+- **Blocking** means Failed, critical or high, and not Epic's sandbox or Sample
+  data. The user can't fix those two, so they never block.
+- **Sample runs never replace a real run.** `store.latest_run()` prefers the
+  newest real run. With no real run yet, it shows the newest sample run under a
+  "Sample data — not a real result" banner, and every failure in it is labelled
+  Sample data.
+- **Where it shows:**
+  - Tests: a column plus a filter (`?where=`).
+  - Test panel: a box above "How to fix". "How to fix" is hidden when the user
+    has nothing to fix.
+  - Home rows, the report and the export.
+
+### Consequences
+- UI tests that post `run_mode=mock` still see their run, now with the sample banner.
+- `tests/ui/test_honesty.py::test_sample_data_is_unmissable` now passes. Its
+  known-issue marker is removed.
+- The design canvas (`docs/ux-redesign`, Spec 3 § 03b) describes these rules.

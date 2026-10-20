@@ -69,7 +69,6 @@ def test_no_failures_only_when_nothing_is_open(report, run_json):
 
 # --- Sample data -------------------------------------------------------------
 
-@known('sample-data runs only say so in a muted subtitle')
 @pytest.mark.parametrize("path", ["/runs/{run}", "/runs/{run}/print", "/", "/tests"])
 def test_sample_data_is_unmissable(visit, server, sample_run, path):
     """Results from sample responses must carry a banner, not a muted subtitle."""

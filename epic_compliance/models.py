@@ -17,6 +17,8 @@ class Finding(BaseModel):
     severity: str = "medium"
     category: str = ""
     citation: str = ""  # required for LLM verdicts; populated when available
+    # Who must act, when the check knows better than fix_where.where_to_fix's default.
+    fix_where: str = ""
 
 
 class Report(BaseModel):

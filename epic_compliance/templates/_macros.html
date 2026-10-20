@@ -37,9 +37,11 @@
     {% if item.subject_label %}<span class="badge subject subject-{{ item.subject }}">{{ item.subject_label }}</span>{% endif %}
     <span class="badge sev-{{ item.severity }}">{{ item.severity }}</span>
     {{ verdict_badge(item.verdict) }}
+    {{ where_badge(item) }}
   </summary>
   <div class="detail">
     <dl>
+      {% if item.fix_where %}<dt>Where to fix it</dt><dd><strong>{{ item.fix_where_label }}.</strong> {{ item.fix_where_action }}</dd>{% endif %}
       {% if item.requirement %}<dt>Requirement</dt><dd>{{ item.requirement }}</dd>{% endif %}
       {% if item.subject_detail %}<dt>What this tests</dt><dd>{{ item.subject_detail }}</dd>{% endif %}
       {% if item.source %}<dt>Source</dt><dd>{{ item.source }}</dd>{% endif %}
@@ -49,7 +51,7 @@
       {% if item.citation %}<dt>LLM citation</dt><dd>{{ item.citation }}</dd>{% endif %}
       {% if item.provided_evidence %}<dt>Evidence provided</dt><dd>{{ evidence_list(item.provided_evidence) }}</dd>{% endif %}
     </dl>
-    {% if item.remediation_hint %}
+    {% if item.remediation_hint and item.fix_where not in ("epic", "sample") %}
     <div class="remediation"><strong>How to fix:</strong> {{ item.remediation_hint }}</div>
     {% endif %}
   </div>
@@ -124,24 +126,40 @@
   <div class="t-row t-head" role="row">
     <span role="columnheader">Test</span><span role="columnheader">Status</span>
     {% if show_frameworks %}<span role="columnheader" class="hide-sm">Frameworks</span>{% endif %}
-    <span role="columnheader" class="hide-sm">Severity</span><span role="columnheader" class="hide-sm">Type</span>
+    <span role="columnheader" class="hide-sm">Severity</span><span role="columnheader" class="hide-sm">Where to fix it</span>
   </div>
   {% for t in tests %}
   <a class="t-row" role="row" href="/tests/{{ t.id }}" hx-get="/tests/{{ t.id }}" hx-target="#drawer-panel" hx-push-url="false"
-     data-status="{{ t.status }}" data-category="{{ t.category }}" data-frameworks=" {{ t.frameworks|join(' ') }} "
+     data-status="{{ t.status }}" data-where="{{ t.fix_where }}" data-category="{{ t.category }}" data-frameworks=" {{ t.frameworks|join(' ') }} "
      data-text="{{ (t.id ~ ' ' ~ t.title ~ ' ' ~ t.category_label)|lower }}">
     <span class="t-name" role="cell"><code>{{ t.id }}</code><span>{{ t.title }}</span>{% if t.changed %}<span class="changed-chip" title="Evidence changed after the last run">Changed</span>{% endif %}</span>
     <span role="cell">{{ status_pill(t.status, t.status_label) }}</span>
     {% if show_frameworks %}<span role="cell" class="chips hide-sm">{% for k in t.frameworks %}<span class="chip">{{ fw_names[k] }}</span>{% endfor %}</span>{% endif %}
     <span role="cell" class="hide-sm"><span class="badge sev-{{ t.severity }}">{{ t.severity }}</span></span>
-    <span role="cell" class="hide-sm muted small">{{ t.type_label }}</span>
+    <span role="cell" class="hide-sm">{{ where_badge(t) }}</span>
   </a>
   {% endfor %}
   <div class="t-empty" hidden>No tests match these filters.</div>
 </div>
 {% endmacro %}
 
+{% macro where_badge(item) -%}
+{% if item.fix_where %}<span class="where where-{{ item.fix_where }}" title="{{ item.fix_where_action }}">{{ item.fix_where_label }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro sample_banner() %}
+<div class="stale-banner sample-banner" role="status">
+  <div class="stale-text">
+    <strong>Sample data — not a real result.</strong>
+    These results come from the tool's built-in sample responses, not from Epic, so nothing here is about your app
+    or your setup, and no failure is blocking. Run your test plan against the Epic sandbox to replace them.
+  </div>
+  <a class="btn small-btn" href="/assess">Set up a real run</a>
+</div>
+{% endmacro %}
+
 {% macro stale_banner(w, next) %}
+{% if w.sample %}{{ sample_banner() }}{% endif %}
 {% if w.run and w.stale %}
 <div class="stale-banner" role="status">
   <span class="stale-icon">{{ icon("refresh") }}</span>

@@ -87,7 +87,7 @@
         <a class="attn-row" href="/tests/{{ t.id }}" hx-get="/tests/{{ t.id }}" hx-target="#drawer-panel">
           {{ m.status_pill(t.status, t.status_label) }}
           <span class="attn-body"><strong>{{ t.title }}</strong>
-            <span class="muted small"><code>{{ t.id }}</code> &middot; {{ t.category_label }}</span></span>
+            <span class="muted small"><code>{{ t.id }}</code> &middot; {{ t.category_label }} {{ m.where_badge(t) }}</span></span>
           <span class="badge sev-{{ t.severity }}">{{ t.severity }}</span>
         </a>
         {% endfor %}
