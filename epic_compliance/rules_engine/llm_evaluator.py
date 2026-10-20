@@ -91,7 +91,7 @@ def evaluate_with_llm(
             check_type="llm",
             severity=rule.severity,
             category=rule.category,
-            citation=f"[MOCK] Evidence not evaluated — run with ANTHROPIC_API_KEY for live assessment. Evidence snippet: {evidence_str[:120]}",
+            citation=f"[MOCK] Evidence not evaluated: answer review isn't set up. Evidence snippet: {evidence_str[:120]}",
         )
 
     import anthropic  # import only when needed

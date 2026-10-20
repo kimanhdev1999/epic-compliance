@@ -35,6 +35,9 @@ Before starting any day's work:
 - When running test suites, save raw output to `notes/day{N}-results.md`
 - When making architectural decisions, note the reasoning in `notes/decisions.md`
 - Never commit credentials or `.env` files
+- **UI/UX work follows `docs/ux-redesign/requirements.md`** (the owner's standing UX requirements,
+  kept with the design canvas). Above all, the UI, the exported report and the canvas never mention
+  Claude, Anthropic or a model name: use "Answer review" and "Basis". No sample data in the UI.
 - Prefer `docker compose` (v2 CLI) over `docker-compose` (v1)
 - **One git worktree per session.** Several Claude sessions often run in this folder at once.
   Before changing any file, call EnterWorktree (or start with `claude --worktree`). To continue an

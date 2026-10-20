@@ -316,9 +316,22 @@ a.chip:hover { color: var(--accent); text-decoration: none; }
 .drawer-body section:last-child { border-bottom: none; }
 .drawer-body h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.45rem; }
 .drawer-body p { margin: 0 0 0.4rem; font-size: 0.9rem; }
-.drawer-body .fix-box { border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); background: color-mix(in srgb, var(--accent) 6%, transparent); border-radius: var(--radius); padding: 0.85rem 1rem; margin-top: 0.75rem; }
-.drawer-body .fix-box h3 { color: var(--accent); }
-pre.evidence { margin: 0; max-height: 280px; overflow: auto; font-family: var(--mono); font-size: 0.8rem; background: var(--surface-2); padding: 0.65rem 0.75rem; border-radius: 8px; white-space: pre-wrap; word-break: break-word; }
+/* Sentence-case pills in the drawer header: status, who acts, severity, check type. */
+.drawer-meta .badge { text-transform: none; letter-spacing: 0; font-size: 0.75rem; padding: 0.15rem 0.6rem; border-radius: 999px; }
+.badge.who { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
+/* Reason box: where to fix it, the result in plain words, one action (requirements R3). */
+.drawer-body .reason { display: flex; flex-direction: column; gap: 0.6rem; margin: 1rem 0 0.4rem; padding: 1rem 1.1rem; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); background: color-mix(in srgb, var(--warn) 7%, var(--surface)); }
+.drawer-body .reason.reason-your_app, .drawer-body .reason.reason-registration { border-color: color-mix(in srgb, var(--fail) 30%, transparent); background: color-mix(in srgb, var(--fail) 5%, var(--surface)); }
+.drawer-body .reason.reason-epic { border-color: var(--border-strong); border-style: dashed; background: var(--surface-2); }
+.reason-k { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--warn); }
+.reason-your_app .reason-k, .reason-registration .reason-k { color: var(--fail); }
+.reason-epic .reason-k { color: var(--muted); }
+.drawer-body .reason-text { margin: 0; font-size: 0.95rem; line-height: 1.55; }
+.reason-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.drawer-body .changed-chip { align-self: flex-start; display: inline-block; margin: 0.75rem 0 0; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+details.tech { margin-top: 0.5rem; border: 1px solid var(--border); border-radius: 10px; }
+details.tech summary { cursor: pointer; padding: 0.55rem 0.8rem; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+details.tech pre { margin: 0; max-height: 280px; overflow: auto; padding: 0.65rem 0.8rem; border-top: 1px solid var(--border); background: var(--surface-2); border-radius: 0 0 10px 10px; font-family: var(--mono); font-size: 0.78rem; white-space: pre-wrap; word-break: break-word; }
 .history { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; font-size: 0.85rem; }
 .history li { display: flex; justify-content: space-between; align-items: center; }
 .drawer-foot { padding: 0.9rem 1.4rem; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 0.6rem; }
@@ -556,7 +569,4 @@ dl.scope dd { margin: 0; }
 /* Where to fix it: who must act on a result (ADR-018) */
 .where { display: inline-block; font-size: 0.72rem; font-weight: 600; line-height: 1.5; padding: 0.05rem 0.45rem; border-radius: 6px; border: 1px solid var(--border-strong); color: var(--text); background: var(--surface); white-space: nowrap; vertical-align: middle; }
 .where-epic, .where-sample { border-style: dashed; color: var(--muted); background: var(--surface-2); }
-.drawer-body .where-box { border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 0.85rem 1rem; margin-top: 0.75rem; }
-.drawer-body .where-box p { margin: 0.25rem 0 0; }
-.drawer-body .where-box.where-epic, .drawer-body .where-box.where-sample { border-style: dashed; background: var(--surface-2); }
 .sample-banner { border-color: var(--border-strong); background: var(--surface-2); }

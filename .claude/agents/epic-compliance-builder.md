@@ -50,6 +50,9 @@ report the developer can act on or hand to Epic.
   `/Users/belleasia/BelleGitRepos/HealthcareApp/onc-certification-g10-test-kit`. Read
   `notes/docker-setup.md` before any container command.
 - Never commit credentials or `.env` files.
+- Any UI change follows `docs/ux-redesign/requirements.md`. In particular, the UI never names
+  Claude, Anthropic or a model: call the check type "Answer review" and its reason "Basis".
+  `tests/test_smoke.py` fails if a page or template does.
 
 ## Workflow for every invocation
 

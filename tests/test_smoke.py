@@ -12,6 +12,7 @@ the Epic sandbox does that.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -23,6 +24,9 @@ from epic_compliance.intake_chat import ChatState
 pytestmark = pytest.mark.smoke
 
 REPO = Path(__file__).parent.parent
+
+#: Words the UI must never show (docs/ux-redesign/requirements.md R1).
+VENDOR = re.compile(r"claude|anthropic|AI review|AI citation|LLM citation", re.I)
 
 #: Two apps that exercise different halves of the catalog.
 APPS = {
@@ -97,11 +101,23 @@ def test_describe_plan_run_and_report(client, app_kind):
     pages += [f"/frameworks/{f.key}" for f in FRAMEWORKS]
     pages += [f"/tests/{rid}" for rid in sorted(planned)]
     for page in pages:
-        assert client.get(page).status_code == 200, page
+        resp = client.get(page)
+        assert resp.status_code == 200, page
+        # The UI never names the review's model or vendor (docs/ux-redesign/requirements.md R1).
+        if "html" in resp.headers.get("content-type", ""):
+            hits = VENDOR.findall(resp.text)
+            assert not hits, f"{page} mentions {sorted(set(hits))}"
 
     # 5. Re-running the saved plan adds a second run.
     assert client.post("/assess/rerun", data={"next": "/"}, follow_redirects=False).status_code == 303
     assert len(client.get("/api/runs").json()) == 2
+
+
+def test_templates_never_name_the_vendor():
+    """Catches copy on pages the walk above doesn't reach (flash messages, error states)."""
+    templates = REPO / "epic_compliance" / "templates"
+    hits = {p.name: sorted(set(VENDOR.findall(p.read_text()))) for p in templates.glob("*.html")}
+    assert not {k: v for k, v in hits.items() if v}
 
 
 def test_cli_run(tmp_path):

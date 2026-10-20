@@ -1,47 +1,60 @@
 {% import "_macros.html" as m %}
+{# Layout: docs/ux-redesign/requirements.md R3 (canvas board 2.4, TestDetail). #}
+{% set open_result = t.status in ("failing", "needs_review") and t.fix_where != "sample" %}
 <div class="drawer-head">
   <div>
     <div class="muted small"><code>{{ t.id }}</code> &middot; {{ t.category_label }}</div>
     <h2>{{ t.title }}</h2>
     <div class="drawer-meta">
       {{ m.status_pill(t.status, t.status_label) }}
-      <span class="badge sev-{{ t.severity }}">{{ t.severity }}</span>
+      {% if open_result and t.fix_where_label %}<span class="badge who">{{ t.fix_where_label }}</span>{% endif %}
+      <span class="badge sev-{{ t.severity }}">{{ t.severity|capitalize }}</span>
       <span class="badge type">{{ t.type_label }}</span>
     </div>
   </div>
   <a class="icon-btn" href="/tests" data-close-drawer aria-label="Close">{{ m.icon("x") }}</a>
 </div>
 <div class="drawer-body">
-  {% if t.changed %}
-  <div class="callout warn" style="margin-top:0.75rem">Evidence for this test changed after the last run, so the result below doesn't reflect it yet. Re-run tests to have it reviewed.</div>
-  {% endif %}
-  {% if t.fix_where %}
-  <section class="where-box where-{{ t.fix_where }}">
-    <h3>Where to fix it: {{ t.fix_where_label }}</h3>
-    <p>{{ t.fix_where_action }}</p>
-  </section>
-  {% endif %}
-  {% if t.status == "failing" and t.remediation and t.fix_where not in ("epic", "sample") %}
-  <section class="fix-box">
-    <h3>How to fix</h3>
-    <p>{{ t.remediation }}</p>
+  {% if open_result %}
+  <section class="reason reason-{{ t.fix_where }}">
+    <span class="reason-k">Where to fix it &middot; {{ t.fix_where_label }}</span>
+    <p class="reason-text">{% if t.evidence and not t.evidence_technical %}{{ t.evidence }}{% else %}{{ t.fix_where_action }}{% endif %}</p>
+    {% if t.actions %}
+    <div class="reason-actions">
+      {% for label, href in t.actions %}
+      {% if href == "#evidence" %}<a class="btn{{ ' secondary' if not loop.first }}" href="#evidence-section" data-ev-open>{{ label }}</a>
+      {% else %}<a class="btn{{ ' secondary' if not loop.first }}" href="{{ href }}"{% if href.startswith('http') %} target="_blank" rel="noopener"{% endif %}>{{ label }}</a>{% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
   </section>
   {% endif %}
 
-  {% if t.evidence %}
+  {% if t.changed %}
+  <p class="changed-chip" role="status">Evidence changed since this run. Re-check this test to update the result.</p>
+  {% endif %}
+
+  {% if t.evidence and (t.evidence_technical or t.citation or not open_result) %}
   <section>
-    <h3>{{ "Why it needs review" if t.status == "needs_review" else "Result" }}</h3>
-    <pre class="evidence">{{ t.evidence }}</pre>
-    {% if t.citation %}<p class="muted small">AI citation: {{ t.citation }}</p>{% endif %}
+    <h3>What we observed</h3>
+    {% if not t.evidence_technical and not open_result %}<p>{{ t.evidence }}</p>{% endif %}
+    {% if t.evidence_technical and not open_result %}<p>The check ran; what it recorded is under Technical details.</p>{% endif %}
+    {% if t.citation %}<p><strong>Basis:</strong> {{ t.citation }}</p>{% endif %}
+    {% if t.evidence_technical %}
+    <details class="tech">
+      <summary>Technical details</summary>
+      <pre>{{ t.evidence }}</pre>
+    </details>
+    {% endif %}
   </section>
   {% endif %}
 
   {% include "_evidence.html" %}
 
-  {% if t.reason %}
+  {% if t.remediation %}
   <section>
-    <h3>{{ "Why it's not applicable" if t.status == "not_applicable" else "Why it's in scope" }}</h3>
-    <p>{{ t.reason }}</p>
+    <h3>How to pass</h3>
+    <p>{{ t.remediation }}</p>
   </section>
   {% endif %}
 
@@ -52,17 +65,17 @@
   </section>
   {% endif %}
 
-  {% if t.remediation and (t.status != "failing" or t.fix_where in ("epic", "sample")) %}
+  {% if t.reason %}
   <section>
-    <h3>Remediation guidance</h3>
-    <p>{{ t.remediation }}</p>
+    <h3>{{ "Why it's not in your plan" if t.status == "not_applicable" else "Why it's in your plan" }}</h3>
+    <p>{{ t.reason }}</p>
   </section>
   {% endif %}
 
   <section>
-    <h3>Frameworks</h3>
-    <div class="chips">{% for k in t.frameworks %}<a class="chip" href="/frameworks/{{ k }}">{{ fw_names[k] }}</a>{% endfor %}</div>
+    <h3>The requirement</h3>
     <p class="muted small">Source: {{ t.source }}</p>
+    <div class="chips">{% for k in t.frameworks %}<a class="chip" href="/frameworks/{{ k }}">{{ fw_names[k] }}</a>{% endfor %}</div>
   </section>
 
   {% if history %}
@@ -78,9 +91,7 @@
 </div>
 {% if w.run %}
 <div class="drawer-foot">
-  {{ m.rerun_button("/tests?open=" ~ t.id, label="Re-run this test", cls="btn", rule_id=t.id) }}
-  {{ m.rerun_button("/tests?open=" ~ t.id, label="Re-run all") }}
-  {% if t.status == "needs_review" and ("test patient" in t.evidence or "Not signed in" in t.evidence) %}<a class="btn secondary" href="/assess/plan">Open test plan</a>
-  {% elif t.status == "needs_review" and t.subject == "app_attested" and not t.category.startswith("rq_") %}<a class="btn secondary" href="/assess">Answer in chat</a>{% endif %}
+  {{ m.rerun_button("/tests?open=" ~ t.id, label="Re-check this test", cls="btn", rule_id=t.id) }}
+  {{ m.rerun_button("/tests?open=" ~ t.id, label="Full re-run") }}
 </div>
 {% endif %}

@@ -119,7 +119,7 @@ class TestSampleRuns:
         assert "Sample data — not a real result" in page
         assert 'data-where="sample"' in page
         drawer = client.get("/tests/AUTH-010", headers={"HX-Request": "true"}).text
-        assert "Where to fix it: Sample data" in drawer and "How to fix" not in drawer
+        assert "Sample data" not in drawer and "class=\"reason" not in drawer  # requirements R2
 
     def test_tests_page_filters_and_labels_by_where_to_fix(self, client):
         self._save("real", "live", "2026-10-01T00:00:00+00:00")
@@ -127,4 +127,4 @@ class TestSampleRuns:
         assert '<option value="epic" selected>' in page
         assert 'data-where="epic"' in page and "Epic&#39;s sandbox" in page
         drawer = client.get("/tests/AUTH-010", headers={"HX-Request": "true"}).text
-        assert "Where to fix it: Epic&#39;s sandbox" in drawer
+        assert "Where to fix it &middot; Epic&#39;s sandbox" in drawer

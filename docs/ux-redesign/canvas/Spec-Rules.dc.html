@@ -128,12 +128,12 @@ pre{margin:0;background:#0F1B2D;color:#E4E7EC;border-radius:10px;padding:16px;fo
 <thead><tr><th>Reason</th><th>Detected when</th><th>Button</th></tr></thead>
 <tbody>
 <tr><td><b>Answer a question</b></td><td><span class="mono">_nothing_to_judge</span>: the profile answer is blank / “not sure”</td><td>Answer (inline field in detail)</td></tr>
-<tr><td><b>Add proof</b></td><td>AI review ran but couldn't confirm; or a statement needs a document</td><td>Add proof</td></tr>
-<tr><td><b>Connect a service</b></td><td>Claude key missing, validator unreachable, token unavailable</td><td>Connect &lt;service&gt;</td></tr>
+<tr><td><b>Add proof</b></td><td>Answer review ran but couldn't confirm; or a statement needs a document</td><td>Add proof</td></tr>
+<tr><td><b>Connect a service</b></td><td>Answer review key missing, validator unreachable, token unavailable</td><td>Connect &lt;service&gt;</td></tr>
 <tr><td><b>Refine test patient</b></td><td>Patient search 0 or &gt;1 matches, or no query</td><td>Edit test patient</td></tr>
 <tr><td><b>Verify outside the app</b></td><td>AUTH-007/008/009/010: only <span class="mono">pytest -m launch</span> can probe</td><td>Copy command · attach output</td></tr>
 </tbody></table></div>
-<p class="muted">Implemented as <span class="mono">needs_reason</span> on the finding, set where the check already knows (the <span class="mono">_unavailable</span> markers, validator <span class="mono">None</span>, mock LLM, multi-match).</p>
+<p class="muted">Implemented as <span class="mono">needs_reason</span> on the finding, set where the check already knows (the <span class="mono">_unavailable</span> markers, validator <span class="mono">None</span>, review not run, multi-match).</p>
 </div>
 </div>
 <div class="card">
@@ -152,7 +152,7 @@ pre{margin:0;background:#0F1B2D;color:#E4E7EC;border-radius:10px;padding:16px;fo
 <tr><td><b>Your app</b></td><td>Failed · subject <span class="mono">app_attested</span> (your answers show non-compliance, e.g. TLS 1.0, client secret in a mobile app)</td><td>Change the app's code or configuration.</td></tr>
 <tr><td><b>Your Epic app registration</b></td><td>Failed · subject <span class="mono">app_registration</span> (scopes not granted, API refused with 401/403) · or <span class="mono">tool_sample</span> refused with 401/403</td><td>Fix it on fhir.epic.com, then sign in to Epic again.</td></tr>
 <tr><td><b>Your answers or proof</b></td><td>Needs input · subject <span class="mono">app_attested</span> (blank / “not sure”, or proof not enough)</td><td>Answer the question or attach proof, then re-run.</td></tr>
-<tr><td><b>This tool's setup</b></td><td>Needs input caused by the tool: not signed in, no or ambiguous test patient, validator unreachable, Claude not connected (<span class="mono">[MOCK]</span> citation), probes only the launch suite runs · or Failed CLIN-001 with 0 matches (wrong test patient)</td><td>Fix the sign-in, test patient, Claude or validator, then re-run.</td></tr>
+<tr><td><b>This tool's setup</b></td><td>Needs input caused by the tool: not signed in, no or ambiguous test patient, validator unreachable, answer review not set up (<span class="mono">[MOCK]</span> citation), probes only the launch suite runs · or Failed CLIN-001 with 0 matches (wrong test patient)</td><td>Fix the sign-in, test patient, answer review key or validator, then re-run.</td></tr>
 <tr><td><b>Epic's sandbox</b></td><td>Failed · subject <span class="mono">epic_platform</span> / <span class="mono">tool_launch</span> · or <span class="mono">tool_sample</span> failing without 401/403 (Epic mishandled the tool's correct sample)</td><td>Nothing to fix in your app. Shown for information; <b>never blocking</b>.</td></tr>
 </tbody></table></div>
 <p class="muted">“Blocking” = Failed, severity critical or high, and Where to fix it is not Epic's sandbox or Sample data.</p>
@@ -240,7 +240,7 @@ if out_of_date: append "· out of date"</pre>
 <tr><td>Profile complete</td><td>All 4 topics answered (“Not sure” counts) and users ≠ backend</td><td>Required</td></tr>
 <tr><td>Epic connected</td><td>State = Connected, matching launch profile, ≥ 5 min left</td><td>Required</td></tr>
 <tr><td>Test patient</td><td>Clinician apps: query set <b>and</b> “Check” returned exactly 1 match <span class="pill p-input">NEW</span></td><td>Required</td></tr>
-<tr><td>Claude</td><td>API key set — else SEC tests → Needs input (Connect)</td><td>Optional</td></tr>
+<tr><td>Answer review</td><td>API key set — else SEC tests → Needs input (Connect)</td><td>Optional</td></tr>
 <tr><td>FHIR validator</td><td>Reachable — else write tests → Needs input (Connect)</td><td>Optional</td></tr>
 </tbody></table></div>
 <p class="muted">Optional items show exactly which tests they will turn into Needs input, so the user decides with full information.</p>
@@ -249,7 +249,7 @@ if out_of_date: append "· out of date"</pre>
 <h3>Run lifecycle <span class="pill p-input">NEW</span></h3>
 <ul>
 <li>Runs execute in the background; the page streams step progress (HTMX polling every 1 s of <span class="mono">GET /run/:id/status</span>).</li>
-<li>Steps shown: Discover Epic → Check sign-in → Read chart data → Find test patient → Write photo → Write note → Validate → AI review → Score.</li>
+<li>Steps shown: Discover Epic → Check sign-in → Read chart data → Find test patient → Write photo → Write note → Validate → Answer review → Score.</li>
 <li>A step that depends on a failed step is shown “Skipped — because …”, matching the result's Needs input reason.</li>
 <li>Cancel is allowed while running; partial results are discarded (no half-run in history).</li>
 <li>Token expiring mid-run → run fails with “Epic sign-in expired during the run”, nothing saved, one-click “Sign in &amp; retry”.</li>
@@ -262,7 +262,7 @@ if out_of_date: append "· out of date"</pre>
 <h3>Re-run</h3>
 <ul>
 <li><b>Full re-run</b> always uses the <b>current</b> profile (fixes the blocker). If the plan changed, the button reads “Review changes &amp; run” and opens Run setup with the diff.</li>
-<li><b>Single-test re-run</b> (from test detail) is offered for AI review tests and attested tests (no Epic I/O needed); others say “Needs a full run (uses Epic)”.</li>
+<li><b>Single-test re-run</b> (from test detail) is offered for answer review tests and attested tests (no Epic I/O needed); others say “Needs a full run (uses Epic)”.</li>
 <li>A single-test re-run creates a new run that copies other results from the previous run and marks them “carried over”.</li>
 </ul>
 </div>
@@ -281,7 +281,7 @@ if out_of_date: append "· out of date"</pre>
 <ul>
 <li>Statement ≤ 5,000 characters · Link http(s) only, never fetched · File ≤ 10 MB: text (.txt .log .md .csv .json .yaml .xml .conf .ini .tf, UTF-8), images (png jpg gif webp), pdf.</li>
 <li>SHA-256 recorded; file always downloaded as attachment.</li>
-<li>Claude receives up to 20 MB of images/PDF and 20k chars per text file per test.</li>
+<li>The answer review receives up to 20 MB of images/PDF and 20k chars per text file per test.</li>
 <li>A statement is an attestation; a bare link is not proof.</li>
 </ul>
 </div>

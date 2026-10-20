@@ -95,6 +95,16 @@
       if (field) field.focus();
       return;
     }
+    // "Add evidence" in the reason box: open the form and bring it into view.
+    if (e.target.closest('[data-ev-open]')) {
+      e.preventDefault();
+      var evSec = document.getElementById('evidence-section'), evForm = evSec.querySelector('.ev-form');
+      evForm.hidden = false;
+      evSec.querySelectorAll('.ev-head [data-ev-toggle]').forEach(function (b) { b.hidden = true; });
+      evSec.scrollIntoView({behavior: 'smooth', block: 'start'});
+      evForm.querySelector('textarea').focus({preventScroll: true});
+      return;
+    }
     var toggle = e.target.closest('[data-ev-toggle]');
     if (toggle) {
       var sec = toggle.closest('.ev'), form = sec.querySelector('.ev-form');
