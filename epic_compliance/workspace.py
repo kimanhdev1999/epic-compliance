@@ -109,10 +109,11 @@ def build_tests(run: dict[str, Any] | None, in_plan: set[str] | None = None) -> 
         f = findings.get(rule.id)
         if f is not None:
             status = STATUS_FROM_VERDICT[f.verdict]
-        elif run is None:
-            status = "not_run" if in_plan is None or rule.id in in_plan else "not_applicable"
+        elif in_plan is not None:
+            # In the current plan but not in this run (e.g. added since): not run yet.
+            status = "not_run" if rule.id in in_plan else "not_applicable"
         else:
-            status = "not_applicable"
+            status = "not_run" if run is None else "not_applicable"
         subject = SUBJECTS.get(rule.subject, ("", ""))
         where = fw.where_to_fix(rule, f, sample=sample)
         tests.append({
