@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Overview, first visit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#0E5E59}a:hover{color:#0A4743}
+.app{display:flex;flex-wrap:wrap;align-items:stretch;min-height:100vh;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#101828;background:#F5F6F8;font-size:14px;line-height:20px}
+.side{flex:1 1 236px;background:#0F1B2D;color:#D0D5DD;padding:20px 14px;display:flex;flex-direction:column;gap:18px;box-sizing:border-box}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:600;font-size:15px;padding:0 8px}
+.mark{width:28px;height:28px;border-radius:8px;background:#2BB3A9;color:#0F1B2D;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.appsw{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid #2A3A52;border-radius:10px;text-decoration:none}
+.appsw b{color:#fff;font-size:14px}.appsw span{color:#98A2B3;font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:8px;color:#D0D5DD;text-decoration:none;font-weight:500}
+.nav a:hover{background:#18263A;color:#fff}
+.nav a.on{background:#1F3350;color:#fff}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#98A2B3;padding:0 12px 4px;font-weight:600}
+.conn{margin-top:auto;padding:12px;border-radius:10px;background:#16243A;display:flex;flex-direction:column;gap:4px;font-size:12px;color:#D0D5DD;text-decoration:none}
+.conn:hover{color:#fff}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
+.main{flex:999 1 560px;min-width:0;padding:32px 40px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:28px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;text-decoration:none;border:1px solid transparent;box-sizing:border-box;white-space:nowrap}
+.btn-p{background:#0E5E59;color:#fff}.btn-p:hover{background:#0A4743;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#0E5E59}
+.muted{color:#475467}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+h1{font-size:32px;line-height:40px;margin:0;font-weight:600;letter-spacing:-.01em}
+h2{font-size:18px;line-height:26px;margin:0;font-weight:600}
+h3{font-size:15px;line-height:22px;margin:0;font-weight:600}
+p{margin:0}
+ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.step{display:flex;gap:14px;align-items:flex-start;padding:16px;border-radius:12px;border:1px solid #E4E7EC;background:#fff}
+.sn{flex:none;width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:600;border:1.5px solid #D0D5DD;color:#475467;background:#fff}
+.step.cur{border:2px solid #0E5E59;background:#F3FAF9}
+.step.cur .sn{background:#0E5E59;border-color:#0E5E59;color:#fff}
+</style>
+</helmet>
+<div class="app">
+<nav class="side" aria-label="Main">
+<div class="brand"><span class="mark">E</span>Epic Readiness</div>
+<a class="appsw" href="Profile.dc.html"><b>New app</b><span>Not described yet</span></a>
+<div class="nav">
+<a href="Welcome.dc.html" class="on" aria-current="page">Overview</a>
+<a href="Profile.dc.html">App profile</a>
+<a href="Tests.dc.html">Tests</a>
+<a href="RunSetup.dc.html">Run</a>
+<a href="Runs.dc.html">Runs</a>
+<a href="Report.dc.html">Report</a>
+</div>
+<div class="nav"><div class="navlabel">Setup</div><a href="Connections.dc.html">Connections</a></div>
+<a class="conn" href="Connect.dc.html"><span style="display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 600"><span class="dot" style="background: #98A2B3"></span>Epic not connected</span><span>Set up in step 2</span></a>
+</nav>
+
+<main class="main">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 760px">
+<div class="eyebrow">Welcome</div>
+<h1>Get your app ready for a health system's Epic review</h1>
+<p class="muted" style="font-size: 16px; line-height: 26px">Five steps. You describe the app, connect to Epic's sandbox, and the tool tests what Epic will check — sign-in, patient data, writes, security — then gives you a report to send to the health system.</p>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<section style="flex: 3 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 10px" aria-label="Readiness journey">
+<div class="step cur">
+<span class="sn" aria-hidden="true">1</span>
+<div style="display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0">
+<div><h3>Describe your app</h3><p class="muted">About 3 minutes. Who signs in, what kind of app, what it does with patient data, and a few security answers. “Not sure” is fine.</p></div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px"><a class="btn btn-p" href="Assistant.dc.html">Describe with the assistant</a><a class="btn btn-s" href="Profile.dc.html">Fill in the form instead</a></div>
+</div>
+</div>
+<div class="step"><span class="sn" aria-hidden="true">2</span><div><h3 style="color: #475467">Connect to Epic's sandbox</h3><p class="muted">Register this tool's sign-in address on fhir.epic.com, paste your non-production client ID, sign in once.</p></div></div>
+<div class="step"><span class="sn" aria-hidden="true">3</span><div><h3 style="color: #475467">Run the tests</h3><p class="muted">Only the tests that apply to your app, each with a reason. Takes 1–2 minutes.</p></div></div>
+<div class="step"><span class="sn" aria-hidden="true">4</span><div><h3 style="color: #475467">Resolve what's left</h3><p class="muted">Every result tells you what to do: fix, answer a question, or add proof.</p></div></div>
+<div class="step"><span class="sn" aria-hidden="true">5</span><div><h3 style="color: #475467">Share the report</h3><p class="muted">A PDF the health system's Epic and security reviewers can read on its own.</p></div></div>
+</section>
+
+<aside style="flex: 2 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<div class="card">
+<h2>What you'll need</h2>
+<ul>
+<li>A non-production client ID from <a href="https://fhir.epic.com">fhir.epic.com</a></li>
+<li>A sandbox login — a clinician (e.g. FHIRTWO) or a MyChart test patient</li>
+<li>For clinician apps: a test patient's MRN, e.g. <span class="mono">203713</span></li>
+<li>Optional: a Claude API key for the security review tests</li>
+</ul>
+</div>
+<div class="card" style="background: #F9FAFB">
+<h2>What the result means</h2>
+<p class="muted">“Ready to submit” means your app passes every test the tool can run and you've supplied proof for the rest. It isn't a promise the health system will approve the app — their reviewers make that call.</p>
+<p class="muted">Everything stays on this computer. No patient data is stored.</p>
+</div>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

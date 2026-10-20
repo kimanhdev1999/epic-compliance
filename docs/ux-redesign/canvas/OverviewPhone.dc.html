@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Overview on a phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0E5E59}a:hover{color:#0A4743}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;text-decoration:none;border:1px solid transparent;box-sizing:border-box;white-space:nowrap}
+.btn-p{background:#0E5E59;color:#fff}.btn-p:hover{background:#0A4743;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600;line-height:22px;white-space:nowrap;align-self:flex-start}
+.p-fail{background:#FEF3F2;color:#B42318}
+.p-input{background:#FFFAEB;color:#B54708}
+.muted{color:#475467}
+p{margin:0}
+h1{font-size:22px;line-height:28px;margin:0;font-weight:600}
+h2{font-size:16px;line-height:22px;margin:0;font-weight:600}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
+.act{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-top:1px solid #F2F4F7;text-decoration:none;color:#101828}
+.idt{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#475467}
+.jr{display:flex;gap:6px}
+.jr span{flex:1;height:6px;border-radius:999px}
+</style>
+</helmet>
+<div style="width: 390px; height: 1300px; box-sizing: border-box; background: #F5F6F8; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; font-size: 14px; line-height: 20px; display: flex; flex-direction: column; position: relative">
+<header style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #0F1B2D; color: #fff">
+<button type="button" aria-label="Open menu" style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid #2A3A52; background: transparent; color: #fff; font-size: 18px">≡</button>
+<b style="font-size: 16px">DermScan</b>
+<a href="Connect.dc.html" aria-label="Epic connected, 38 minutes left" style="display: flex; align-items: center; gap: 6px; color: #D0D5DD; font-size: 12px; text-decoration: none; min-height: 44px"><span class="dot" style="background: #47CD89"></span>38 min</a>
+</header>
+
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 16px">
+<div class="card">
+<span class="pill p-fail">✕ Blocked</span>
+<h1>2 failures block submission</h1>
+<p class="muted">Then 5 tests need your input.</p>
+<div style="display: flex; align-items: baseline; gap: 8px; padding-top: 6px; border-top: 1px solid #F2F4F7"><span style="font-size: 32px; line-height: 38px; font-weight: 600">53%</span><span class="muted">your app · 9 of 17 passed</span></div>
+<div style="display: flex; gap: 2px; height: 10px" role="img" aria-label="9 passed, 3 failed, 5 need input"><div style="flex: 9; background: #12B76A; border-radius: 4px 0 0 4px"></div><div style="flex: 3; background: #F04438"></div><div style="flex: 5; background: #F79009; border-radius: 0 4px 4px 0"></div></div>
+<div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 12.5px"><span><span class="dot" style="background: #12B76A"></span> 9 Passed</span><span><span class="dot" style="background: #F04438"></span> 3 Failed</span><span><span class="dot" style="background: #F79009"></span> 5 Needs input</span></div>
+<p style="font-size: 12.5px" class="muted">Epic environment: 9 of 12 OK</p>
+</div>
+
+<div class="card" style="gap: 8px">
+<div style="display: flex; justify-content: space-between"><b>Step 4 of 5 · Resolve</b><span class="muted">8 to go</span></div>
+<div class="jr" aria-hidden="true"><span style="background: #12B76A"></span><span style="background: #12B76A"></span><span style="background: #12B76A"></span><span style="background: #0E5E59"></span><span style="background: #E4E7EC"></span></div>
+</div>
+
+<div class="card" style="gap: 0">
+<h2 style="padding-bottom: 6px">What to do next</h2>
+<a class="act" href="TestDetail.dc.html"><span class="pill p-fail">✕ Failed</span><span class="idt">CLIN-007 · critical</span><b>The photo was filed without the visit</b></a>
+<a class="act" href="TestDetail.dc.html"><span class="pill p-fail">✕ Failed</span><span class="idt">CLIN-008 · high</span><b>Epic refused the allergy list (HTTP 403)</b></a>
+<a class="act" href="TestDetail.dc.html"><span class="pill p-fail">✕ Failed</span><span class="idt">CLIN-010 · medium</span><b>The new consult note didn't show up in search</b></a>
+<a class="act" href="Profile.dc.html"><span class="pill p-input">? Needs input</span><span class="idt">SEC-001, SEC-003</span><b>Answer 2 security questions</b></a>
+<a class="act" href="TestDetail.dc.html"><span class="pill p-input">? Needs input</span><span class="idt">SEC-002</span><b>Add proof of audit logging</b></a>
+<a class="act" href="Connections.dc.html"><span class="pill p-input">? Needs input</span><span class="idt">CLIN-005, CLIN-009</span><b>Start the FHIR validator</b></a>
+</div>
+
+<div class="card" style="gap: 6px">
+<h2>Recent runs</h2>
+<div style="display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid #F2F4F7"><span>Today 10:46</span><b>53%</b></div>
+<div style="display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid #F2F4F7"><span>Yesterday 16:05</span><b>47%</b></div>
+<a href="Runs.dc.html" style="padding-top: 6px">All runs</a>
+</div>
+</div>
+
+<div style="margin-top: auto; position: sticky; bottom: 0; display: flex; gap: 8px; padding: 12px 16px; background: #fff; border-top: 1px solid #E4E7EC">
+<a class="btn btn-s" href="Report.dc.html" style="flex: 1">Report</a>
+<a class="btn btn-p" href="TestDetail.dc.html" style="flex: 2">Start with CLIN-007</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1300}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

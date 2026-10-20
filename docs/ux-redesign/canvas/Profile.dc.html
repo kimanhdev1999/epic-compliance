@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>App profile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#0E5E59}a:hover{color:#0A4743}
+.app{display:flex;flex-wrap:wrap;align-items:stretch;min-height:100vh;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#101828;background:#F5F6F8;font-size:14px;line-height:20px}
+.side{flex:1 1 236px;background:#0F1B2D;color:#D0D5DD;padding:20px 14px;display:flex;flex-direction:column;gap:18px;box-sizing:border-box}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:600;font-size:15px;padding:0 8px}
+.mark{width:28px;height:28px;border-radius:8px;background:#2BB3A9;color:#0F1B2D;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.appsw{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid #2A3A52;border-radius:10px;text-decoration:none}
+.appsw b{color:#fff;font-size:14px}.appsw span{color:#98A2B3;font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:8px;color:#D0D5DD;text-decoration:none;font-weight:500}
+.nav a:hover{background:#18263A;color:#fff}
+.nav a.on{background:#1F3350;color:#fff}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#98A2B3;padding:0 12px 4px;font-weight:600}
+.cnt{font-size:12px;font-weight:600;padding:0 7px;border-radius:999px;background:#D92D20;color:#fff;line-height:18px}
+.conn{margin-top:auto;padding:12px;border-radius:10px;background:#16243A;display:flex;flex-direction:column;gap:4px;font-size:12px;color:#D0D5DD;text-decoration:none}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
+.main{flex:999 1 560px;min-width:0;padding:28px 40px 0;box-sizing:border-box;display:flex;flex-direction:column;gap:20px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;text-decoration:none;border:1px solid transparent;box-sizing:border-box;white-space:nowrap}
+.btn-p{background:#0E5E59;color:#fff}.btn-p:hover{background:#0A4743;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#0E5E59}
+.muted{color:#475467}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+h1{font-size:26px;line-height:34px;margin:0;font-weight:600}
+h2{font-size:17px;line-height:24px;margin:0;font-weight:600}
+p{margin:0}
+.banner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-radius:10px;background:#FFFAEB;border:1px solid #FEDF89;color:#7A2E0E}
+.sect{display:flex;flex-wrap:wrap;gap:24px}
+.sect-h{flex:1 1 220px;display:flex;flex-direction:column;gap:6px}
+.sect-b{flex:3 1 420px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.field{display:flex;flex-direction:column;gap:6px}
+.lbl{font-weight:600;font-size:13px}
+.inp{font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid #D0D5DD;border-radius:8px;background:#fff;color:#101828;min-height:40px;box-sizing:border-box;width:100%}
+.hint{font-size:12.5px;color:#475467}
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid #D0D5DD;border-radius:10px;background:#fff;cursor:pointer}
+.opt input{margin:3px 0 0;accent-color:#0E5E59;width:16px;height:16px}
+.opt.sel{border:2px solid #0E5E59;background:#F3FAF9;padding:11px 13px}
+.opt.dis{background:#F9FAFB;color:#475467}
+.derived{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;color:#344054;background:#F2F4F7;border-radius:6px;padding:4px 10px;align-self:flex-start}
+.cbrow{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid #F2F4F7}
+.cbrow input{margin:2px 0 0;accent-color:#0E5E59;width:18px;height:18px;flex:none}
+.adds{font-size:12px;color:#475467}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.savebar{position:sticky;bottom:0;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;background:#fff;border:1px solid #E4E7EC;border-bottom:0;border-radius:12px 12px 0 0;box-shadow:0 -6px 20px rgba(16,24,40,.06)}
+.ok{color:#067647;font-weight:600}
+</style>
+</helmet>
+<div class="app">
+<nav class="side" aria-label="Main">
+<div class="brand"><span class="mark">E</span>Epic Readiness</div>
+<a class="appsw" href="Profile.dc.html"><b>DermScan</b><span>Advocate Health · Clinician app</span></a>
+<div class="nav">
+<a href="Overview.dc.html">Overview</a>
+<a href="Profile.dc.html" class="on" aria-current="page">App profile</a>
+<a href="Tests.dc.html">Tests <span class="cnt">3</span></a>
+<a href="RunSetup.dc.html">Run</a>
+<a href="Runs.dc.html">Runs</a>
+<a href="Report.dc.html">Report</a>
+</div>
+<div class="nav"><div class="navlabel">Setup</div><a href="Connections.dc.html">Connections</a></div>
+<a class="conn" href="Connect.dc.html"><span style="display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 600"><span class="dot" style="background: #47CD89"></span>Epic sandbox connected</span><span>Clinician sign-in · 41 min left</span></a>
+</nav>
+
+<main class="main">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><div class="eyebrow">Source of truth for every run</div><h1>App profile</h1><p class="muted">Version 5 · saved today 10:42 · <a href="Runs.dc.html">Version history</a></p></div>
+<a class="btn btn-s" href="Assistant.dc.html">Update with the assistant</a>
+</div>
+
+<div class="banner" role="status"><span><b>Your answers changed since the last run</b> (version 4 → 5): Audit logging set to “Yes, 6 years”. Results are out of date.</span><a class="btn btn-s" href="RunSetup.dc.html">Review &amp; re-run</a></div>
+
+<section class="card"><div class="sect">
+<div class="sect-h"><h2>About the app</h2><p class="hint">Appears on the report cover.</p></div>
+<div class="sect-b">
+<div class="g2">
+<div class="field"><label class="lbl" for="an">App name</label><input class="inp" id="an" value="DermScan"></div>
+<div class="field"><label class="lbl" for="hs">Health system</label><input class="inp" id="hs" value="Advocate Health"></div>
+</div>
+<div class="field"><label class="lbl" for="ds">Description</label><textarea class="inp" id="ds" rows="3">Clinician mobile app. A clinician signs in through Epic, searches for the patient, photographs the lesion, and a dermatologist files a consult note. Photos go to a third-party AI model for a suggested diagnosis.</textarea></div>
+</div>
+</div></section>
+
+<section class="card"><div class="sect">
+<div class="sect-h"><h2>Who signs in</h2><p class="hint">Decides how the tool signs in to Epic and which tests apply.</p></div>
+<div class="sect-b">
+<div class="opts" role="radiogroup" aria-label="Who signs in">
+<label class="opt sel"><input type="radio" name="u" checked><span><b>Clinicians</b><br><span class="hint">Staff sign in, then pick a patient</span></span></label>
+<label class="opt"><input type="radio" name="u"><span><b>Patients</b><br><span class="hint">Through MyChart; the patient is the login</span></span></label>
+<label class="opt dis"><input type="radio" name="u" disabled><span><b>No one (backend)</b><br><span class="hint">Not supported yet</span></span></label>
+</div>
+<span class="derived">Sign-in used for tests: <b>Clinician, patient chosen in the app</b> · user/* scopes · <a href="Main.dc.html">Why?</a></span>
+</div>
+</div></section>
+
+<section class="card"><div class="sect">
+<div class="sect-h"><h2>Kind of app</h2></div>
+<div class="sect-b">
+<div class="opts" role="radiogroup" aria-label="Kind of app">
+<label class="opt sel"><input type="radio" name="p" checked><span><b>Mobile app</b><br><span class="hint">iOS / Android</span></span></label>
+<label class="opt"><input type="radio" name="p"><span><b>Browser-only web app</b><br><span class="hint">No server holds tokens</span></span></label>
+<label class="opt"><input type="radio" name="p"><span><b>Web app with a server</b><br><span class="hint">Server can keep a secret</span></span></label>
+</div>
+<span class="derived">Registered as a <b>public client</b> — no secret, relies on PKCE</span>
+</div>
+</div></section>
+
+<section class="card"><div class="sect">
+<div class="sect-h"><h2>What it does with patient data</h2><p class="hint">Each choice adds tests. Nothing is assumed — confirm every row.</p></div>
+<div class="sect-b" style="gap: 0">
+<label class="cbrow" style="border-top: 0"><input type="checkbox" checked><span style="flex: 1"><b>Reads the chart</b> — problem list, medications, allergies, observations<br><span class="adds">Adds FHIR-001…005, CLIN-008 (6 tests)</span></span></label>
+<label class="cbrow"><input type="checkbox" checked><span style="flex: 1"><b>Saves photos to the chart</b><br><span class="adds">Adds CLIN-004…007 (4 tests)</span></span></label>
+<label class="cbrow"><input type="checkbox" checked><span style="flex: 1"><b>Writes notes or results back</b><br><span class="adds">Adds CLIN-009, CLIN-010 (2 tests)</span></span></label>
+<label class="cbrow"><input type="checkbox" checked><span style="flex: 1"><b>Sends patient data to an outside AI or vendor</b><br><span class="adds">Widens SEC-003 to subprocessors</span></span></label>
+</div>
+</div></section>
+
+<section class="card"><div class="sect">
+<div class="sect-h"><h2>Security answers</h2><p class="hint">“Not sure” never fails a test — it turns it into <b>Needs input</b> so you can add proof later.</p></div>
+<div class="sect-b">
+<div class="g2">
+<div class="field"><label class="lbl" for="tls">TLS version on your backend</label><select class="inp" id="tls"><option>Not sure</option><option>TLS 1.3</option><option>TLS 1.2</option><option>Older than 1.2</option></select><span class="hint">Used by SEC-001</span></div>
+<div class="field"><label class="lbl" for="aud">Do you log every access to patient data?</label><select class="inp" id="aud"><option>Yes</option><option>No</option><option>Not sure</option></select><span class="hint">Used by SEC-002</span></div>
+<div class="field"><label class="lbl" for="ret">How long are audit logs kept?</label><input class="inp" id="ret" value="2190 days (6 years)"></div>
+<div class="field"><label class="lbl" for="baa">Business Associate Agreements</label><select class="inp" id="baa"><option>Not sure</option><option>With the health system and every vendor that sees PHI</option><option>With the health system only</option><option>None yet</option></select><span class="hint">Used by SEC-003</span></div>
+</div>
+</div>
+</div></section>
+
+<section class="card"><div class="sect">
+<div class="sect-h"><h2>Test settings</h2><p class="hint">How the tool exercises Epic on your app's behalf.</p></div>
+<div class="sect-b">
+<div class="field"><label class="lbl" for="pq">Test patient search</label>
+<div style="display: flex; gap: 8px"><input class="inp mono" id="pq" value="identifier=203713" style="flex: 1"><button class="btn btn-s" type="button">Check</button></div>
+<span class="hint"><span class="ok">✓ 1 match: Camila Lopez · MRN 203713</span> · Search by MRN, not name — names often match several sandbox patients.</span></div>
+<div class="g2">
+<div class="field"><label class="lbl" for="img">How the app saves photos</label><select class="inp" id="img"><option>As a Media resource</option><option>As a DocumentReference</option></select></div>
+<div class="field"><label class="lbl" for="enc">Photos and notes must belong to a visit</label><select class="inp" id="enc"><option>Yes — require an encounter</option><option>No</option></select></div>
+</div>
+<div class="field"><label class="lbl" for="ru">Your app's own redirect URI</label><input class="inp mono" id="ru" value="dermscan://callback"><span class="hint">What your app registered with Epic. Checked by CLIN-012. Not the same as this tool's sign-in address (set under Connections).</span></div>
+</div>
+</div></section>
+
+<div class="savebar"><span><b>Unsaved changes</b> <span class="muted">· no change to the plan</span></span><div style="display: flex; gap: 8px"><button class="btn btn-s" type="button">Discard</button><button class="btn btn-p" type="button">Save as version 6</button></div></div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

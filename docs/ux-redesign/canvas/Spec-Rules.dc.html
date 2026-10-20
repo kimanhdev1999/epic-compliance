@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spec: business logic</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#0E5E59}a:hover{color:#0A4743}
+.doc{font-family:'IBM Plex Sans',system-ui,sans-serif;color:#101828;background:#F5F6F8;font-size:14px;line-height:22px;padding:56px 24px 80px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:36px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#0E5E59}
+.muted{color:#475467}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+h1{font-size:36px;line-height:44px;margin:0;font-weight:600}
+h2{font-size:22px;line-height:30px;margin:0;font-weight:600}
+h3{font-size:15px;line-height:22px;margin:0;font-weight:600}
+p{margin:0}
+ul,ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:20px}
+th{text-align:left;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:#475467;font-weight:600;padding:9px 12px;border-bottom:1px solid #D0D5DD;background:#F9FAFB}
+td{padding:10px 12px;border-bottom:1px solid #EAECF0;vertical-align:top}
+.scroll{overflow-x:auto;border:1px solid #E4E7EC;border-radius:10px}
+pre{margin:0;background:#0F1B2D;color:#E4E7EC;border-radius:10px;padding:16px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:20px;overflow-x:auto;white-space:pre}
+.pill{display:inline-flex;align-items:center;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600;line-height:20px;white-space:nowrap}
+.p-pass{background:#ECFDF3;color:#067647}
+.p-fail{background:#FEF3F2;color:#B42318}
+.p-input{background:#FFFAEB;color:#B54708}
+.p-out{background:#F2F4F7;color:#475467}
+.p-notrun{background:#fff;color:#475467;border:1px dashed #98A2B3}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.sec{display:flex;flex-direction:column;gap:14px}
+.secno{color:#0E5E59;font-family:'IBM Plex Mono',monospace;font-size:14px;margin-right:6px}
+</style>
+</helmet>
+<div class="doc">
+<div class="wrap">
+
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 900px">
+<div class="eyebrow">Spec 3 of 4 · Business logic</div>
+<h1>Rules the screens are built on</h1>
+<p class="muted" style="font-size: 16px; line-height: 26px">Everything below is either kept from the current code (cited) or a new rule marked <b style="color: #0E5E59">NEW</b>. Engineers can implement from this page; designers can check every state against it.</p>
+</div>
+
+<div class="sec">
+<h2><span class="secno">01</span>Entities</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width: 150px">Entity</th><th>Key fields</th><th style="width: 330px">Lifecycle &amp; rules</th></tr></thead>
+<tbody>
+<tr><td><b>App profile</b> <span class="pill p-input">NEW table</span></td><td><span class="mono">version, created_at, hash, app_name, health_system, description, users, platform, reads_chart, saves_images, writes_back, third_party_ai, tls_version, audit_logging, audit_retention_days, baa_status, test_patient_query, encounter_required, app_redirect_uri, source (form|assistant)</span></td><td>Append-only versions; current = highest version. Every save that changes any field creates a version. Replaces <span class="mono">settings.last_intake</span> and the chat snapshot as source of truth.</td></tr>
+<tr><td><b>Plan</b></td><td><span class="mono">profile_version, launch_profile, client_type, tests[{id, in_plan, reason}]</span></td><td>Pure function of (profile, catalog). Never stored on its own; recomputed on read, snapshotted into each run. Existing <span class="mono">build_plan</span> + <span class="mono">SELECTORS</span>.</td></tr>
+<tr><td><b>Run</b></td><td><span class="mono">run_id, created_at, finished_at, state, environment (sandbox|sample), fhir_base_url, profile_version, plan_snapshot, rules_fingerprint, proof_snapshot, connection_snapshot, results[]</span></td><td>States: <span class="mono">queued → running → complete | failed | cancelled</span>. One active run at a time. Immutable once complete; deletable.</td></tr>
+<tr><td><b>Result</b></td><td><span class="mono">test_id, verdict, summary, needs_reason, action, observed (raw), remediation, citation, check_type</span></td><td>Extends today's Finding with <span class="mono">summary</span>, <span class="mono">needs_reason</span>, <span class="mono">action</span> (NEW). Raw <span class="mono">evidence</span> string becomes <span class="mono">observed</span>.</td></tr>
+<tr><td><b>Proof</b></td><td><span class="mono">id, test_id, kind (statement|file|link), text, filename, media_type, size, sha256, created_at</span></td><td>Per test, persists across runs (today's <span class="mono">evidence</span> table). Allowed only on in-plan tests (NEW).</td></tr>
+<tr><td><b>Connection</b></td><td><span class="mono">service, client_id, launch_profile, signed_in_at, expires_at, last_error</span></td><td>Token in memory only; metadata persisted (NEW) so state survives restarts as “Expired”.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="sec">
+<h2><span class="secno">02</span>Profile → plan</h2>
+<div class="g2">
+<div class="card">
+<h3>Derived settings (kept, now visible)</h3>
+<div class="scroll"><table>
+<thead><tr><th>Profile answer</th><th>Derived</th></tr></thead>
+<tbody>
+<tr><td>Who signs in = Clinicians</td><td>Launch profile <span class="mono">clinician_standalone</span> · user/* scopes · test patient required</td></tr>
+<tr><td>Who signs in = Patients</td><td>Launch profile <span class="mono">patient_launch</span> · patient/* scopes</td></tr>
+<tr><td>Who signs in = No one (backend)</td><td><b>Blocked:</b> “Backend services aren't supported yet” (NEW, replaces the loop)</td></tr>
+<tr><td>Platform = Web app with a server</td><td>Client type confidential</td></tr>
+<tr><td>Platform = Mobile / browser-only</td><td>Client type public (PKCE)</td></tr>
+</tbody></table></div>
+<p class="muted">Both derived values are shown read-only on the profile with “Why?” — today the user never sees the launch profile.</p>
+</div>
+<div class="card">
+<h3>What puts a test in the plan (from <span class="mono">SELECTORS</span>)</h3>
+<div class="scroll"><table>
+<thead><tr><th>Area</th><th>In plan when</th></tr></thead>
+<tbody>
+<tr><td>Sign-in AUTH-001…010</td><td>Always (AUTH-009 patients only)</td></tr>
+<tr><td>Chart data FHIR-001…005</td><td>Reads the chart</td></tr>
+<tr><td>Security SEC-001…003</td><td>Always</td></tr>
+<tr><td>Patient selection CLIN-001…003</td><td>Clinicians</td></tr>
+<tr><td>Visit + write safety CLIN-004, 007</td><td>Clinicians and (saves images or writes back)</td></tr>
+<tr><td>Photos CLIN-005, 006</td><td>Clinicians and saves images</td></tr>
+<tr><td>Chart reads CLIN-008</td><td>Clinicians and reads the chart</td></tr>
+<tr><td>Notes CLIN-009, 010</td><td>Clinicians and writes back</td></tr>
+<tr><td>Client hygiene CLIN-011, 012</td><td>Clinicians</td></tr>
+<tr><td>Write-back WRITE-001…004</td><td>Patients and writes back / saves images</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div class="card">
+<h3>Plan diff <span class="pill p-input">NEW</span></h3>
+<p>When the current profile version differs from the last run's, compute <span class="mono">added = in_plan(now) − in_plan(run)</span> and <span class="mono">removed = in_plan(run) − in_plan(now)</span>. Show it on the profile save toast (“+3 tests, −1 test”), on Run setup, and in the out-of-date banner. Removed tests keep their history but leave readiness immediately.</p>
+</div>
+</div>
+
+<div class="sec">
+<h2><span class="secno">03</span>Results</h2>
+<div class="g2">
+<div class="card">
+<h3>Five results, one vocabulary</h3>
+<div class="scroll"><table>
+<thead><tr><th>Result</th><th>Source</th><th>Counts in readiness</th></tr></thead>
+<tbody>
+<tr><td><span class="pill p-pass">Passed</span></td><td>verdict <span class="mono">pass</span></td><td>Yes (numerator)</td></tr>
+<tr><td><span class="pill p-fail">Failed</span></td><td>verdict <span class="mono">fail</span></td><td>Yes</td></tr>
+<tr><td><span class="pill p-input">Needs input</span></td><td>verdict <span class="mono">needs_human</span></td><td>Yes (never a pass)</td></tr>
+<tr><td><span class="pill p-notrun">Not run</span></td><td>in plan, no result yet (incl. added since last run)</td><td>No</td></tr>
+<tr><td><span class="pill p-out">Out of plan</span></td><td>excluded by the plan, reason shown</td><td>No</td></tr>
+</tbody></table></div>
+<p class="muted">Kept: missing information is never a fail; a missing citation forces Needs input; an exception in a check gives Needs input, never a crash (ADR-004, ADR-015).</p>
+</div>
+<div class="card">
+<h3>Needs input always says why <span class="pill p-input">NEW</span></h3>
+<div class="scroll"><table>
+<thead><tr><th>Reason</th><th>Detected when</th><th>Button</th></tr></thead>
+<tbody>
+<tr><td><b>Answer a question</b></td><td><span class="mono">_nothing_to_judge</span>: the profile answer is blank / “not sure”</td><td>Answer (inline field in detail)</td></tr>
+<tr><td><b>Add proof</b></td><td>AI review ran but couldn't confirm; or a statement needs a document</td><td>Add proof</td></tr>
+<tr><td><b>Connect a service</b></td><td>Claude key missing, validator unreachable, token unavailable</td><td>Connect &lt;service&gt;</td></tr>
+<tr><td><b>Refine test patient</b></td><td>Patient search 0 or &gt;1 matches, or no query</td><td>Edit test patient</td></tr>
+<tr><td><b>Verify outside the app</b></td><td>AUTH-007/008/009/010: only <span class="mono">pytest -m launch</span> can probe</td><td>Copy command · attach output</td></tr>
+</tbody></table></div>
+<p class="muted">Implemented as <span class="mono">needs_reason</span> on the finding, set where the check already knows (the <span class="mono">_unavailable</span> markers, validator <span class="mono">None</span>, mock LLM, multi-match).</p>
+</div>
+</div>
+<div class="card">
+<h3>Plain summary per result <span class="pill p-input">NEW</span></h3>
+<p>Every result carries a one-sentence <span class="mono">summary</span> written for a non-developer reviewer, e.g. “Epic refused the patient search (HTTP 403).” The raw <span class="mono">observed</span> text (today's evidence string, dict dumps, errno) is only shown under <b>Technical details</b> and in the JSON export — never as the headline, never in the PDF body.</p>
+</div>
+</div>
+
+<div class="sec">
+<h2><span class="secno">04</span>Who it tests, readiness and verdict</h2>
+<div class="g3">
+<div class="card">
+<h3>Who it tests</h3>
+<div class="scroll"><table>
+<thead><tr><th>Subject</th><th>Group</th></tr></thead>
+<tbody>
+<tr><td><span class="mono">app_registration</span></td><td>Your app</td></tr>
+<tr><td><span class="mono">tool_sample</span></td><td>Your app (write path)</td></tr>
+<tr><td><span class="mono">app_attested</span></td><td>Your app (your answers)</td></tr>
+<tr><td><span class="mono">epic_platform</span></td><td>Epic environment</td></tr>
+<tr><td><span class="mono">tool_launch</span></td><td>Epic environment</td></tr>
+</tbody></table></div>
+<p class="muted">DermScan: 17 “Your app” tests, 12 “Epic environment”, 5 out of plan.</p>
+</div>
+<div class="card">
+<h3>Two numbers, not one</h3>
+<pre>app_readiness =
+  passed(app) /
+  (passed + failed + needs_input)(app)
+  over in-plan tests only
+
+epic_health =
+  passed(env) / ran(env)
+  shown as "11 of 12 OK"</pre>
+<p class="muted">Headline is <b>Your app</b>. Frameworks still show a % each using the same formula, filtered by framework.</p>
+</div>
+<div class="card">
+<h3>Verdict (one word for the app)</h3>
+<pre>if no complete run:      "Not tested"
+elif any Failed critical/high (app):
+                         "Blocked"
+elif any Failed (app):   "Fixes needed"
+elif any Needs input (app):
+                         "Missing proof"
+else:                    "Ready to submit"
+if out_of_date: append "· out of date"</pre>
+<p class="muted">Matches ADR-009's top-level verdict. Epic-environment failures show a separate warning, never block the app.</p>
+</div>
+</div>
+<div class="card">
+<h3>Ordering everywhere (kept)</h3>
+<p>Failed → Needs input → Not run → Passed → Out of plan; within a group by severity critical → high → medium → low, then ID. “Blocking” = Failed and severity critical or high.</p>
+</div>
+</div>
+
+<div class="sec">
+<h2><span class="secno">05</span>Out of date (staleness)</h2>
+<div class="g2">
+<div class="card">
+<h3>Latest run is out of date when any of:</h3>
+<ol>
+<li><b>Profile changed</b> — current profile hash ≠ run's profile hash. Banner shows the plan diff.</li>
+<li><b>Proof changed</b> on an <b>in-plan</b> test — proof sha set ≠ run's snapshot for that test. <span class="muted">(Fixes the sticky banner: out-of-plan proof is ignored.)</span></li>
+<li><b>Test catalog changed</b> — <span class="mono">rules_fingerprint</span> differs.</li>
+<li><b>Connection changed</b> — client ID or launch profile differs from the run's.</li>
+</ol>
+</div>
+<div class="card">
+<h3>What the user sees</h3>
+<ul>
+<li>One banner (Overview, Tests, Report) listing the reasons in plain words and one button: <b>Re-run</b> (or <b>Review changes</b> when the plan changed).</li>
+<li>Per-test “Changed since run” chip on tests whose proof changed.</li>
+<li>The report shows “Superseded by a newer profile” when opened for an out-of-date run.</li>
+<li>Readiness numbers stay as measured — never recomputed from un-run changes.</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="sec">
+<h2><span class="secno">06</span>Running</h2>
+<div class="g2">
+<div class="card">
+<h3>Pre-flight (Start run enabled only when required items pass)</h3>
+<div class="scroll"><table>
+<thead><tr><th>Item</th><th>Rule</th><th>Type</th></tr></thead>
+<tbody>
+<tr><td>Profile complete</td><td>All 4 topics answered (“Not sure” counts) and users ≠ backend</td><td>Required</td></tr>
+<tr><td>Epic connected</td><td>State = Connected, matching launch profile, ≥ 5 min left</td><td>Required</td></tr>
+<tr><td>Test patient</td><td>Clinician apps: query set <b>and</b> “Check” returned exactly 1 match <span class="pill p-input">NEW</span></td><td>Required</td></tr>
+<tr><td>Claude</td><td>API key set — else SEC tests → Needs input (Connect)</td><td>Optional</td></tr>
+<tr><td>FHIR validator</td><td>Reachable — else write tests → Needs input (Connect)</td><td>Optional</td></tr>
+</tbody></table></div>
+<p class="muted">Optional items show exactly which tests they will turn into Needs input, so the user decides with full information.</p>
+</div>
+<div class="card">
+<h3>Run lifecycle <span class="pill p-input">NEW</span></h3>
+<ul>
+<li>Runs execute in the background; the page streams step progress (HTMX polling every 1 s of <span class="mono">GET /run/:id/status</span>).</li>
+<li>Steps shown: Discover Epic → Check sign-in → Read chart data → Find test patient → Write photo → Write note → Validate → AI review → Score.</li>
+<li>A step that depends on a failed step is shown “Skipped — because …”, matching the result's Needs input reason.</li>
+<li>Cancel is allowed while running; partial results are discarded (no half-run in history).</li>
+<li>Token expiring mid-run → run fails with “Epic sign-in expired during the run”, nothing saved, one-click “Sign in &amp; retry”.</li>
+<li>Only one run at a time; a second Start shows the running one.</li>
+</ul>
+</div>
+</div>
+<div class="g2">
+<div class="card">
+<h3>Re-run</h3>
+<ul>
+<li><b>Full re-run</b> always uses the <b>current</b> profile (fixes the blocker). If the plan changed, the button reads “Review changes &amp; run” and opens Run setup with the diff.</li>
+<li><b>Single-test re-run</b> (from test detail) is offered for AI review tests and attested tests (no Epic I/O needed); others say “Needs a full run (uses Epic)”.</li>
+<li>A single-test re-run creates a new run that copies other results from the previous run and marks them “carried over”.</li>
+</ul>
+</div>
+<div class="card">
+<h3>Sample data</h3>
+<p>Sample-data runs (today's mock mode) stay out of the main UI (ADR-014) but, if one exists in history, it is labelled <b>Sample data</b> in every list and its report is watermarked “SAMPLE DATA — NOT EVIDENCE”. Sample runs never count toward the trend or the verdict.</p>
+</div>
+</div>
+</div>
+
+<div class="sec">
+<h2><span class="secno">07</span>Proof</h2>
+<div class="g2">
+<div class="card">
+<h3>Kept from ADR-015</h3>
+<ul>
+<li>Statement ≤ 5,000 characters · Link http(s) only, never fetched · File ≤ 10 MB: text (.txt .log .md .csv .json .yaml .xml .conf .ini .tf, UTF-8), images (png jpg gif webp), pdf.</li>
+<li>SHA-256 recorded; file always downloaded as attachment.</li>
+<li>Claude receives up to 20 MB of images/PDF and 20k chars per text file per test.</li>
+<li>A statement is an attestation; a bare link is not proof.</li>
+</ul>
+</div>
+<div class="card">
+<h3>Changed <span class="pill p-input">NEW</span></h3>
+<ul>
+<li><b>All-or-nothing save:</b> validate every part (statement, link, each file) before writing anything; on error keep all inputs and highlight the bad part.</li>
+<li>Proof only on in-plan tests; out-of-plan tests show existing proof read-only with “Not used — this test isn't in your plan”.</li>
+<li>Remove asks inline (“Remove proof? Undo”) instead of a browser confirm; undo for 10 s.</li>
+<li>Adding proof to an AI-review test offers “Re-check this test now”.</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="sec">
+<h2><span class="secno">08</span>Report, privacy and access</h2>
+<div class="g3">
+<div class="card">
+<h3>Report content</h3>
+<ul>
+<li>Cover: app, health system, environment, FHIR base, client ID, run date, run ID, tool version, rules fingerprint.</li>
+<li>Verdict + both numbers.</li>
+<li>Scope: in plan and out of plan, with reasons.</li>
+<li>Your app results, then Epic environment as an appendix.</li>
+<li>Method &amp; limits (e.g. CLIN-005…010 use this tool's sample writes; CLIN-011/012 are attested).</li>
+<li>Proof index with SHA-256.</li>
+<li>Passed tests never show “How to fix”.</li>
+</ul>
+</div>
+<div class="card">
+<h3>Privacy (kept)</h3>
+<ul>
+<li>No patient data stored: the test patient is resolved at run time; only booleans and resource ids are kept.</li>
+<li>Secrets stored as <span class="mono">***set***</span>; token never written to disk.</li>
+<li>Everything is local to this computer; reports leave only when the user downloads them.</li>
+</ul>
+</div>
+<div class="card">
+<h3>Access (MVP)</h3>
+<ul>
+<li>Single user, single app, local tool (ADR-012). No login.</li>
+<li>Reviewers receive the PDF/HTML; there is no reviewer account yet.</li>
+<li>The app switcher in the sidebar is drawn but shows one app until multi-app ships (Spec 4, later).</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="sec">
+<h2><span class="secno">09</span>Copy &amp; accessibility rules</h2>
+<div class="g2">
+<div class="card">
+<h3>Copy</h3>
+<ul>
+<li>Use glossary words only (Spec 1). Never show <span class="mono">needs_human</span>, <span class="mono">[MOCK]</span>, Python reprs or errno to users.</li>
+<li>Test titles in plain language; spec wording as subtitle (e.g. “Clinician can find the right patient” / CLIN-001).</li>
+<li>Config names (<span class="mono">IMAGE_WRITE_RESOURCE</span>) never appear in titles; they appear in Technical details.</li>
+<li>Jargon gets a dotted underline + definition on hover/focus: SMART, PKCE, scope, fhirUser, MRN, US Core, MyChart, Hyperspace.</li>
+</ul>
+</div>
+<div class="card">
+<h3>Accessibility</h3>
+<ul>
+<li>Test detail drawer: focus trap, Esc closes, focus returns to the row.</li>
+<li>Tabs use <span class="mono">role=tab</span> + <span class="mono">aria-selected</span>; tables are real tables with the link in the first cell.</li>
+<li>Assistant thread <span class="mono">aria-live="polite"</span>; run progress announces each finished step.</li>
+<li>Stepper uses <span class="mono">aria-current="step"</span>; status never by colour alone (icon + word).</li>
+<li>Text contrast ≥ 4.5:1; targets ≥ 44 px on touch.</li>
+</ul>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":3000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

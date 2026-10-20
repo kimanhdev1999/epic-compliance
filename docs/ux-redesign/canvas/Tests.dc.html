@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tests</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#0E5E59}a:hover{color:#0A4743}
+.app{display:flex;flex-wrap:wrap;align-items:stretch;min-height:100vh;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#101828;background:#F5F6F8;font-size:14px;line-height:20px}
+.side{flex:1 1 236px;background:#0F1B2D;color:#D0D5DD;padding:20px 14px;display:flex;flex-direction:column;gap:18px;box-sizing:border-box}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:600;font-size:15px;padding:0 8px}
+.mark{width:28px;height:28px;border-radius:8px;background:#2BB3A9;color:#0F1B2D;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.appsw{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid #2A3A52;border-radius:10px;text-decoration:none}
+.appsw b{color:#fff;font-size:14px}.appsw span{color:#98A2B3;font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:8px;color:#D0D5DD;text-decoration:none;font-weight:500}
+.nav a:hover{background:#18263A;color:#fff}
+.nav a.on{background:#1F3350;color:#fff}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#98A2B3;padding:0 12px 4px;font-weight:600}
+.cnt{font-size:12px;font-weight:600;padding:0 7px;border-radius:999px;background:#D92D20;color:#fff;line-height:18px}
+.conn{margin-top:auto;padding:12px;border-radius:10px;background:#16243A;display:flex;flex-direction:column;gap:4px;font-size:12px;color:#D0D5DD;text-decoration:none}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
+.main{flex:999 1 560px;min-width:0;padding:28px 40px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;text-decoration:none;border:1px solid transparent;box-sizing:border-box;white-space:nowrap}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.muted{color:#475467}
+h1{font-size:26px;line-height:34px;margin:0;font-weight:600}
+p{margin:0}
+.tabs{display:flex;gap:4px;border-bottom:1px solid #E4E7EC;flex-wrap:wrap}
+.tab{font-family:inherit;font-size:14px;font-weight:600;color:#475467;background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px;margin-bottom:-1px;min-height:44px;cursor:pointer}
+.tab[aria-selected="true"]{color:#0E5E59;border-bottom-color:#0E5E59}
+.tab span{font-weight:500;color:#475467;margin-left:4px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.seg{display:inline-flex;border:1px solid #D0D5DD;border-radius:8px;overflow:hidden;background:#fff}
+.seg button{font-family:inherit;font-size:13px;font-weight:600;border:0;background:#fff;color:#344054;padding:0 14px;min-height:38px;border-right:1px solid #D0D5DD;cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:#E6F2F1;color:#0E5E59}
+.inp{font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid #D0D5DD;border-radius:8px;background:#fff;color:#101828;min-height:40px;box-sizing:border-box}
+.tbl{background:#fff;border:1px solid #E4E7EC;border-radius:12px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:20px}
+th{text-align:left;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:#475467;font-weight:600;padding:10px 14px;border-bottom:1px solid #E4E7EC;background:#F9FAFB;white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid #F2F4F7;vertical-align:middle}
+tr:hover td{background:#F9FAFB}
+td a.t{color:#101828;text-decoration:none;font-weight:600}
+td a.t:hover{text-decoration:underline}
+.idt{display:block;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#475467;font-weight:400}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600;line-height:22px;white-space:nowrap}
+.p-pass{background:#ECFDF3;color:#067647}
+.p-fail{background:#FEF3F2;color:#B42318}
+.p-input{background:#FFFAEB;color:#B54708}
+.who{display:inline-flex;font-size:12px;font-weight:600;line-height:20px;padding:0 8px;border-radius:6px;white-space:nowrap}
+.w-app{background:#E6F2F1;color:#0E5E59}
+.w-env{background:#EEF4FF;color:#3538CD}
+.next{font-size:13px;color:#344054}
+.chg{font-size:11px;font-weight:600;color:#3538CD;background:#EEF4FF;border-radius:999px;padding:0 7px;line-height:18px;margin-left:6px}
+</style>
+</helmet>
+<div class="app">
+<nav class="side" aria-label="Main">
+<div class="brand"><span class="mark">E</span>Epic Readiness</div>
+<a class="appsw" href="Profile.dc.html"><b>DermScan</b><span>Advocate Health · Clinician app</span></a>
+<div class="nav">
+<a href="Overview.dc.html">Overview</a>
+<a href="Profile.dc.html">App profile</a>
+<a href="Tests.dc.html" class="on" aria-current="page">Tests <span class="cnt">3</span></a>
+<a href="RunSetup.dc.html">Run</a>
+<a href="Runs.dc.html">Runs</a>
+<a href="Report.dc.html">Report</a>
+</div>
+<div class="nav"><div class="navlabel">Setup</div><a href="Connections.dc.html">Connections</a></div>
+<a class="conn" href="Connect.dc.html"><span style="display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 600"><span class="dot" style="background: #47CD89"></span>Epic sandbox connected</span><span>Clinician sign-in · 38 min left</span></a>
+</nav>
+
+<main class="main">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px"><h1>Tests</h1><p class="muted">Results from today 10:46 · 29 in your plan · 5 not in your plan</p></div>
+<div class="seg" role="group" aria-label="View"><button type="button" aria-pressed="true">List</button><button type="button" aria-pressed="false">By framework</button></div>
+</div>
+
+<div class="tabs" role="tablist" aria-label="Result">
+<button class="tab" role="tab" aria-selected="false" type="button">All<span>29</span></button>
+<button class="tab" role="tab" aria-selected="true" type="button">To resolve<span>11</span></button>
+<button class="tab" role="tab" aria-selected="false" type="button">Failed<span>3</span></button>
+<button class="tab" role="tab" aria-selected="false" type="button">Needs input<span>8</span></button>
+<button class="tab" role="tab" aria-selected="false" type="button">Passed<span>18</span></button>
+<button class="tab" role="tab" aria-selected="false" type="button">Not in plan<span>5</span></button>
+</div>
+
+<div class="filters">
+<div class="seg" role="group" aria-label="Who it tests"><button type="button" aria-pressed="false">Everything</button><button type="button" aria-pressed="true">Your app</button><button type="button" aria-pressed="false">Epic environment</button></div>
+<label for="fw" style="position: absolute; left: -9999px">Framework</label><select class="inp" id="fw"><option>All frameworks</option><option>ONC (g)(10)</option><option>SMART App Launch</option><option>US Core / FHIR R4</option><option>Epic requirements</option><option>HIPAA Security Rule</option><option>Patient safety</option></select>
+<label for="ar" style="position: absolute; left: -9999px">Area</label><select class="inp" id="ar"><option>All areas</option><option>Sign-in</option><option>Patient selection &amp; chart writes</option><option>Chart data</option><option>Security answers</option></select>
+<label for="q" style="position: absolute; left: -9999px">Search tests</label><input class="inp" id="q" placeholder="Search by ID or words" style="flex: 1 1 200px">
+</div>
+
+<div class="tbl">
+<table>
+<thead><tr><th>Test</th><th>Result</th><th>Tests</th><th>Severity</th><th>Next step</th></tr></thead>
+<tbody>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-007</span>Everything written lands on the confirmed patient</a></td><td><span class="pill p-fail">✕ Failed</span></td><td><span class="who w-app">Your app</span></td><td>Critical</td><td class="next">Fix: file the photo against the visit</td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-008</span>Problem list, medications and allergies can be read</a></td><td><span class="pill p-fail">✕ Failed</span></td><td><span class="who w-app">Your app</span></td><td>High</td><td class="next">Fix: enable AllergyIntolerance.Search</td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-010</span>Earlier consult notes can be found</a></td><td><span class="pill p-fail">✕ Failed</span></td><td><span class="who w-app">Your app</span></td><td>Medium</td><td class="next">Fix: check the note's category and status</td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">SEC-001</span>Data in transit uses TLS 1.2 or higher</a></td><td><span class="pill p-input">? Needs input</span></td><td><span class="who w-app">Your app</span></td><td>Critical</td><td class="next">Answer a question</td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">SEC-002</span>Every access to patient data is logged<span class="chg">Answer changed</span></a></td><td><span class="pill p-input">? Needs input</span></td><td><span class="who w-app">Your app</span></td><td>High</td><td class="next">Add proof</td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">SEC-003</span>BAAs cover everyone who handles patient data</a></td><td><span class="pill p-input">? Needs input</span></td><td><span class="who w-app">Your app</span></td><td>High</td><td class="next">Answer a question</td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-005</span>A clinical photo is accepted by Epic</a></td><td><span class="pill p-input">? Needs input</span></td><td><span class="who w-app">Your app</span></td><td>Critical</td><td class="next">Connect FHIR validator</td></tr>
+<tr><td><a class="t" href="TestDetail.dc.html"><span class="idt">CLIN-009</span>A consult note is accepted by Epic</a></td><td><span class="pill p-input">? Needs input</span></td><td><span class="who w-app">Your app</span></td><td>High</td><td class="next">Connect FHIR validator</td></tr>
+</tbody>
+</table>
+</div>
+<p class="muted" style="font-size: 13px">Showing 8 of 11 to resolve — 3 more test the Epic environment (AUTH-007, AUTH-008, AUTH-010: verify outside the app). Switch to “Everything” to see them.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
