@@ -743,3 +743,30 @@ The plan has two layers:
 3. Plan, test and report UI: question sections, sources, AI-suggested badges,
    coverage, UI-harness honesty rules.
 4. Answering and judging each question in chat and through proof.
+
+## ADR-020: The plan page offers a sample run with no setup, next to the Epic run
+**Date:** 2026-10-20  **Status:** Accepted (user decision). Amends ADR-014.
+
+### Context
+To run the plan, the user had to fill in a test patient search and sign in to the
+Epic sandbox, even just to see what the checks do. The user asked to drop both
+steps and use the built-in patient and clinician.
+
+### Decision
+- **How to run** has two options:
+  - **Run on sample data:** always available, no setup. It uses the built-in
+    patient and clinician (`run_mode=mock`). Results carry the Sample data
+    labels from ADR-018 and never replace a real run.
+  - **Run on Epic:** needs only a client ID and a sign-in.
+- **No test-patient step.** Epic runs default to the sandbox patient Camila Lopez
+  (`SANDBOX_TEST_PATIENT = identifier=203713`). It can be changed under
+  More settings. Sample runs use the built-in patient and never record Epic's.
+- **`/launch` without a client ID** redirects to the plan's Epic setup (or
+  Settings), not a bare 400. Without a profile, it signs in with the current
+  plan's launch profile, so Integrations no longer signs a clinician app in with
+  patient scopes.
+
+### Consequences
+- A sample run is one click. Its results show what each check looks at, not
+  whether the app works with Epic, and the page says so next to the button.
+- The UI harness now clicks "Run on sample data" instead of rewriting the form.
