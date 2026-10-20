@@ -5,7 +5,7 @@ import pytest
 
 from epic_compliance.assessment import SELECTORS, Intake, build_plan
 from epic_compliance.intake_chat import ChatState, next_turn
-from epic_compliance.rules_engine.catalog import load_rules
+from epic_compliance.rules_engine.catalog import is_reviewer_question, load_rules
 
 
 def _ids(plan) -> set[str]:
@@ -15,8 +15,9 @@ def _ids(plan) -> set[str]:
 class TestBuildPlan:
     def test_every_catalog_rule_has_a_selector(self):
         # A new rule without a selector is included by default, but it should be
-        # a deliberate choice — keep SELECTORS in step with the catalog.
-        assert {r.id for r in load_rules()} <= set(SELECTORS)
+        # a deliberate choice — keep SELECTORS in step with the catalog. Reviewer
+        # questions are selected by their library tags instead (ADR-019).
+        assert {r.id for r in load_rules() if not is_reviewer_question(r)} <= set(SELECTORS)
 
     def test_clinician_mobile_photo_app(self):
         plan = build_plan(Intake(users="clinicians", platform="mobile", saves_images=True))
@@ -242,13 +243,16 @@ class TestAssessmentRoutes:
         assert "Back to chat" in resp.text
         assert "Demo data" not in resp.text and 'name="run_mode" value="live"' in resp.text
 
-    def test_plan_puts_the_epic_setup_steps_first(self, client, monkeypatch):
+    def test_plan_offers_only_the_epic_run(self, client, monkeypatch):
         from epic_compliance import pipeline
         monkeypatch.setattr(pipeline, "get_live_token", lambda: None)
         text = client.post("/assess/plan", data=self.FORM).text
         assert text.index("Before you run") < text.index("What will be checked")
-        assert 'id="test_patient_query"' in text and "Sign in to Epic sandbox" in text
-        assert 'id="run-btn" class="btn big" disabled' in text  # the page script unlocks it
+        # Sample data is for the test suite only (ADR-014); the page never offers it.
+        assert 'value="mock"' not in text and "sample data" not in text.lower()
+        assert 'id="run-btn" class="btn big" disabled' in text and "Sign in to Epic sandbox" in text
+        # No test-patient step: Epic's sandbox patient is the default, editable under More settings.
+        assert 'id="step-patient"' not in text and 'value="identifier=203713"' in text
         assert client.get("/launch/status").json() == {"signed_in": False}
 
         monkeypatch.setattr(pipeline, "get_live_token", lambda: object())
@@ -267,11 +271,14 @@ class TestAssessmentRoutes:
         page = client.get("/assess/plan?notice=signin")
         assert "Sign in to the Epic sandbox before running" in page.text and 'value="abc"' in page.text
 
-    def test_clinician_live_run_needs_a_test_patient(self, client, monkeypatch):
-        from epic_compliance import pipeline
-        monkeypatch.setattr(pipeline, "get_live_token", lambda: object())
-        resp = client.post("/assess/run", data=self.LIVE, follow_redirects=False)
-        assert resp.headers["location"] == "/assess/plan?notice=patient"
+    def test_epic_runs_default_to_the_sandbox_patient_and_sample_runs_dont(self):
+        from epic_compliance.assessment import SANDBOX_TEST_PATIENT
+        live = Intake(users="clinicians", run_mode="live")
+        assert build_plan(live).config_overrides()["test_patient_query"] == SANDBOX_TEST_PATIENT
+        custom = live.model_copy(update={"test_patient_query": "identifier=1"})
+        assert build_plan(custom).config_overrides()["test_patient_query"] == "identifier=1"
+        sample = Intake(users="clinicians", run_mode="mock")
+        assert build_plan(sample).config_overrides()["test_patient_query"] == ""
 
     def test_rerun_without_sign_in_does_not_overwrite_results(self, client, monkeypatch):
         from epic_compliance import pipeline, store
@@ -314,11 +321,13 @@ class TestAssessmentRoutes:
         assert store.get_config_defaults()["oauth_client_id"] == "abc-123"
         assert 'value="abc-123"' in client.post("/assess/plan", data=self.FORM).text
 
-    def test_sign_in_without_a_client_id_explains_what_to_add(self, client, monkeypatch):
+    def test_sign_in_without_a_client_id_goes_where_the_client_id_is_entered(self, client, monkeypatch):
         monkeypatch.setattr("epic_compliance.api._epic_connection",
                             lambda: {"client_id": "", "redirect_uri": "", "fhir_base_url": ""})
-        resp = client.get("/launch", follow_redirects=False)
-        assert resp.status_code == 400 and "client ID" in resp.text
+        # No app described yet: Settings. With a plan: its Epic setup steps.
+        assert client.get("/launch", follow_redirects=False).headers["location"] == "/config"
+        client.post("/assess/run", data=self.FORM)
+        assert client.get("/launch", follow_redirects=False).headers["location"] == "/assess/plan#setup"
 
     def test_intake_defaults_to_the_epic_sandbox(self):
         from epic_compliance.assessment import Intake

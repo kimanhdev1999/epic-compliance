@@ -50,13 +50,13 @@ FRAMEWORKS: list[Framework] = [
     Framework("onc_g10", "ONC (g)(10)",
               "The certified standardized API criterion Epic's FHIR API is built to. "
               "Apps are expected to work with what it guarantees.",
-              _cites("ONC")),
+              _cites("(g)(10)")),
     Framework("smart", "SMART App Launch",
               "How your app signs in to Epic: OAuth 2.0, PKCE, scopes and identity tokens.",
               _cites("SMART", "RFC", "OAuth", "OpenID")),
     Framework("us_core", "US Core / FHIR R4",
               "The shape of the patient data you read and write.",
-              _cites("US Core", "HL7 FHIR")),
+              _cites("US Core", "HL7 FHIR", "FHIR R4")),
     Framework("epic", "Epic requirements",
               "The Epic on FHIR APIs your app uses, and what Epic and its customers ask for in app review.",
               _cites("Epic")),
@@ -64,8 +64,23 @@ FRAMEWORKS: list[Framework] = [
               "Encryption, audit logging and BAAs. Every health-system security review asks for these.",
               _cites("HIPAA")),
     Framework("patient_safety", "Patient safety",
-              "Wrong-patient guards: two identifiers before anything is saved to the chart.",
-              _cites("Joint Commission", "wrong-patient")),
+              "Wrong-patient guards and safe clinical photography: two identifiers before anything "
+              "is saved, consent, and images clinicians can rely on.",
+              _cites("Joint Commission", "wrong-patient", "RACGP", "Katragadda")),
+    Framework("hecvat", "Security questionnaire (HECVAT)",
+              "What a health system's vendor security questionnaire asks: assurance reports, "
+              "incidents, data use, subprocessors and AI.",
+              _cites("HECVAT", "HITRUST")),
+    Framework("mobile", "Mobile app security",
+              "OWASP MASVS and native-app OAuth (RFC 8252): data on the phone, tokens, permissions.",
+              _cites("MASVS", "RFC 8252")),
+    Framework("ai_dsi", "AI transparency (ONC HTI-1)",
+              "What the decision-support rules ask of AI output in the EHR: source attributes, "
+              "risk management and feedback.",
+              _cites("(b)(11)")),
+    Framework("fda", "FDA device rules",
+              "Whether the software is a medical device, and what FDA expects of AI that analyses clinical data.",
+              _cites("FDA")),
 ]
 FRAMEWORKS_BY_KEY = {f.key: f for f in FRAMEWORKS}
 
@@ -94,10 +109,11 @@ def build_tests(run: dict[str, Any] | None, in_plan: set[str] | None = None) -> 
         f = findings.get(rule.id)
         if f is not None:
             status = STATUS_FROM_VERDICT[f.verdict]
-        elif run is None:
-            status = "not_run" if in_plan is None or rule.id in in_plan else "not_applicable"
+        elif in_plan is not None:
+            # In the current plan but not in this run (e.g. added since): not run yet.
+            status = "not_run" if rule.id in in_plan else "not_applicable"
         else:
-            status = "not_applicable"
+            status = "not_run" if run is None else "not_applicable"
         subject = SUBJECTS.get(rule.subject, ("", ""))
         where = fw.where_to_fix(rule, f, sample=sample)
         tests.append({

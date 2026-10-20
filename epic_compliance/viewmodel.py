@@ -10,6 +10,7 @@ from typing import Any
 
 from . import fix_where as fw
 from .models import Report
+from .reviewer_questions import TOPICS as REVIEWER_TOPICS
 from .rules_engine.catalog import load_rules
 
 SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
@@ -21,6 +22,8 @@ CATEGORY_LABELS = {
     "security": "Security & Privacy",
     "clinician_workflow": "Clinician Workflow (standalone)",
     "write_back": "Writing to the Chart",
+    # Reviewer questions (ADR-019), one category per topic.
+    **{f"rq_{k}": f"Reviewer: {v}" for k, v in REVIEWER_TOPICS.items()},
 }
 
 VERDICT_LABELS = {"pass": "Passed", "fail": "Failed", "needs_human": "Needs review"}

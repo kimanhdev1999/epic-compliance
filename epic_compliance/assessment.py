@@ -16,8 +16,13 @@ from typing import Any, Callable, Literal
 
 from pydantic import BaseModel
 
-from .rules_engine.catalog import Rule, load_rules
+from .reviewer_questions import TOPICS as REVIEWER_TOPICS, PlannedQuestion, select as select_questions
+from .rules_engine.catalog import Rule, is_reviewer_question, load_rules
 
+
+#: Epic's sandbox test patient (Camila Lopez), used when no other patient is set,
+#: so an Epic run needs no patient setup step.
+SANDBOX_TEST_PATIENT = "identifier=203713"
 
 #: Where/how to run, chosen on the plan page rather than in the chat.
 RUN_FIELDS = ("run_mode", "fhir_base_url", "oauth_client_id", "app_redirect_uri",
@@ -89,6 +94,12 @@ PLAN_SECTIONS = {
 }
 
 
+def _reviewer_label(category: str) -> str:
+    """'rq_images' -> 'Reviewer questions: Clinical photos' ("" if not a reviewer topic)."""
+    topic = category.removeprefix("rq_")
+    return f"Reviewer questions: {REVIEWER_TOPICS[topic]}" if category.startswith("rq_") and topic in REVIEWER_TOPICS else ""
+
+
 @dataclass
 class PlannedCheck:
     rule: Rule
@@ -101,6 +112,8 @@ class Plan:
     intake: Intake
     launch_profile: str
     checks: list[PlannedCheck] = field(default_factory=list)
+    # What a reviewer will ask the vendor (ADR-019), next to the automated tests.
+    questions: list[PlannedQuestion] = field(default_factory=list)
 
     @property
     def included(self) -> list[PlannedCheck]:
@@ -121,7 +134,7 @@ class Plan:
             groups.setdefault(c.rule.category, []).append(c)
         order = list(PLAN_SECTIONS)
         return [
-            {"key": k, "label": PLAN_SECTIONS.get(k, k.replace("_", " ").title()), "checks": v}
+            {"key": k, "label": PLAN_SECTIONS.get(k) or _reviewer_label(k) or k.replace("_", " ").title(), "checks": v}
             for k, v in sorted(groups.items(), key=lambda kv: order.index(kv[0]) if kv[0] in order else 99)
         ]
 
@@ -146,7 +159,8 @@ class Plan:
             "fhir_base_url": i.fhir_base_url,
             "oauth_client_id": i.oauth_client_id,
             "app_redirect_uri": i.app_redirect_uri,
-            "test_patient_query": i.test_patient_query,
+            # Sample runs use the built-in patient; Epic runs default to the sandbox one.
+            "test_patient_query": (i.test_patient_query or SANDBOX_TEST_PATIENT) if i.run_mode == "live" else "",
             "encounter_required": "true" if i.encounter_required else "false",
             "app_client_type": "confidential" if i.platform == "web_server" else "public",
             "transport_tls_version": i.tls_version,
@@ -165,6 +179,10 @@ class Plan:
             "excluded": [
                 {"rule_id": c.rule.id, "reason": c.reason, "description": c.rule.description}
                 for c in self.excluded
+            ],
+            "questions": [
+                {"id": q.question.id, "text": q.wording, "reason": q.reason, "ai_suggested": q.ai_suggested}
+                for q in self.questions if q.included
             ],
         }
 
@@ -256,7 +274,9 @@ SELECTORS: dict[str, Callable[[Intake], Decision]] = {
 def build_plan(intake: Intake) -> Plan:
     launch_profile = "clinician_standalone" if intake.users == "clinicians" else "patient_launch"
     plan = Plan(intake=intake, launch_profile=launch_profile)
-    for rule in load_rules():
+    rules = load_rules()
+    automated = [r for r in rules if not is_reviewer_question(r)]
+    for rule in automated:
         selector = SELECTORS.get(rule.id)
         if selector is None:
             included, reason = True, "General requirement for every Epic app."
@@ -266,4 +286,9 @@ def build_plan(intake: Intake) -> Plan:
         if included and not rule.applies_to(launch_profile):
             included, reason = False, "Doesn't apply to this kind of app."
         plan.checks.append(PlannedCheck(rule=rule, included=included, reason=reason))
+    # Reviewer questions (ADR-019): included by the library's tags, run as tests.
+    plan.questions = select_questions(intake, covered=plan.rule_ids)
+    by_id = {r.id: r for r in rules}
+    for q in plan.questions:
+        plan.checks.append(PlannedCheck(rule=by_id[q.question.id], included=q.included, reason=q.reason))
     return plan

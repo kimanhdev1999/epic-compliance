@@ -12,6 +12,7 @@ import json
 
 from scripts import eval_llm_rules
 from epic_compliance.models import Finding
+from epic_compliance.rules_engine.catalog import is_reviewer_question
 
 
 def test_fixtures_file_is_well_formed():
@@ -25,7 +26,8 @@ def test_fixtures_file_is_well_formed():
 
 def test_fixtures_cover_all_llm_rules_in_catalog():
     rules = eval_llm_rules._rules_by_id()
-    llm_rule_ids = {r.id for r in rules.values() if r.check_type == "llm"}
+    # Reviewer questions (ADR-019) share one judging path; plan evals cover them.
+    llm_rule_ids = {r.id for r in rules.values() if r.check_type == "llm" and not is_reviewer_question(r)}
     cases = eval_llm_rules._load_cases()
     covered = {c["rule_id"] for c in cases}
     missing = llm_rule_ids - covered
