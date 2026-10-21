@@ -95,6 +95,28 @@ def build_validation_request(
     return request
 
 
+def _native_issues_to_outcome(issues: list[Any]) -> dict[str, Any]:
+    """The validator's own issue records -> an OperationOutcome.
+
+    inferno-resource-validator 1.0.78 answers
+    ``{"outcomes": [{"fileInfo": ..., "issues": [{"level": "ERROR",
+    "location": "Patient.name", "message": "...", "type": "REQUIRED", ...}]}]}``
+    — validator-native records, not OperationOutcome.issue entries.
+    """
+    converted = []
+    for issue in issues:
+        if not isinstance(issue, dict):
+            continue
+        converted.append({
+            "severity": str(issue.get("level", "")).lower(),
+            "code": str(issue.get("type", "")).lower(),
+            "details": {"text": issue.get("message", "")},
+            "diagnostics": issue.get("diagnostics", ""),
+            "expression": [issue["location"]] if issue.get("location") else [],
+        })
+    return {"resourceType": "OperationOutcome", "issue": converted}
+
+
 def _first_outcome(payload: Any) -> dict[str, Any]:
     """The wrapper may return one OperationOutcome or a list (one per file)."""
     if isinstance(payload, list):
@@ -105,7 +127,10 @@ def _first_outcome(payload: Any) -> dict[str, Any]:
         if isinstance(outcomes, list) and outcomes:
             entry = outcomes[0]
             if isinstance(entry, dict):
-                return entry.get("issues") or entry.get("outcome") or entry
+                issues = entry.get("issues")
+                if isinstance(issues, list):
+                    return _native_issues_to_outcome(issues)
+                return issues or entry.get("outcome") or entry
         return payload
     return {}
 
@@ -125,6 +150,12 @@ class HL7ValidatorService:
     """
 
     name = "hl7-validator-service"
+
+    #: base_url -> the service's sessionId. Without one, every request opens a
+    #: new session that reloads FHIR core + US Core (~1 min, ~500 MB each) until
+    #: the JVM is OOM-killed. Class-level: get_validator() builds a new instance
+    #: per run, and the session should outlive it.
+    _sessions: dict[str, str] = {}
 
     def __init__(self, base_url: str, timeout_s: float = 60.0) -> None:
         self.base_url = base_url.rstrip("/")
@@ -152,11 +183,14 @@ class HL7ValidatorService:
         try:
             resp = httpx.post(
                 f"{self.base_url}/validate",
-                json=build_validation_request(resource, profile),
+                json=build_validation_request(
+                    resource, profile, session_id=self._sessions.get(self.base_url)),
                 timeout=self.timeout_s,
             )
             resp.raise_for_status()
             payload = resp.json()
+            if isinstance(payload, dict) and payload.get("sessionId"):
+                self._sessions[self.base_url] = payload["sessionId"]
         except (httpx.HTTPError, httpx.TimeoutException) as exc:
             return _unavailable(resource, profile, self.name, f"validator service call failed: {exc}")
         except (json.JSONDecodeError, ValueError) as exc:

@@ -777,3 +777,50 @@ offers only the Epic run (client ID and sign-in). The test-patient default and
 the `/launch` fixes stay. Sample data is again for the test suite and UI harness
 only (ADR-014). The harness switches the Run button to `run_mode=mock`. Sample
 runs already saved keep their "Sample data" banners (ADR-018).
+
+---
+
+## ADR-021: The app starts the FHIR validator itself (inferno-resource-validator 1.0.84)
+
+**Date:** 2026-10-20 · **Status:** Accepted
+
+### Context
+CLIN-005, CLIN-009 and WRITE-001..003 need the HL7 validator. Users had to run
+`podman compose -f docker/fhir-validator.compose.yml up -d` by hand. Without it,
+every write check came back Needs review ("validator unavailable"). When the
+validator did run, three bugs meant no write check ever got a verdict:
+- The client didn't reuse the service's `sessionId`. Each request opened a new
+  session that reloaded FHIR core and US Core (~1 min). Memory grew until the
+  JVM was OOM-killed (exit 137).
+- The client couldn't parse the real response
+  (`{"outcomes": [{"issues": [<validator-native issues>]}]}`). It crashed.
+- Image 1.0.78 (validator 6.9.7, the one the g10 test kit pins) rejects valid
+  codes such as `contentType: image/jpeg` against today's tx.fhir.org ("The
+  System URI could not be determined"). Every write check failed.
+
+### Decision
+- **Autostart:** `serve` (on a background thread) and `run` / `validator` (waiting) start
+  container `epic-compliance-fhir-validator` with podman, falling back to docker.
+  - This happens only when `VALIDATOR_SERVICE_URL` is local and nothing answers there.
+  - The app then makes one warm-up validation so the first user run is fast.
+  - The container is left running on exit.
+  - `VALIDATOR_AUTOSTART=false` turns this off. Tests always turn it off.
+- **Image:** 1.0.84 (validator 6.10.3). If the existing container runs another image,
+  it is removed and recreated, so a version bump takes effect.
+- **Sessions:** the client reuses the service's `sessionId`, keyed by base URL.
+  The client also converts validator-native issues into an OperationOutcome.
+- **Payload fixes:** the working validator found real bugs in the tool's own
+  write-back samples:
+  - DiagnosticReport had no `effective[x]`, which us-core-diagnosticreport-note requires.
+  - The Observation used `us-core-observation-clinical-result`. That profile is US Core 6.x
+    only, so the 3.1.1 validator can't resolve it and returns HTTP 500. It now validates
+    against base R4, as Media does.
+  - The Observation's LOINC display was wrong.
+
+### Consequences
+- The first launch pulls the image (~500 MB). The first validation takes about
+  2 minutes; after that each one takes under a second.
+- The validator runs a newer version than the g10 test kit. Messages can differ
+  slightly from the kit's, but they are correct for today's terminology server.
+- In mock mode the POST is still simulated. Only a live run against the Epic
+  sandbox tests whether Epic accepts the write.

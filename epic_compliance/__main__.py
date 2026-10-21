@@ -23,7 +23,9 @@ VERDICT_STYLE = {
 def cmd_run() -> None:
     config = get_config()
     console.print(f"\n[bold]Epic Compliance Tool[/bold] — mode=[cyan]{config.run_mode}[/cyan]")
-    console.print(f"FHIR base: {config.fhir_base_url}\n")
+    console.print(f"FHIR base: {config.fhir_base_url}")
+    _ensure_validator(config)
+    console.print()
 
     report = run_full_pipeline(config)
     summary = report.summary()
@@ -76,11 +78,26 @@ def cmd_run() -> None:
         sys.exit(1)
 
 
+def _ensure_validator(config) -> None:
+    """Start the validator container if it is not running (VALIDATOR_AUTOSTART)."""
+    from .validator.autostart import ensure_validator_service, should_autostart, warm_up
+
+    if not should_autostart(config)[0]:
+        return
+    with console.status("FHIR validator: starting (first launch can take a minute)…"):
+        ok, detail = ensure_validator_service(config)
+        if ok and not detail.startswith("already running"):
+            warm_ok, warm_detail = warm_up(config)
+            detail = f"{detail}; {warm_detail}"
+    console.print(f"FHIR validator: {'[green]' if ok else '[yellow]'}{detail}[/]")
+
+
 def cmd_validator() -> None:
     """Report which FHIR validator backend is available, and prove it works."""
     from .validator import US_CORE_PROFILES, get_validator
 
     config = get_config()
+    _ensure_validator(config)
     validator = get_validator(config)
     ok, detail = validator.health()
 
