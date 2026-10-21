@@ -1,5 +1,5 @@
 {% import "_macros.html" as m %}
-{% set ai = t.type_label == "AI review" %}
+{% set reviewed = t.type_label == "Answer review" %}
 {% set open_form = evidence_error or not evidence_items %}
 <section id="evidence-section" class="ev">
   <div class="ev-head">
@@ -9,12 +9,12 @@
     {% endif %}
   </div>
   <p class="ev-lead">
-    {% if ai and claude_connected %}Claude reviews this evidence on the next run and cites it in the result. It's also listed with this test in the report.
-    {% elif ai %}Claude isn't connected, so evidence is listed in the report but not reviewed. <a href="/integrations">Integrations</a>
+    {% if reviewed and review_ready %}Checked against Epic's review criteria the next time this test runs, and listed with it in the report.
+    {% elif reviewed %}Listed with this test in the report. Answer review isn't set up, so it won't be checked yet. <a href="/integrations">Set it up</a>
     {% else %}Listed with this test in the report for the health system's reviewers. The result itself comes from the automated check.{% endif %}
   </p>
 
-  {% if evidence_added %}<div class="ev-flash" role="status">{{ m.icon("check") }} Evidence added. {% if ai and claude_connected %}Re-run tests to have it reviewed.{% else %}It appears in the next report.{% endif %}</div>{% endif %}
+  {% if evidence_added %}<div class="ev-flash" role="status">{{ m.icon("check") }} Evidence added. {% if reviewed and review_ready %}Re-check this test to include it.{% else %}It appears in the next report.{% endif %}</div>{% endif %}
 
   {% if evidence_items %}
   <ul class="ev-list">
@@ -68,14 +68,14 @@
     <div class="ev-panel" data-ev-panel="link" hidden>
       <label class="sr-only" for="ev-link-{{ t.id }}">Link</label>
       <input id="ev-link-{{ t.id }}" type="url" name="link" placeholder="https://… your logging dashboard, SOC 2 report or policy page">
-      <p class="ev-note">Claude doesn't open links, so a link alone isn't proof. Add a statement or file with it.</p>
+      <p class="ev-note">Links aren't opened during the check, so a link alone isn't proof. Add a statement or file with it.</p>
     </div>
 
     {% if evidence_error %}<div class="ev-error" role="alert">{{ evidence_error }}</div>{% endif %}
 
     <div class="ev-foot">
-      <span class="ev-privacy">{{ m.icon("lock") }} No real patient data. Sandbox or de-identified samples only.
-        {% if ai and claude_connected %}Sent to Claude for review; stored on this computer.{% else %}Stored on this computer.{% endif %}</span>
+      <span class="ev-privacy">{{ m.icon("lock") }} No real patient data: sandbox or de-identified samples only.
+        Stored on this computer{% if reviewed and review_ready %}, and sent to the answer-review service when this test runs{% endif %}.</span>
       <div class="ev-actions">
         {% if evidence_items %}<button type="button" class="btn secondary small-btn" data-ev-toggle>Cancel</button>{% endif %}
         <button type="submit" class="btn small-btn">Save evidence</button>

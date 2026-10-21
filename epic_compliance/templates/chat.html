@@ -22,7 +22,7 @@
   }
   var AVATAR = document.querySelector('#avatar-tpl').innerHTML;
 
-  // Show the user's message and a typing indicator while Claude / the parser answers.
+  // Show the user's message and a typing indicator while the assistant answers.
   document.addEventListener('htmx:beforeRequest', function (e) {
     var form = e.detail.elt;
     if (form.classList.contains('edit-form')) { form.classList.add('busy'); return; }

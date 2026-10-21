@@ -35,7 +35,7 @@ def where(rule_id: str, verdict: str, **kw) -> str:
     ("SEC-001", "fail", {"evidence": "TLS 1.0", "citation": "app_config says TLS 1.0"}, "your_app"),
     ("SEC-001", "needs_human", {"evidence": "nothing answered"}, "your_answers"),
     # Caused by this tool's setup.
-    ("SEC-002", "needs_human", {"citation": "Not evaluated: Claude isn't connected. Connect Claude, then re-run."}, "tool_setup"),
+    ("SEC-002", "needs_human", {"citation": "Not evaluated: answer review isn't set up. Set it up in Integrations, then re-run."}, "tool_setup"),
     ("CLIN-002", "needs_human", {"evidence": "Skipped: no test patient was given."}, "tool_setup"),
     ("AUTH-007", "needs_human", {"evidence": "auth_probe unavailable"}, "tool_setup"),
 ])
@@ -127,4 +127,4 @@ class TestSampleRuns:
         assert '<option value="epic" selected>' in page
         assert 'data-where="epic"' in page and "Epic&#39;s sandbox" in page
         drawer = client.get("/tests/AUTH-010", headers={"HX-Request": "true"}).text
-        assert "Where to fix it: Epic&#39;s sandbox" in drawer
+        assert "Where to fix it &middot; Epic&#39;s sandbox" in drawer

@@ -29,7 +29,7 @@ FIX_WHERE = {
     ),
     "tool_setup": (
         "This tool's setup",
-        "Fix the sign-in, test patient, Claude key or validator, then re-run.",
+        "Fix the sign-in, test patient, answer review key or validator, then re-run.",
     ),
     "epic": (
         "Epic's sandbox",
@@ -60,7 +60,7 @@ def where_to_fix(rule: Rule | None, finding: Finding | None, *, sample: bool = F
     if finding.verdict == "needs_human":
         # "[MOCK]" is how runs saved before this wording said the same.
         if finding.citation.startswith((NOT_EVALUATED, "[MOCK]")):
-            return "tool_setup"  # Claude isn't connected, so the answer was never judged
+            return "tool_setup"  # answer review isn't set up, so the answer was never judged
         if subject == "app_attested":
             return "your_answers"
         # Not signed in, no test patient, validator down, a probe only the launch suite runs.

@@ -47,7 +47,7 @@ def test_banner_appears_after_evidence_is_added_and_goes_after_a_rerun(client):
     client.post("/tests/SEC-002/evidence", data={"note": "Logs kept 6 years"})
     tests = client.get("/tests").text
     assert "These results are out of date" in tests and "evidence was added or removed on 1 test" in tests
-    assert "Evidence for this test changed after the last run" in client.get("/tests/SEC-002").text
+    assert "Evidence changed since this run" in client.get("/tests/SEC-002").text
     client.post("/assess/rerun", data={"next": "/tests"})
     assert "out of date" not in client.get("/tests").text
     assert run.status_code == 303

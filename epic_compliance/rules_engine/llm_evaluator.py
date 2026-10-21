@@ -73,7 +73,7 @@ def _parse_llm_response(content: str) -> LLMVerdict:
 
 
 #: Citation prefix when Claude never judged the evidence (no API key).
-NOT_EVALUATED = "Not evaluated: Claude isn't connected."
+NOT_EVALUATED = "Not evaluated: answer review isn't set up."
 
 
 def evaluate_with_llm(
@@ -95,7 +95,7 @@ def evaluate_with_llm(
             check_type="llm",
             severity=rule.severity,
             category=rule.category,
-            citation=f"{NOT_EVALUATED} Connect Claude (set ANTHROPIC_API_KEY), then re-run.",
+            citation=f"{NOT_EVALUATED} Set it up in Integrations, then re-run.",
         )
 
     import anthropic  # import only when needed

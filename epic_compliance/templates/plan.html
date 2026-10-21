@@ -88,7 +88,7 @@
       <div class="why">Why: {{ c.reason }}</div>
     </div>
     <span class="badge sev-{{ c.rule.severity }}">{{ c.rule.severity }}</span>
-    <span class="badge type">{{ "AI review" if c.rule.check_type == 'llm' else "Automated" }}</span>
+    <span class="badge type">{{ check_type_labels.get(c.rule.check_type, c.rule.check_type) }}</span>
   </div>
   {% endfor %}
 </div>

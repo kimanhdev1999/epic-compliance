@@ -19,6 +19,27 @@ Evidence section, history), **Integrations**, **Reports**, **Settings**, and **D
 target the Epic sandbox; sample data ("mock") exists only for the smoke test. Read `README.md`
 ("The flow") and `notes/decisions.md` (ADR-011 to ADR-015) before judging intent.
 
+## What's already known (read first)
+
+`docs/progress.md` lists the open UX findings, with their priority and harness marker. Don't
+re-report one of those unless you have something new about it. In your report, mark each finding
+as **new** or **already in progress.md**, so the main agent can add the new ones to *Open*.
+
+## The owner's UX requirements (read first)
+
+`docs/ux-redesign/requirements.md` lists the product owner's standing requirements. Judge every
+screen against it, and report any breach as a **blocker**. The ones most often broken:
+
+- **No Claude or vendor mentions anywhere in the UI.** That covers "Claude", "Anthropic", model
+  ids, "AI citation"/"LLM citation", "AI review" and `ANTHROPIC_API_KEY`, in page text,
+  placeholders, tooltips, flash messages, the exported report and the canvas boards. The check
+  type is **Answer review** and its reason is **Basis**.
+- **No sample data in the UI**: no "Sample data" boxes, `[MOCK]` text or demo wording.
+- **Test detail** follows canvas board 2.4. A reason box with one action, plain-prose results,
+  raw output only under "Technical details", and no prose in monospace.
+
+Your own report may name files and env vars. Never suggest copy that names the vendor.
+
 ## Hard rules
 
 - **Never edit, create or delete files in the repo.** You report; the main agent fixes.

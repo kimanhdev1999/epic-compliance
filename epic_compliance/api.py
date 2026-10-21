@@ -6,7 +6,7 @@ Pages (workspace shell, ADR-012)
   GET  /frameworks/{key}      one framework and its tests
   GET  /tests                 every test with its status; filter by status / framework / category
   GET  /tests/{rule_id}       test detail (HTMX → side drawer, or full page)
-  GET  /integrations          Epic sandbox, Claude, FHIR validator, ONC test kit — what each unlocks
+  GET  /integrations          Epic sandbox, answer review, FHIR validator, ONC test kit — what each unlocks
   POST /assess/rerun          re-run the current app's plan, back to where you were
   GET  /assess                step 1 of an assessment: describe your app in a chat
   POST /assess/chat           one chat turn (HTMX → chat partial)
@@ -54,7 +54,7 @@ from .pipeline import run_full_pipeline
 from .smart.discovery import fetch_smart_configuration
 from .smart.pkce import build_authorization_url, exchange_code_for_token, generate_pkce
 from .rules_engine.catalog import load_rules, rules_fingerprint
-from .viewmodel import build_report_view
+from .viewmodel import CHECK_TYPE_LABELS, build_report_view
 from . import workspace as ws
 
 BASE_DIR = Path(__file__).parent
@@ -73,6 +73,7 @@ def _asset(path: str) -> str:
 
 
 templates.env.globals["asset"] = _asset
+templates.env.globals["check_type_labels"] = CHECK_TYPE_LABELS
 
 _last_report: Report | None = None
 
@@ -252,11 +253,12 @@ def _integrations() -> dict[str, dict[str, Any]]:
             "unlocks": [r.id for r in rules if r.subject in ("app_registration", "tool_launch", "tool_sample")],
             "actions": [("Sign in with SMART", "/launch"), ("Edit connection", "/config")],
         },
-        "claude": {
-            "name": "Claude", "vendor": "Anthropic API", "status": "connected" if cfg.anthropic_api_key else "not_connected",
-            "what": "Judges your security answers (TLS, audit logging, BAAs) against HIPAA and Epic's review "
+        # The UI never names the vendor behind this (docs/ux-redesign/requirements.md, R1).
+        "review": {
+            "name": "Answer review", "vendor": "Review service", "status": "connected" if cfg.anthropic_api_key else "not_connected",
+            "what": "Checks your security answers (TLS, audit logging, BAAs) against HIPAA and Epic's review "
                     "criteria, and runs the describe-your-app chat.",
-            "detail": "ANTHROPIC_API_KEY is set" if cfg.anthropic_api_key else "Set ANTHROPIC_API_KEY in .env",
+            "detail": "API key is set" if cfg.anthropic_api_key else "Add the review API key to .env (see .env.example)",
             "unlocks": [r.id for r in rules if r.check_type == "llm"],
             "actions": [],
         },
@@ -338,7 +340,7 @@ def test_detail(request: Request, rule_id: str) -> Any:
 def _evidence_ctx(rule_id: str, test: dict[str, Any], error: str = "", added: bool = False) -> dict[str, Any]:
     return {"t": test, "evidence_items": store.list_evidence(rule_id), "evidence_error": error,
             "evidence_added": added, "evidence_accept": dev_evidence.ACCEPT,
-            "claude_connected": bool(get_config().anthropic_api_key)}
+            "review_ready": bool(get_config().anthropic_api_key)}
 
 
 def _test_or_404(rule_id: str) -> dict[str, Any]:

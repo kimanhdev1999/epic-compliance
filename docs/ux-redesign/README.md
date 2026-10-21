@@ -3,6 +3,9 @@
 **Live canvas:** https://claude.ai/artifact/AzaXJ7sNMaQ4p2iuvFcu6R (private; share it from the page's Share menu)
 **Decision:** ADR-017 in `notes/decisions.md`
 **Status:** Proposed. No code changes yet; the release plan is on board "Spec 4".
+**Owner's requirements:** [`requirements.md`](requirements.md). These are standing rules for every
+screen and board (no Claude or vendor mentions, no sample data, test-detail layout), and they win
+over older wording on the boards.
 
 The files in `canvas/` are the canvas's source: one `.dc.html` per artboard plus
 `canvas.json` (layout). They are kept here so the design is versioned next to the

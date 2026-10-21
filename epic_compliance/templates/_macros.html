@@ -48,7 +48,7 @@
       <dt>Check type</dt><dd><span class="badge type">{{ item.check_type }}</span></dd>
       {% if item.evidence_needed %}<dt>Evidence needed</dt><dd><code class="inline">{{ item.evidence_needed }}</code></dd>{% endif %}
       <dt>Evidence / reason</dt><dd class="evidence">{{ item.evidence }}</dd>
-      {% if item.citation %}<dt>LLM citation</dt><dd>{{ item.citation }}</dd>{% endif %}
+      {% if item.citation %}<dt>Basis</dt><dd>{{ item.citation }}</dd>{% endif %}
       {% if item.provided_evidence %}<dt>Evidence provided</dt><dd>{{ evidence_list(item.provided_evidence) }}</dd>{% endif %}
     </dl>
     {% if item.remediation_hint and item.fix_where not in ("epic", "sample") %}

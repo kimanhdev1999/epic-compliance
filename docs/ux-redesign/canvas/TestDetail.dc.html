@@ -66,13 +66,13 @@ pre{margin:0;padding:12px 14px;border-top:1px solid #E4E7EC;background:#F9FAFB;f
 <div style="display: flex; gap: 6px; align-items: center"><span class="muted" style="font-size: 12.5px">5 of 11 to resolve</span><button class="btn btn-s icon" type="button" aria-label="Previous test">‹</button><button class="btn btn-s icon" type="button" aria-label="Next test">›</button><a class="btn btn-s icon" href="Tests.dc.html" aria-label="Close">✕</a></div>
 </div>
 <h1 id="dt">Every access to patient data is logged</h1>
-<div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="pill p-input">? Needs input</span><span class="who">Your app · your answers</span><span class="pill p-meta">High</span><span class="pill p-meta">AI review</span></div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="pill p-input">? Needs input</span><span class="who">Your app · your answers</span><span class="pill p-meta">High</span><span class="pill p-meta">Answer review</span></div>
 </div>
 
 <div class="db">
 <div class="reason">
 <span class="k">Where to fix it · Your answers or proof</span>
-<p style="font-size: 15px; line-height: 23px">Claude reviewed your answer. It says audit logging is on and kept 6 years, but not whether <b>reads</b> of patient data are logged — only that logging exists. Attach your audit-logging policy, a sample log entry for a chart read, or the logging config.</p>
+<p style="font-size: 15px; line-height: 23px">Answer review checked your answer. It says audit logging is on and kept 6 years, but not whether <b>reads</b> of patient data are logged — only that logging exists. Attach your audit-logging policy, a sample log entry for a chart read, or the logging config.</p>
 <div style="display: flex; gap: 8px; flex-wrap: wrap"><a class="btn btn-p" href="#proof">Add proof</a><a class="btn btn-s" href="Profile.dc.html">Edit my answer</a></div>
 </div>
 
@@ -80,8 +80,8 @@ pre{margin:0;padding:12px 14px;border-top:1px solid #E4E7EC;background:#F9FAFB;f
 
 <div class="sec">
 <h2>What we observed</h2>
-<p>Your profile: audit logging <b>Yes</b>, retention <b>2,190 days</b>. One statement attached as proof. AI verdict: can't confirm reads are logged.</p>
-<details><summary>Technical details</summary><pre>check_type: llm (claude-sonnet-4-6)
+<p>Your profile: audit logging <b>Yes</b>, retention <b>2,190 days</b>. One statement attached as proof. Answer review: can't confirm reads are logged.</p>
+<details><summary>Technical details</summary><pre>check_type: answer review
 inputs: app_config.audit_logging_enabled=true
         app_config.audit_log_retention_days=2190
         developer_evidence[1]: statement (412 chars)

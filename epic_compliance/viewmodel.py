@@ -6,6 +6,7 @@ groups by category, and sorts so the most actionable items surface first
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from . import fix_where as fw
@@ -28,6 +29,26 @@ CATEGORY_LABELS = {
 
 VERDICT_LABELS = {"pass": "Passed", "fail": "Failed", "needs_human": "Needs review"}
 
+#: How each check type is named on screen. The UI never names the model or
+#: vendor behind the answer review (docs/ux-redesign/requirements.md, R1).
+CHECK_TYPE_LABELS = {"automated": "Automated", "llm": "Answer review"}
+
+# Checker output (key=value pairs, dicts, OS errors, status codes) rather than prose.
+_TECHNICAL = re.compile(r"\w=|[{}]|\[Errno|\bstatus[ _]code\b|\bHTTP \d{3}\b")
+
+
+def is_technical(text: str) -> bool:
+    """True when a result's evidence is raw checker output, shown only under
+    "Technical details"; prose evidence is shown as the result itself."""
+    return bool(_TECHNICAL.search(text))
+
+
+def basis(citation: str) -> str:
+    """The answer review's stated reason, for display. Placeholders from runs
+    where the review didn't run ("[MOCK] ...", "Not evaluated: ...") only
+    repeat the result, so they are dropped."""
+    return "" if citation.startswith(("[MOCK]", "Not evaluated")) else citation
+
 
 #: What each rule's verdict is evidence *about*. key → (badge, explanation).
 SUBJECTS = {
@@ -49,7 +70,7 @@ SUBJECTS = {
     ),
     "app_attested": (
         "Judges your stated answers",
-        "Claude judges your answers in the chat and the evidence you attach. "
+        "Your answers in the chat and the evidence you attach are checked automatically. "
         "It doesn't connect to your systems to verify them.",
     ),
 }
@@ -85,10 +106,10 @@ def build_report_view(
             "verdict": f.verdict,
             "evidence": f.evidence,
             "remediation_hint": f.remediation_hint,
-            "check_type": f.check_type,
+            "check_type": CHECK_TYPE_LABELS.get(f.check_type, f.check_type),
             "severity": f.severity,
             "category": category,
-            "citation": f.citation,
+            "citation": basis(f.citation),
             "requirement": rule.description if rule else "",
             "source": rule.source if rule else "",
             "evidence_needed": rule.evidence_needed if rule else "",

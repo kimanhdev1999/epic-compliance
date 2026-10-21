@@ -78,7 +78,7 @@ class TestRoutes:
         client.post("/assess/run", data=self.FORM)
         base = store.latest_run()
         drawer = client.get("/tests/CLIN-001", headers={"HX-Request": "true"})
-        assert "Re-run this test" in drawer.text and 'name="rule_id" value="CLIN-001"' in drawer.text
+        assert "Re-check this test" in drawer.text and 'name="rule_id" value="CLIN-001"' in drawer.text
 
         resp = client.post("/assess/rerun", data={"next": "/tests?open=CLIN-001", "rule_id": "CLIN-001"},
                            follow_redirects=False)
@@ -102,6 +102,6 @@ class TestRoutes:
     def test_integrations_list_what_each_unlocks(self, client, monkeypatch):
         resp = client.get("/integrations")
         assert resp.status_code == 200
-        for name in ("Epic sandbox", "Claude", "HL7 FHIR validator", "ONC (g)(10) test kit"):
+        for name in ("Epic sandbox", "Answer review", "HL7 FHIR validator", "ONC (g)(10) test kit"):
             assert name in resp.text
         assert "SEC-001" in resp.text  # unlocked by Claude

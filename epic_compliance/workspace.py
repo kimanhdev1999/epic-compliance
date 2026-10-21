@@ -21,7 +21,7 @@ from typing import Any, Callable
 
 from . import fix_where as fw
 from .rules_engine.catalog import Rule, load_rules
-from .viewmodel import CATEGORY_LABELS, SEVERITY_ORDER, SUBJECTS
+from .viewmodel import CATEGORY_LABELS, CHECK_TYPE_LABELS, SEVERITY_ORDER, SUBJECTS, basis, is_technical
 
 STATUS_FROM_VERDICT = {"pass": "passing", "fail": "failing", "needs_human": "needs_review"}
 STATUS_LABELS = {
@@ -92,6 +92,26 @@ def frameworks_for(rule: Rule) -> list[str]:
 # --------------------------------------------------------------------------- #
 # Tests
 # --------------------------------------------------------------------------- #
+def next_actions(test: dict[str, Any]) -> list[tuple[str, str]]:
+    """The one thing to do about an open result, plus at most one alternative:
+    (label, href). "#evidence" opens the drawer's add-evidence form."""
+    where, evidence = test["fix_where"], test["evidence"]
+    if test["status"] not in ("failing", "needs_review"):
+        return []
+    if where == "your_answers":
+        actions = [("Add evidence", "#evidence")]
+        if test["subject"] == "app_attested" and not test["category"].startswith("rq_"):
+            actions.append(("Answer in chat", "/assess"))
+        return actions
+    if where == "tool_setup":
+        if "test patient" in evidence or "Not signed in" in evidence:
+            return [("Open test plan", "/assess/plan")]
+        return [("Open integrations", "/integrations")]
+    if where == "registration":
+        return [("Open fhir.epic.com", "https://fhir.epic.com/")]
+    return []
+
+
 def build_tests(run: dict[str, Any] | None, in_plan: set[str] | None = None) -> list[dict[str, Any]]:
     """Every catalog rule as a test, with its status in ``run`` (latest run).
 
@@ -124,14 +144,15 @@ def build_tests(run: dict[str, Any] | None, in_plan: set[str] | None = None) -> 
             "severity": rule.severity,
             "category": rule.category,
             "category_label": CATEGORY_LABELS.get(rule.category, rule.category.replace("_", " ").title()),
-            "type_label": "AI review" if rule.check_type == "llm" else "Automated",
+            "type_label": CHECK_TYPE_LABELS.get(rule.check_type, rule.check_type),
             "frameworks": frameworks_for(rule),
             "source": rule.source,
             "subject": rule.subject,
             "subject_label": subject[0],
             "subject_detail": subject[1],
             "evidence": f.evidence if f else "",
-            "citation": f.citation if f else "",
+            "evidence_technical": is_technical(f.evidence) if f else False,
+            "citation": basis(f.citation) if f else "",
             "remediation": (f.remediation_hint if f else "") or rule.remediation_hint,
             # Who must act on a failing / needs-review result (ADR-018).
             "fix_where": where,
@@ -142,6 +163,7 @@ def build_tests(run: dict[str, Any] | None, in_plan: set[str] | None = None) -> 
             "reason": in_scope.get(rule.id) or out_of_scope.get(rule.id)
                       or ("" if f or run is None else "Not part of this assessment."),
         })
+        tests[-1]["actions"] = next_actions(tests[-1])
     tests.sort(key=lambda t: (STATUS_ORDER[t["status"]], SEVERITY_ORDER.get(t["severity"], 9), t["id"]))
     return tests
 
