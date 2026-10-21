@@ -5,7 +5,7 @@ work and updates it before opening a PR** (see `CLAUDE.md`). Keep it short: one 
 per item, newest first within each section. Detail belongs in `notes/decisions.md`
 (ADRs), PR descriptions and `docs/ux-redesign/requirements.md`.
 
-**Last updated:** 2026-10-21 (no real health system named anywhere; examples use "Example Health")
+**Last updated:** 2026-10-21 (CI now checks this file on every PR)
 
 ## How to keep this current
 - **Starting work:** read *Open* and *Next*. If your task is listed, work from that line.
@@ -15,6 +15,14 @@ per item, newest first within each section. Detail belongs in `notes/decisions.m
   `KNOWN` entry names that marker. When the fix lands, the marker XPASSes: remove the
   marker and move the item to *Done* in the same PR.
 - **Check:** `pytest` and `pytest -m ui` before every PR. The xfail count should only go down.
+- **Checked automatically:**
+  - `tests/test_progress.py` (runs in CI) fails when:
+    - a harness `known(...)` / `KNOWN` marker isn't listed under *Open*;
+    - a marker listed under *Open* no longer exists, meaning it was fixed: move the row to *Done*;
+    - a *Done* row lacks a PR number;
+    - *Last updated* isn't a date.
+  - The CI job `progress` fails a PR that changes `epic_compliance/`, `rules/`, `tests/` or `scripts/` without changing this file. Label the PR `no-progress-update` to skip it for trivial changes.
+  - Write the PR number in *Done* once the PR is open (`#NN`), not "this PR".
 
 ## Standing rules (owner's requirements)
 - The UI, export and canvas never name Claude, Anthropic or a model. Use "Answer review" and "Basis". See `docs/ux-redesign/requirements.md`.
@@ -24,7 +32,8 @@ per item, newest first within each section. Detail belongs in `notes/decisions.m
 ## Done
 | What | PR / ADR |
 |---|---|
-| No real health system named anywhere: examples, canvas boards, tests and docs use "Example Health" | this PR |
+| docs/progress.md checked on every PR: CI job plus sync tests with the UI harness | #39 |
+| No real health system named anywhere: examples, canvas boards, tests and docs use "Example Health" | #38 |
 | Test detail redesigned (reason box, plain observations, Technical details); no vendor names in the UI | #36 |
 | FHIR validator starts with the app; write checks (CLIN-005/006/009, WRITE-001..004) give real verdicts | #37, ADR-021 |
 | UI never shows sample data; real runs no longer say `[MOCK]` or "mock/sandbox" | #35 |
