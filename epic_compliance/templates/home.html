@@ -9,7 +9,7 @@
     <p class="subtitle">
       {% if run %}
         {% if w.intake.health_system %}Integrating with {{ w.intake.health_system }} &middot; {% endif %}
-        Last tested {{ run.created_at[:16].replace('T', ' ') }} UTC on {{ "demo data" if run.run_mode == 'mock' else "the Epic sandbox" }}
+        Last tested {{ run.created_at[:16].replace('T', ' ') }} UTC on the Epic sandbox
       {% else %}
         Describe your app, and we'll work out which Epic, ONC (g)(10) and HIPAA tests it has to pass.
       {% endif %}

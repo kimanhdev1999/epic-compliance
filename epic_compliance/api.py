@@ -130,6 +130,8 @@ def _nav() -> dict[str, Any]:
 @app.on_event("startup")
 def _startup() -> None:
     store.init_db()
+    from .validator.autostart import start_in_background
+    start_in_background(get_config())
 
 
 # --------------------------------------------------------------------------- #
@@ -232,13 +234,21 @@ def _integrations() -> dict[str, dict[str, Any]]:
         epic = "configured"
     else:
         epic = "not_connected"
+    from .validator.autostart import status as autostart
     validator = "configured" if cfg.validator_mode != "off" and (
         cfg.validator_jar_path or cfg.validator_mode == "service") else "not_connected"
+    validator_detail = cfg.validator_jar_path or (cfg.validator_service_url if validator != "not_connected"
+                                                  else "Set VALIDATOR_JAR_PATH or VALIDATOR_MODE=service")
+    if autostart["state"] == "ready":
+        validator, validator_detail = "connected", f"{cfg.validator_service_url} (started with the app)"
+    elif autostart["state"] in ("starting", "warming"):
+        validator, validator_detail = "configured", "Starting with the app — loading US Core…"
+    elif autostart["state"] == "unavailable":
+        validator_detail = f"Could not start: {autostart['detail']}"
     return {
         "epic": {
             "name": "Epic sandbox", "vendor": "fhir.epic.com", "status": epic,
-            "what": "Real SMART sign-in and real FHIR calls with your non-production client ID, "
-                    "instead of sample responses.",
+            "what": "Real SMART sign-in and real FHIR calls with your non-production client ID.",
             "detail": f"Client ID {client_id}" if epic != "not_connected" else "No client ID yet",
             "unlocks": [r.id for r in rules if r.subject in ("app_registration", "tool_launch", "tool_sample")],
             "actions": [("Sign in with SMART", "/launch"), ("Edit connection", "/config")],
@@ -255,8 +265,7 @@ def _integrations() -> dict[str, dict[str, Any]]:
         "validator": {
             "name": "HL7 FHIR validator", "vendor": "validator_cli.jar or validator service", "status": validator,
             "what": "Validates the resources your app writes against US Core before Epic sees them.",
-            "detail": cfg.validator_jar_path or (cfg.validator_service_url if validator != "not_connected"
-                                                 else "Set VALIDATOR_JAR_PATH or VALIDATOR_MODE=service"),
+            "detail": validator_detail,
             "unlocks": [r.id for r in rules if r.subject == "tool_sample" and r.category == "write_back"],
             "actions": [],
         },

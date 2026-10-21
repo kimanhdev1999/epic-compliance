@@ -6,7 +6,7 @@
   <div>
     <h1>Tests</h1>
     <p class="subtitle">
-      {% if w.run %}Results from {{ w.run.created_at[:16].replace('T', ' ') }} UTC on {{ "demo data" if w.run.run_mode == 'mock' else "the Epic sandbox" }}. Select a test to see the evidence and how to fix it.
+      {% if w.run %}Results from {{ w.run.created_at[:16].replace('T', ' ') }} UTC on the Epic sandbox. Select a test to see the evidence and how to fix it.
       {% else %}Nothing has run yet. <a href="/assess">Describe your app</a> to build a test plan.{% endif %}
     </p>
   </div>
@@ -31,7 +31,7 @@
     </select>
     <select name="where" aria-label="Where to fix it">
       <option value="">Fix anywhere</option>
-      {% for key, (label, _) in fix_where.items() %}<option value="{{ key }}" {{ 'selected' if filters.where == key }}>{{ label }}</option>{% endfor %}
+      {% for key, (label, _) in fix_where.items() if key != "sample" %}<option value="{{ key }}" {{ 'selected' if filters.where == key }}>{{ label }}</option>{% endfor %}
     </select>
     <select name="category" aria-label="Category">
       <option value="">All categories</option>

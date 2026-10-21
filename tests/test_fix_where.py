@@ -35,7 +35,7 @@ def where(rule_id: str, verdict: str, **kw) -> str:
     ("SEC-001", "fail", {"evidence": "TLS 1.0", "citation": "app_config says TLS 1.0"}, "your_app"),
     ("SEC-001", "needs_human", {"evidence": "nothing answered"}, "your_answers"),
     # Caused by this tool's setup.
-    ("SEC-002", "needs_human", {"citation": "[MOCK] Evidence not evaluated"}, "tool_setup"),
+    ("SEC-002", "needs_human", {"citation": "Not evaluated: answer review isn't set up. Set it up in Integrations, then re-run."}, "tool_setup"),
     ("CLIN-002", "needs_human", {"evidence": "Skipped: no test patient was given."}, "tool_setup"),
     ("AUTH-007", "needs_human", {"evidence": "auth_probe unavailable"}, "tool_setup"),
 ])
@@ -110,16 +110,16 @@ class TestSampleRuns:
         assert store.latest_run()["run_id"] == "real"
         assert "sample-banner" not in client.get("/tests").text
 
-    def test_only_sample_runs_are_shown_under_a_banner(self, client):
+    def test_the_app_never_shows_sample_runs(self, client, monkeypatch):
         from epic_compliance import store
 
+        monkeypatch.setenv("EPIC_COMPLIANCE_SHOW_SAMPLE_RUNS", "0")  # as users run the app
         self._save("sample", "mock", "2026-10-02T00:00:00+00:00")
-        assert store.latest_run()["run_id"] == "sample"
+        assert store.latest_run() is None and store.list_runs() == [] and store.get_run("sample") is None
         page = client.get("/tests").text
-        assert "Sample data — not a real result" in page
-        assert 'data-where="sample"' in page
-        drawer = client.get("/tests/AUTH-010", headers={"HX-Request": "true"}).text
-        assert "Sample data" not in drawer and "class=\"reason" not in drawer  # requirements R2
+        # The sample run's failure isn't shown: every test is simply not run yet.
+        assert "Nothing has run yet" in page and "Sample data" not in page and 'data-status="failing"' not in page
+        assert client.get("/runs/sample").status_code == 404
 
     def test_tests_page_filters_and_labels_by_where_to_fix(self, client):
         self._save("real", "live", "2026-10-01T00:00:00+00:00")

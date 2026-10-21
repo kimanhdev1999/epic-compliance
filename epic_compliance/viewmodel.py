@@ -62,7 +62,7 @@ SUBJECTS = {
     ),
     "tool_sample": (
         "Tests the write path",
-        "This tool sends its own sample resource through your registration. Proves Epic accepts it, not that your app sends valid ones.",
+        "This tool writes its own test resource through your registration. Proves Epic accepts it, not that your app sends valid ones.",
     ),
     "tool_launch": (
         "Tests this tool's login",

@@ -69,14 +69,26 @@ def test_no_failures_only_when_nothing_is_open(report, run_json):
 
 # --- Sample data -------------------------------------------------------------
 
-@pytest.mark.parametrize("path", ["/runs/{run}", "/runs/{run}/print", "/", "/tests"])
-def test_sample_data_is_unmissable(visit, server, sample_run, path):
-    """Results from sample responses must carry a banner, not a muted subtitle."""
-    v = visit(server)
-    v.page.goto(path.format(run=sample_run))
-    banner = v.page.locator("[role=alert], [role=status], .banner, [data-demo-banner]").filter(
-        has_text=re.compile(r"demo|sample", re.I))
-    assert banner.count(), f"{path}: sample-data results with no visible banner"
+@pytest.fixture(scope="module")
+def app_sample_run(app_server) -> str:
+    """A sample-data run made through the API, as the CLI or smoke test would."""
+    return httpx.post(f"{app_server}/api/run", timeout=60).json()["run_id"]
+
+
+@pytest.mark.parametrize("path", ["/", "/tests", "/frameworks", "/runs", "/integrations", "/assess", "/config"])
+def test_the_app_never_shows_sample_data(visit, app_server, app_sample_run, path):
+    """Users only ever see results from their real Epic runs: no sample runs,
+    and no sample, mock or demo wording anywhere (ADR-020)."""
+    v = visit(app_server)
+    v.page.goto(path)
+    text = v.text()
+    assert not re.search(r"\b(sample data|sample responses|mock|demo data)\b", text, re.I), f"{path} mentions sample data"
+    assert app_sample_run[:8] not in v.page.content(), f"{path} shows the sample run"
+
+
+def test_a_sample_run_has_no_report_page(app_server, app_sample_run):
+    for suffix in ("", "/print", "/export"):
+        assert httpx.get(f"{app_server}/runs/{app_sample_run}{suffix}").status_code == 404
 
 
 @known('a sample run ticks Connect / Run / Fix on Home')

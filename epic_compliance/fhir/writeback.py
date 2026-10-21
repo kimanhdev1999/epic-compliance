@@ -14,6 +14,7 @@ any other SMART app. Do not add server-side FHIR routes here.
 from __future__ import annotations
 
 import base64
+from datetime import datetime, timezone
 from typing import Any
 
 #: Scopes this write-back flow needs at SMART launch, on top of whatever read
@@ -26,10 +27,12 @@ WRITE_SCOPES_NEEDED = [
 ]
 
 #: US Core 3.1.1 profile canonicals for the write-back resources, where one
-#: exists. US Core 3.1.1 has no Media profile, so Media validates against the
-#: base FHIR R4 spec only (empty profile = base-spec validation).
+#: exists (empty profile = base FHIR R4 validation). US Core 3.1.1 has no Media
+#: profile, and its Observation profiles (lab, vitals, smoking status) don't fit
+#: an AI imaging finding. us-core-observation-clinical-result is US Core 6.x
+#: only: the validator, which loads 3.1.1, can't resolve it and answers HTTP 500.
 WRITE_PROFILES: dict[str, str] = {
-    "Observation": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-clinical-result",
+    "Observation": "",
     "DiagnosticReport": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-diagnosticreport-note",
     "Media": "",
 }
@@ -58,10 +61,13 @@ def build_observation(
         ],
         "code": {
             "coding": [
-                {"system": "http://loinc.org", "code": "18782-3", "display": "Radiology Study observation"}
+                # LOINC's exact display; the validator rejects any other wording.
+                {"system": "http://loinc.org", "code": "18782-3",
+                 "display": "Radiology Study observation (narrative)"}
             ]
         },
         "subject": {"reference": f"Patient/{patient_id}"},
+        "effectiveDateTime": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "valueString": value_text,
     }
 
@@ -89,6 +95,8 @@ def build_diagnostic_report(
             ]
         },
         "subject": {"reference": f"Patient/{patient_id}"},
+        # Required by us-core-diagnosticreport-note (effective[x] 1..1).
+        "effectiveDateTime": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "result": [{"reference": f"Observation/{observation_id}"}],
     }
 
@@ -210,7 +218,7 @@ def build_consult_note(
     *,
     encounter_id: str = "",
     practitioner_ref: str = "",
-    text: str = "Dermatology e-consult: compliance-tool sample note. Not clinical content.",
+    text: str = "Dermatology e-consult: compliance-tool test note. Not clinical content.",
 ) -> dict[str, Any]:
     """The derm's assessment, as a Clinical Notes DocumentReference."""
     doc: dict[str, Any] = {

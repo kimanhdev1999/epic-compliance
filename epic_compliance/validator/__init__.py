@@ -61,6 +61,11 @@ def get_validator(config: AppConfig) -> FhirValidator:
     if mode == "off":
         return NullValidator()
 
+    # A run started right after `serve` launched must not race the container
+    # boot and come back needs_human; wait for the autostart thread instead.
+    from .autostart import wait_for_autostart
+    wait_for_autostart()
+
     service = HL7ValidatorService(config.validator_service_url, config.validator_timeout_s)
     java = JavaCliValidator(config.validator_jar_path, config.validator_timeout_s)
 

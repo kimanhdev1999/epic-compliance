@@ -47,6 +47,9 @@ class AppConfig(BaseSettings):
     )
     validator_jar_path: str = Field(default="", alias="VALIDATOR_JAR_PATH")
     validator_timeout_s: float = Field(default=60.0, alias="VALIDATOR_TIMEOUT_S")
+    # Start the validator container (podman, else docker) with the app when
+    # VALIDATOR_SERVICE_URL is local and nothing answers there.
+    validator_autostart: bool = Field(default=True, alias="VALIDATOR_AUTOSTART")
 
     # --- Launch profile (ADR-010) ------------------------------------------
     # patient_launch: patient-context token (patient/* scopes, `patient` in
