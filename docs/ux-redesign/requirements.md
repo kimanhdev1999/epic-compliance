@@ -53,3 +53,5 @@ Never render prose in a monospace `<pre>`. Never show internals (Python dicts, `
 - Use plain words a developer new to Epic understands. Explain Epic terms (SMART, FHIR, scopes)
   where they first appear.
 - Layouts work at phone width (390 px).
+- Examples, placeholders, mockups and test data use fictional names ("Example Health",
+  "DermScan"), never a real health system or organization.

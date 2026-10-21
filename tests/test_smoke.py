@@ -31,7 +31,7 @@ VENDOR = re.compile(r"claude|anthropic|AI review|AI citation|LLM citation", re.I
 #: Two apps that exercise different halves of the catalog.
 APPS = {
     "clinician_mobile": [
-        "We're building DermScan, a mobile app dermatologists at Advocate Health use to "
+        "We're building DermScan, a mobile app dermatologists at Example Health use to "
         "photograph a lesion, save the photo to the chart and get an AI read.",
         "TLS 1.3, audit logging on and kept 6 years, BAA signed with all vendors",
     ],

@@ -365,7 +365,7 @@ the intake and plan are stored with the run (`config.assessment`) so a report
 shows its own scope.
 
 ### Reasoning
-- The user's goal is getting one app live at one health system (Advocate),
+- The user's goal is getting one app live at one health system,
   not a marketplace listing. Asking about the app first means the report only
   contains checks that matter to it, and says why each is there.
 - Showing the plan before running keeps the tool honest: what will be judged,

@@ -5,7 +5,7 @@ work and updates it before opening a PR** (see `CLAUDE.md`). Keep it short: one 
 per item, newest first within each section. Detail belongs in `notes/decisions.md`
 (ADRs), PR descriptions and `docs/ux-redesign/requirements.md`.
 
-**Last updated:** 2026-10-21 (PR #36: test detail redesign, merged with `main` after #35 and #37)
+**Last updated:** 2026-10-21 (no real health system named anywhere; examples use "Example Health")
 
 ## How to keep this current
 - **Starting work:** read *Open* and *Next*. If your task is listed, work from that line.
@@ -24,6 +24,7 @@ per item, newest first within each section. Detail belongs in `notes/decisions.m
 ## Done
 | What | PR / ADR |
 |---|---|
+| No real health system named anywhere: examples, canvas boards, tests and docs use "Example Health" | this PR |
 | Test detail redesigned (reason box, plain observations, Technical details); no vendor names in the UI | #36 |
 | FHIR validator starts with the app; write checks (CLIN-005/006/009, WRITE-001..004) give real verdicts | #37, ADR-021 |
 | UI never shows sample data; real runs no longer say `[MOCK]` or "mock/sandbox" | #35 |

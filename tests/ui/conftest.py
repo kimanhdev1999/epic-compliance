@@ -33,7 +33,7 @@ VIEWPORTS = {
 
 # Described like a real first-time user would; the chat has to get from this to a plan.
 APP_DESCRIPTION = (
-    "A standalone clinician web app for Advocate nurses. They sign in, look up a "
+    "A standalone clinician web app for hospital nurses. They sign in, look up a "
     "patient, read their medications and allergies, and save wound photos to the chart."
 )
 
