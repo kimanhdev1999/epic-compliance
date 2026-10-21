@@ -19,6 +19,8 @@ Build an automated Epic FHIR compliance verification tool: ONC (g)(10) conforman
 `docs/progress.md` is the running record of what's done, what's open and what's next.
 **Read it before starting any task, and update it in the same PR as your change**: move what
 you closed to *Done* with the PR number, add what you found to *Open*, and bump *Last updated*.
+CI enforces it: the `progress` job fails a PR that changes code without changing the file, and
+`tests/test_progress.py` keeps *Open* in step with the UI harness's known-issue markers.
 
 ## Build Plan Tracking
 Before starting any day's work:

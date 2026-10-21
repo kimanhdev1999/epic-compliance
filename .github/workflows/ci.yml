@@ -6,6 +6,8 @@ name: CI
 
 on:
   pull_request:
+    # labeled/unlabeled re-run the progress check when `no-progress-update` changes.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   push:
     branches: [main]
 
@@ -31,3 +33,29 @@ jobs:
         run: pytest -m smoke -v
       - name: Unit tests
         run: pytest -m "not smoke and not live and not launch"
+
+  # docs/progress.md is the running record every session reads first (CLAUDE.md).
+  # A PR that changes the app must update it; tests/test_progress.py checks its content.
+  progress:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: docs/progress.md is updated with the change
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          SKIP: ${{ contains(github.event.pull_request.labels.*.name, 'no-progress-update') }}
+        run: |
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          echo "$changed"
+          if [ "$SKIP" = "true" ]; then
+            echo "Skipped: the PR has the no-progress-update label."
+            exit 0
+          fi
+          if echo "$changed" | grep -qE '^(epic_compliance|rules|tests|scripts)/' \
+             && ! echo "$changed" | grep -qx 'docs/progress.md'; then
+            echo "::error file=docs/progress.md::This PR changes the app, rules, tests or scripts but not docs/progress.md. Move what you closed to Done (with the PR number), add anything you found to Open, and bump Last updated. For a trivial change, add the no-progress-update label."
+            exit 1
+          fi
