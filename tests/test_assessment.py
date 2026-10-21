@@ -53,7 +53,7 @@ class TestBuildPlan:
 
     def test_overrides_map_answers_to_config(self):
         o = build_plan(Intake(
-            platform="mobile", third_party_ai=True, health_system="Advocate Health",
+            platform="mobile", third_party_ai=True, health_system="Example Health",
             baa_status="health_system_only", tls_version="TLS 1.2",
         )).config_overrides()
         assert o["app_client_type"] == "public"
@@ -86,12 +86,12 @@ class TestChatIntake:
 
     def test_description_fills_topics_then_asks_what_is_missing(self):
         state = self._say(ChatState.start(),
-                          "We're building DermScan, a mobile app dermatologists at Advocate Health "
+                          "We're building DermScan, a mobile app dermatologists at Example Health "
                           "use to photograph a lesion, save the photo to the chart and get an AI read.")
         i = state.intake
         assert (i.users, i.platform) == ("clinicians", "mobile")
         assert i.saves_images and i.third_party_ai
-        assert i.health_system == "Advocate Health" and i.app_name == "DermScan"
+        assert i.health_system == "Example Health" and i.app_name == "DermScan"
         assert not i.reads_chart  # "save the photo to the chart" is a write, not a read
         assert set(state.known) == {"users", "platform", "data"}
         assert "security" in state.messages[-1]["content"].lower()
@@ -218,7 +218,7 @@ class TestAssessmentRoutes:
         return TestClient(app)
 
     FORM = {
-        "app_name": "DermScan", "health_system": "Advocate Health",
+        "app_name": "DermScan", "health_system": "Example Health",
         "users": "clinicians", "platform": "mobile",
         "reads_chart": "on", "saves_images": "on", "run_mode": "mock",
     }

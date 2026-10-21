@@ -33,7 +33,7 @@ class TestRoutes:
         return TestClient(app)
 
     FORM = {
-        "app_name": "DermScan", "health_system": "Advocate Health",
+        "app_name": "DermScan", "health_system": "Example Health",
         "users": "clinicians", "platform": "mobile",
         "reads_chart": "on", "saves_images": "on", "run_mode": "mock",
     }

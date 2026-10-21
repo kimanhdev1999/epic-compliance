@@ -85,10 +85,10 @@ rule to the answers that pull it in); frameworks and test statuses in
 ## Who this is for — worked example
 
 Say you're building **DermScan**, a mobile app a dermatologist at
-**Advocate Health** uses to photograph a lesion, file the photo in the
+**Example Health** uses to photograph a lesion, file the photo in the
 patient's chart, and get an AI read of it.
 
-Tell the chat: *"A mobile app dermatologists at Advocate Health use to
+Tell the chat: *"A mobile app dermatologists at Example Health use to
 photograph a lesion, save the photo to the chart and get an AI read."* It
 picks up clinicians, mobile, photos and a third-party AI, asks about your
 security setup, and the plan comes back with checks including:
@@ -97,7 +97,7 @@ security setup, and the plan comes back with checks including:
 - **Right patient, every time** — the clinician signs in with no patient, searches, and confirms one; the search must match exactly one patient and show enough to confirm them (`CLIN-001`, `CLIN-002`). Everything written must land on that patient (`CLIN-007`).
 - **The photo** — it must validate, be accepted by Epic, and read back so the care team can open it (`CLIN-005`, `CLIN-006`).
 - **Chart reads** — problems, meds and allergies are allowed, and US Core data is shaped the way your parser expects (`CLIN-008`, `FHIR-*`).
-- **Security** — TLS 1.2+, audit logging of PHI access, and a BAA with Advocate *and* the AI vendor that sees the image (`SEC-*`). That last one is the check teams most often discover too late.
+- **Security** — TLS 1.2+, audit logging of PHI access, and a BAA with the health system *and* the AI vendor that sees the image (`SEC-*`). That last one is the check teams most often discover too late.
 
 Write-back checks for notes, and the patient-app checks (`WRITE-*`,
 `AUTH-009`), are skipped — they don't apply to this app — and the report says
