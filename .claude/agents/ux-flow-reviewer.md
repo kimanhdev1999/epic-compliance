@@ -19,6 +19,12 @@ Evidence section, history), **Integrations**, **Reports**, **Settings**, and **D
 target the Epic sandbox; sample data ("mock") exists only for the smoke test. Read `README.md`
 ("The flow") and `notes/decisions.md` (ADR-011 to ADR-015) before judging intent.
 
+## What's already known (read first)
+
+`docs/progress.md` lists the open UX findings, with their priority and harness marker. Don't
+re-report one of those unless you have something new about it. In your report, mark each finding
+as **new** or **already in progress.md**, so the main agent can add the new ones to *Open*.
+
 ## The owner's UX requirements (read first)
 
 `docs/ux-redesign/requirements.md` lists the product owner's standing requirements. Judge every

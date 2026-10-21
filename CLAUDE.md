@@ -15,6 +15,11 @@ Build an automated Epic FHIR compliance verification tool: ONC (g)(10) conforman
   - Stop: `podman compose down`
   - Uses **Podman** (not Docker) — use `podman compose` for all container commands
 
+## Progress Tracking
+`docs/progress.md` is the running record of what's done, what's open and what's next.
+**Read it before starting any task, and update it in the same PR as your change**: move what
+you closed to *Done* with the PR number, add what you found to *Open*, and bump *Last updated*.
+
 ## Build Plan Tracking
 Before starting any day's work:
 1. Read `plan/epic-compliance-build-plan.md` to find the next unchecked day
