@@ -32,6 +32,7 @@ per item, newest first within each section. Detail belongs in `notes/decisions.m
 ## Done
 | What | PR / ADR |
 |---|---|
+| docs/progress.md checked on every PR: CI job plus sync tests with the UI harness | #39 |
 | No real health system named anywhere: examples, canvas boards, tests and docs use "Example Health" | #38 |
 | Test detail redesigned (reason box, plain observations, Technical details); no vendor names in the UI | #36 |
 | FHIR validator starts with the app; write checks (CLIN-005/006/009, WRITE-001..004) give real verdicts | #37, ADR-021 |
