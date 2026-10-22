@@ -28,8 +28,8 @@
 </ol>
 {% endmacro %}
 
-{% macro finding(item) %}
-<details class="finding v-{{ item.verdict }}" id="f-{{ item.rule_id }}" data-verdict="{{ item.verdict }}">
+{% macro finding(item, open=false) %}
+<details class="finding v-{{ item.verdict }}"{% if open %} open{% endif %} id="f-{{ item.rule_id }}" data-verdict="{{ item.verdict }}">
   <summary>
     <span class="chevron">&#9656;</span>
     <span class="rid">{{ item.rule_id }}</span>

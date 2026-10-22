@@ -12,7 +12,24 @@
   {% if intake %}{{ labels.users[intake.users] }} &middot; {{ labels.platform[intake.platform] }}{% if intake.health_system %} &middot; {{ intake.health_system }}{% endif %} &middot; {% endif %}
   Epic sandbox: {{ run.fhir_base_url }} &middot; {{ run.created_at[:16].replace('T',' ') }} UTC
 </p>
+{% if recheck and not show_all %}
+<h2>Re-check of {{ recheck["items"]|map(attribute="rule_id")|join(", ") }}</h2>
+<p class="muted">Only {{ "this test was" if recheck["items"]|length == 1 else "these tests were" }} checked again. Every other result in this run is carried over unchanged{% if recheck.base_run_id %} from the <a href="/runs/{{ recheck.base_run_id }}">{{ recheck.base_when }} UTC run</a>{% endif %}.</p>
+{% for it in recheck["items"] %}
+<div class="recheck-result">
+  <span class="rid">{{ it.rule_id }}</span>
+  {% if it.before %}{{ m.status_pill(it.before.status, it.before.label) }} <span class="muted">&rarr;</span>{% endif %}
+  {{ m.status_pill(it.now.status, it.now.label) }}
+  {% if it.before and it.before.status == it.now.status %}<span class="muted small">No change</span>{% endif %}
+  <a class="btn small-btn" href="/tests?open={{ it.rule_id }}">Open in Tests</a>
+</div>
+{{ m.finding(it, open=true) }}
+{% endfor %}
+<div class="actions" style="margin-top:1rem"><a class="btn secondary" href="?all=1">Show all {{ view.total }} results in this run</a></div>
+{% else %}
+{% if recheck %}<div class="callout">This run re-checked only {{ recheck["items"]|map(attribute="rule_id")|join(", ") }}. The other results are carried over from the previous run. <a href="/runs/{{ run.run_id }}">Show just the re-check</a></div>{% endif %}
 {% include "_report_body.html" %}
+{% endif %}
 
 {% if assessment %}
 <h2>Assessment scope</h2>

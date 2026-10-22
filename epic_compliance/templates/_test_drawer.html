@@ -83,7 +83,7 @@
     <h3>History</h3>
     <ul class="history">
       {% for h in history %}
-      <li><a href="/runs/{{ h.run_id }}">{{ h.when }} UTC</a>{{ m.status_pill(h.status, h.status_label) }}</li>
+      <li><span><a href="/runs/{{ h.run_id }}">{{ h.when }} UTC</a>{% if h.recheck %}<span class="kind">Re-check</span>{% endif %}</span>{{ m.status_pill(h.status, h.status_label) }}</li>
       {% endfor %}
     </ul>
   </section>
