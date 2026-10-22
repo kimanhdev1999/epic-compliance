@@ -294,7 +294,7 @@ def stale_reasons(
 
 
 def history_of_test(runs: list[dict[str, Any]], rule_id: str) -> list[dict[str, Any]]:
-    """Status of one test across recent full runs, newest first."""
+    """Status of one test across recent runs (full runs and its own re-checks), newest first."""
     out = []
     for run in runs:
         rerun = run.get("config", {}).get("rerun_of")
@@ -303,5 +303,5 @@ def history_of_test(runs: list[dict[str, Any]], rule_id: str) -> list[dict[str, 
         f = next((f for f in run["report"].findings if f.rule_id == rule_id), None)
         status = STATUS_FROM_VERDICT[f.verdict] if f else "not_applicable"
         out.append({"run_id": run["run_id"], "when": run["created_at"][:16].replace("T", " "),
-                    "status": status, "status_label": STATUS_LABELS[status]})
+                    "status": status, "status_label": STATUS_LABELS[status], "recheck": bool(rerun)})
     return out

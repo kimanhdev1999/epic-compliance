@@ -334,6 +334,9 @@ details.tech summary { cursor: pointer; padding: 0.55rem 0.8rem; font-size: 0.85
 details.tech pre { margin: 0; max-height: 280px; overflow: auto; padding: 0.65rem 0.8rem; border-top: 1px solid var(--border); background: var(--surface-2); border-radius: 0 0 10px 10px; font-family: var(--mono); font-size: 0.78rem; white-space: pre-wrap; word-break: break-word; }
 .history { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; font-size: 0.85rem; }
 .history li { display: flex; justify-content: space-between; align-items: center; }
+.history .kind { margin-left: 0.35rem; font-size: 0.75rem; color: var(--muted); }
+.recheck-result { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0.75rem 0 0.5rem; }
+.recheck-result .btn { margin-left: auto; }
 .drawer-foot { padding: 0.9rem 1.4rem; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .drawer-page { padding: 0; }
 .drawer-page .drawer-head [data-close-drawer] { display: none; }

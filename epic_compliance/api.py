@@ -148,7 +148,8 @@ def _execute_run(
     ``rule_ids``/``assessment`` come from an assessment plan: the checks to run,
     and the intake + scope stored with the run so its report can show them.
     ``base`` is the run a single-test re-run updates: every other test keeps
-    its result from it.
+    its result from it. A live check takes seconds, so if another run was
+    saved meanwhile, the re-run folds into that newer run instead.
     """
     global _last_report
     config = config_with_overrides(overrides)
@@ -160,7 +161,7 @@ def _execute_run(
     if assessment is not None:
         snapshot["assessment"] = assessment
     if base is not None:
-        report, snapshot = _merge_into(base, report, snapshot)
+        report, snapshot = _merge_into(store.latest_run() or base, report, snapshot)
     store.save_run(report, snapshot)
     # Remember non-secret choices to prefill the next form.
     store.save_config_defaults(snapshot)
@@ -589,13 +590,37 @@ def history(request: Request) -> Any:
 
 
 @app.get("/runs/{run_id}", response_class=HTMLResponse)
-def report_detail(request: Request, run_id: str) -> Any:
+def report_detail(request: Request, run_id: str, all: bool = False) -> Any:
+    """A run's report. A single-test re-check opens on the test(s) it re-checked,
+    with the result before and after; ``?all=1`` shows the full snapshot."""
     run = _load_run_or_404(run_id)
     view = build_report_view(run["report"], run["config"].get("evidence"), sample=store.is_sample(run))
     return render(
         request, "report.html", active="history", view=view, run=run,
         assessment=run["config"].get("assessment"), labels=_intake_labels(),
+        recheck=_recheck_view(run), show_all=all,
     )
+
+
+def _recheck_view(run: dict[str, Any]) -> dict[str, Any] | None:
+    """For a single-test re-check: the re-checked findings and each one's status
+    in the run it updated (None if that run was deleted)."""
+    rerun = run["config"].get("rerun_of")
+    if not rerun:
+        return None
+    ids = set(rerun["rule_ids"])
+    focused = Report(run_id=run["run_id"], findings=[f for f in run["report"].findings if f.rule_id in ids])
+    view = build_report_view(focused, run["config"].get("evidence"), sample=store.is_sample(run))
+    base = store.get_run(rerun["run_id"])
+    before = {f.rule_id: f.verdict for f in base["report"].findings} if base else {}
+    items = [it for c in view["categories"] for it in c["items"]]
+    for it in items:
+        status = ws.STATUS_FROM_VERDICT.get(before.get(it["rule_id"], ""))
+        it["before"] = {"status": status, "label": ws.STATUS_LABELS[status]} if status else None
+        now = ws.STATUS_FROM_VERDICT[it["verdict"]]
+        it["now"] = {"status": now, "label": ws.STATUS_LABELS[now]}
+    return {"items": items, "base_run_id": rerun["run_id"] if base else None,
+            "base_when": base["created_at"][:16].replace("T", " ") if base else None}
 
 
 @app.delete("/runs/{run_id}", response_class=HTMLResponse)
