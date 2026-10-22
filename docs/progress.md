@@ -32,7 +32,7 @@ per item, newest first within each section. Detail belongs in `notes/decisions.m
 ## Done
 | What | PR / ADR |
 |---|---|
-| A re-check's run page shows just that test, before → after; History marks re-checks; a re-check no longer drops a run saved while it ran | #PR |
+| A re-check's run page shows just that test, before → after; History marks re-checks; a re-check no longer drops a run saved while it ran | #41 |
 | docs/progress.md checked on every PR: CI job plus sync tests with the UI harness | #39 |
 | No real health system named anywhere: examples, canvas boards, tests and docs use "Example Health" | #38 |
 | Test detail redesigned (reason box, plain observations, Technical details); no vendor names in the UI | #36 |
