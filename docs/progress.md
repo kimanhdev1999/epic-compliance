@@ -32,7 +32,7 @@ per item, newest first within each section. Detail belongs in `notes/decisions.m
 ## Done
 | What | PR / ADR |
 |---|---|
-| Run report: clicking a test opens its fix screen (how to fix + evidence) instead of expanding details in place | #42 |
+| Run report: clicking a test opens its fix screen (how to fix + evidence) instead of expanding details in place; `/tests?open=<id>` opens the drawer again (also fixes Re-check this test) | #42 |
 | A re-check's run page shows just that test, before → after; History marks re-checks; a re-check no longer drops a run saved while it ran | #41 |
 | docs/progress.md checked on every PR: CI job plus sync tests with the UI harness | #39 |
 | No real health system named anywhere: examples, canvas boards, tests and docs use "Example Health" | #38 |
