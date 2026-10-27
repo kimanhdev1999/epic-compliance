@@ -26,7 +26,7 @@
   <h2>Fix these first</h2>
   <div class="card priority">
     {% for it in view.failed %}
-    <a class="pri-item" href="#f-{{ it.rule_id }}" onclick="document.getElementById('f-{{ it.rule_id }}').open = true">
+    <a class="pri-item" href="/tests?open={{ it.rule_id }}">
       <span class="badge sev-{{ it.severity }}">{{ it.severity }}</span>
       <span class="rid">{{ it.rule_id }}</span>
       <span class="body"><strong>{{ it.requirement }}</strong><span class="fix">{{ it.remediation_hint }}</span></span>
@@ -40,7 +40,7 @@
   <p class="muted" style="margin-top:-0.4rem">We couldn't decide these from the evidence available. Answer the question, connect the missing service, or check by hand. We won't guess.</p>
   <div class="card priority">
     {% for it in view.review %}
-    <a class="pri-item" href="#f-{{ it.rule_id }}" onclick="document.getElementById('f-{{ it.rule_id }}').open = true">
+    <a class="pri-item" href="/tests?open={{ it.rule_id }}">
       <span class="badge sev-{{ it.severity }}">{{ it.severity }}</span>
       <span class="rid">{{ it.rule_id }}</span>
       <span class="body"><strong>{{ it.requirement }}</strong><span class="fix">{{ it.evidence|truncate(160) }}</span></span>
@@ -70,6 +70,13 @@
 <script>
 (function () {
   var root = document.getElementById('report-body');
+  // A finding row opens that test's fix screen: result, how to fix, evidence.
+  root.querySelectorAll('.finding > summary').forEach(function (s) {
+    s.addEventListener('click', function (e) {
+      e.preventDefault();
+      location.href = s.dataset.href;
+    });
+  });
   root.querySelectorAll('.filters button').forEach(function (b) {
     b.addEventListener('click', function () {
       var f = b.dataset.filter;

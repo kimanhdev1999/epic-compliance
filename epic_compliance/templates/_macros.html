@@ -30,7 +30,7 @@
 
 {% macro finding(item, open=false) %}
 <details class="finding v-{{ item.verdict }}"{% if open %} open{% endif %} id="f-{{ item.rule_id }}" data-verdict="{{ item.verdict }}">
-  <summary>
+  <summary data-href="/tests?open={{ item.rule_id }}" title="Open the fix screen">
     <span class="chevron">&#9656;</span>
     <span class="rid">{{ item.rule_id }}</span>
     <span class="req">{{ item.requirement or item.evidence }}</span>
