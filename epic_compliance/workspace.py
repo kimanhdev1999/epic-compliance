@@ -218,7 +218,8 @@ def build_workspace(
          "done": integrations["epic"]["status"] != "not_connected", "href": "/integrations", "cta": "Connect"},
         {"title": "Run your first assessment",
          "detail": "Sign in to the Epic sandbox and run your test plan against it.",
-         "done": run is not None, "href": "/assess", "cta": "Run"},
+         # The test plan has the Run button; the chat is only for describing the app.
+         "done": run is not None, "href": "/assess/plan#setup" if intake else "/assess", "cta": "Run"},
         {"title": "Fix failing tests",
          "detail": "Each failing test shows how to fix it.",
          "done": run is not None and counts["failing"] == 0, "href": "/tests?status=failing", "cta": "Review"},

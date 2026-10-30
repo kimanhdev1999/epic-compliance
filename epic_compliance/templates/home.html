@@ -19,6 +19,8 @@
     {% if run %}
     {{ m.rerun_button("/") }}
     <a class="btn" href="/runs/{{ run.run_id }}">Share report</a>
+    {% elif w.intake %}
+    <a class="btn" href="/assess/plan#setup">Run tests {{ m.icon("arrow") }}</a>
     {% else %}
     <a class="btn" href="/assess">Describe your app {{ m.icon("arrow") }}</a>
     {% endif %}
