@@ -22,6 +22,14 @@ def test_no_run_means_every_test_not_run():
     assert tests and {t["status"] for t in tests} == {"not_run"}
 
 
+@pytest.mark.parametrize("intake, href", [({}, "/assess"), ({"app_name": "DermScan"}, "/assess/plan")])
+def test_run_step_opens_the_plan_once_the_app_is_described(intake, href):
+    # The Run button is on the plan page; sending a described app to the chat strands it there.
+    w = ws.build_workspace(None, intake=intake, integrations={"epic": {"status": "connected"}}, history=[])
+    step = next(c for c in w["checklist"] if c["title"] == "Run your first assessment")
+    assert step["href"] == href
+
+
 class TestRoutes:
     @pytest.fixture
     def client(self, tmp_path, monkeypatch):
@@ -43,6 +51,10 @@ class TestRoutes:
         assert resp.status_code == 200
         assert "Get started" in resp.text and "Describe your app" in resp.text
         assert "Needs attention" not in resp.text  # nothing has run
+
+    def test_signin_callback_returns_to_the_test_plan(self, client):
+        page = client.get("/callback", params={"error": "access_denied"})
+        assert 'href="/assess/plan"' in page.text and "Back to the test plan" in page.text
 
     def test_after_a_run_home_frameworks_and_tests_reflect_it(self, client):
         client.post("/assess/run", data=self.FORM)
