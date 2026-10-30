@@ -5,6 +5,7 @@
 <div class="card" style="border-color: {{ 'var(--pass)' if ok else 'var(--fail)' }}">
   <p>{{ message }}</p>
   <p class="muted" id="close-note" hidden>This window closes by itself…</p>
+  {% if ok %}<p class="muted" id="return-note" hidden>Taking you back to the app…</p>{% endif %}
   <div class="actions">
     <a class="btn" href="/">Back to the app</a>
   </div>
@@ -15,6 +16,10 @@ if (window.opener && !window.opener.closed) {
   try { window.opener.postMessage({ type: 'epic-signin', ok: {{ 'true' if ok else 'false' }} }, window.location.origin); } catch (e) {}
   {% if ok %}document.getElementById('close-note').hidden = false;
   setTimeout(function () { window.close(); }, 1200);{% endif %}
-}
+}{% if ok %} else {
+  // Opened as a tab (popup blocked, or from Integrations): go back to Home, where Run is.
+  document.getElementById('return-note').hidden = false;
+  setTimeout(function () { window.location.replace('/'); }, 1200);
+}{% endif %}
 </script>
 {% endblock %}

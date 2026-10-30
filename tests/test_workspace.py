@@ -22,6 +22,16 @@ def test_no_run_means_every_test_not_run():
     assert tests and {t["status"] for t in tests} == {"not_run"}
 
 
+def test_run_step_opens_the_test_plan_once_the_app_is_described():
+    # After signing in, "Run" must lead to the plan's Run button, not back to the chat.
+    epic = {"epic": {"status": "connected"}}
+    run_step = lambda w: next(c for c in w["checklist"] if c["cta"] == "Run")
+    described = ws.build_workspace(None, intake={"platform": "mobile"}, integrations=epic, history=[])
+    assert run_step(described)["href"] == "/assess/plan#setup"
+    blank = ws.build_workspace(None, intake={}, integrations=epic, history=[])
+    assert run_step(blank)["href"] == "/assess"
+
+
 class TestRoutes:
     @pytest.fixture
     def client(self, tmp_path, monkeypatch):
