@@ -13,3 +13,7 @@ Update the UX for the each test fix at review tests screen.
 Day 3
 
 Nothing get done today, not event have enough time to setup the pipeline to re check the fix yesterday.
+
+Day 4
+
+Nothing get done today, missing a clear timeline to start thing, is this product good enough to start a Epic check
