@@ -124,6 +124,7 @@ def _nav() -> dict[str, Any]:
         "health_system": intake.get("health_system", ""),
         "failing": verdicts.count("fail"),
         "review": verdicts.count("needs_human"),
+        "latest_run_id": run["run_id"] if run else "",
     }
 
 
@@ -415,8 +416,10 @@ def _save_chat(state: ChatState) -> ChatState:
 def _adopt_chat(raw: str) -> ChatState:
     """Save a conversation a page sent back if it isn't the saved one yet
     (e.g. a tab opened before chats were saved)."""
-    state = ChatState.load(raw)
-    if len(state.messages) > 1 and state != _saved_chat():
+    state, saved = ChatState.load(raw), _saved_chat()
+    if state.messages == saved.messages:
+        state.planned = state.planned or saved.planned  # a tab opened before the plan was generated
+    if len(state.messages) > 1 and state != saved:
         _save_chat(state)
     return state
 
@@ -472,6 +475,7 @@ def assess_edit(request: Request, index: int = Form(...), message: str = Form(""
     base = rewind(current, index, snapshots)
     if base is None or not message.strip():
         return _render_chat(request, current, partial=True)
+    base.planned = current.planned
     return _render_chat(request, _save_chat(
         next_turn(base, message, api_key=get_config().anthropic_api_key)), partial=True)
 
@@ -499,7 +503,12 @@ async def assess_plan(request: Request) -> Any:
     """
     form = dict(await request.form())
     if form.get("state"):
-        _adopt_chat(str(form["state"]))
+        chat = ChatState.load(str(form["state"]))
+        if len(chat.messages) > 1:
+            chat.planned = True
+            if chat != _saved_chat():
+                _save_chat(chat)
+            form["state"] = chat.model_dump_json()
     intake = Intake.from_form(form)
     last = store.get_last_intake()
     env = {k: last[k] for k in RUN_FIELDS if k in last and k not in form}
@@ -510,10 +519,21 @@ async def assess_plan(request: Request) -> Any:
 def assess_plan_saved(request: Request, notice: str = "") -> Any:
     """The test plan for the saved answers (last run, else the saved chat), so
     the page can be reloaded and Re-run can send you to its setup steps."""
-    intake = _current_intake()
+    intake = _plan_intake()
     if not intake:
         return RedirectResponse(url="/assess", status_code=303)
     return _render_plan(request, Intake.model_validate(intake), notice=_NOTICES.get(notice, ""))
+
+
+def _plan_intake() -> dict[str, Any]:
+    """The answers step 2 plans from: the finished conversation (the newest
+    description of the app) with where-to-run from the last run; else the last run."""
+    chat = _saved_chat()
+    if not chat.ready:
+        return _current_intake()
+    last = store.get_last_intake() or {}
+    defaults = Intake().model_dump()
+    return {**chat.intake.model_dump(), **{k: last.get(k, defaults[k]) for k in RUN_FIELDS}}
 
 
 _NOTICES = {
