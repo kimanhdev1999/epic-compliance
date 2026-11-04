@@ -5,7 +5,7 @@ work and updates it before opening a PR** (see `CLAUDE.md`). Keep it short: one 
 per item, newest first within each section. Detail belongs in `notes/decisions.md`
 (ADRs), PR descriptions and `docs/ux-redesign/requirements.md`.
 
-**Last updated:** 2026-11-04 (assess step bar links to steps 2 and 3; "Edit app description" after the plan)
+**Last updated:** 2026-11-04 (after Epic sign-in, the tab goes straight to the test plan's Run)
 
 ## How to keep this current
 - **Starting work:** read *Open* and *Next*. If your task is listed, work from that line.
@@ -32,6 +32,7 @@ per item, newest first within each section. Detail belongs in `notes/decisions.m
 ## Done
 | What | PR / ADR |
 |---|---|
+| After Epic sign-in, the sign-in tab's button and auto-return go straight to the test plan's Run (`/assess/plan#setup`) instead of Home | #45 |
 | Assess step bar links to step 2 once the app is described and step 3 once there's a run; step 2 plans from the newest description; after a plan, the summary's button is "Edit app description" and confirms before generating again | #47 |
 | After Epic sign-in the app goes back to Home, and Home's Run (header button and checklist) opens the test plan's Run button instead of the chat | #46 |
 | Run report: clicking a test opens its fix screen (how to fix + evidence) instead of expanding details in place; `/tests?open=<id>` opens the drawer again (also fixes Re-check this test) | #42 |

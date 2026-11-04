@@ -54,6 +54,10 @@ class TestRoutes:
         assert "Get started" in resp.text and "Describe your app" in resp.text
         assert "Needs attention" not in resp.text  # nothing has run
 
+    def test_signin_callback_returns_to_the_test_plan(self, client):
+        page = client.get("/callback", params={"error": "access_denied"})
+        assert 'href="/assess/plan#setup"' in page.text and "Back to the test plan" in page.text
+
     def test_after_a_run_home_frameworks_and_tests_reflect_it(self, client):
         client.post("/assess/run", data=self.FORM)
         home = client.get("/")

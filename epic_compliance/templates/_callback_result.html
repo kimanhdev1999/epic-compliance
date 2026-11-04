@@ -5,9 +5,10 @@
 <div class="card" style="border-color: {{ 'var(--pass)' if ok else 'var(--fail)' }}">
   <p>{{ message }}</p>
   <p class="muted" id="close-note" hidden>This window closes by itself…</p>
-  {% if ok %}<p class="muted" id="return-note" hidden>Taking you back to the app…</p>{% endif %}
+  {% if ok %}<p class="muted" id="return-note" hidden>Taking you back to the test plan…</p>{% endif %}
   <div class="actions">
-    <a class="btn" href="/">Back to the app</a>
+    {# The plan is where sign-in started and where the Run button is (it falls back to the chat). #}
+    <a class="btn" href="/assess/plan#setup">Back to the test plan</a>
   </div>
 </div>
 <script>
@@ -17,9 +18,9 @@ if (window.opener && !window.opener.closed) {
   {% if ok %}document.getElementById('close-note').hidden = false;
   setTimeout(function () { window.close(); }, 1200);{% endif %}
 }{% if ok %} else {
-  // Opened as a tab (popup blocked, or from Integrations): go back to Home, where Run is.
+  // Opened as a tab (popup blocked, or from Integrations): go back to the plan's Run.
   document.getElementById('return-note').hidden = false;
-  setTimeout(function () { window.location.replace('/'); }, 1200);
+  setTimeout(function () { window.location.replace('/assess/plan#setup'); }, 1200);
 }{% endif %}
 </script>
 {% endblock %}
