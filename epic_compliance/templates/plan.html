@@ -3,7 +3,7 @@
 {% set active = "assess" %}
 {% block title %}Test plan — Epic Readiness{% endblock %}
 {% block content %}
-{{ m.stepper(2) }}
+{{ m.stepper(2, {1: '/assess', 3: '/runs/' ~ nav.latest_run_id if nav.latest_run_id else ''}) }}
 <h1>Test plan{% if intake.app_name %} for {{ intake.app_name }}{% endif %}</h1>
 <p class="subtitle">
   {{ plan.included|length }} checks selected for {{ {"mobile": "a native mobile app", "web_browser": "a browser-only web app", "web_server": "a web app with its own backend"}[intake.platform] }}

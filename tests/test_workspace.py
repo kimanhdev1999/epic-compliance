@@ -22,12 +22,14 @@ def test_no_run_means_every_test_not_run():
     assert tests and {t["status"] for t in tests} == {"not_run"}
 
 
-@pytest.mark.parametrize("intake, href", [({}, "/assess"), ({"app_name": "DermScan"}, "/assess/plan")])
-def test_run_step_opens_the_plan_once_the_app_is_described(intake, href):
-    # The Run button is on the plan page; sending a described app to the chat strands it there.
-    w = ws.build_workspace(None, intake=intake, integrations={"epic": {"status": "connected"}}, history=[])
-    step = next(c for c in w["checklist"] if c["title"] == "Run your first assessment")
-    assert step["href"] == href
+def test_run_step_opens_the_test_plan_once_the_app_is_described():
+    # After signing in, "Run" must lead to the plan's Run button, not back to the chat.
+    epic = {"epic": {"status": "connected"}}
+    run_step = lambda w: next(c for c in w["checklist"] if c["cta"] == "Run")
+    described = ws.build_workspace(None, intake={"platform": "mobile"}, integrations=epic, history=[])
+    assert run_step(described)["href"] == "/assess/plan#setup"
+    blank = ws.build_workspace(None, intake={}, integrations=epic, history=[])
+    assert run_step(blank)["href"] == "/assess"
 
 
 class TestRoutes:
@@ -54,7 +56,7 @@ class TestRoutes:
 
     def test_signin_callback_returns_to_the_test_plan(self, client):
         page = client.get("/callback", params={"error": "access_denied"})
-        assert 'href="/assess/plan"' in page.text and "Back to the test plan" in page.text
+        assert 'href="/assess/plan#setup"' in page.text and "Back to the test plan" in page.text
 
     def test_after_a_run_home_frameworks_and_tests_reflect_it(self, client):
         client.post("/assess/run", data=self.FORM)
