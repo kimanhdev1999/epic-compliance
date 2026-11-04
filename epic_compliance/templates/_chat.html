@@ -45,7 +45,12 @@
               {% elif v is not sameas false %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}
             {% endfor %}
             <input type="hidden" name="state" value="{{ state.model_dump_json() }}">
+            {% if state.planned %}
+            <button type="submit" class="primary-btn"
+                    onclick="return confirm('Generate the test plan again from this description?')">Edit app description</button>
+            {% else %}
             <button type="submit" class="primary-btn">Generate test plan &rarr;</button>
+            {% endif %}
           </form>
         </div>
       </div>

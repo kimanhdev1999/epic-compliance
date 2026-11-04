@@ -434,7 +434,74 @@ class TestSavedConversation:
         from epic_compliance.intake_chat import next_turn
         old_tab = next_turn(ChatState.start(), "A mobile app clinicians use", api_key="")
         client.post("/assess/plan", data={**TestAssessmentRoutes.FORM, "state": old_tab.model_dump_json()})
-        assert self._saved() == old_tab
+        assert self._saved() == old_tab.model_copy(update={"planned": True})
         assert len(store.chat_snapshots()) == 1
         client.post("/assess/resume", data={"state": old_tab.model_dump_json()})
         assert len(store.chat_snapshots()) == 1  # already saved, not duplicated
+
+
+class TestStepsAfterDescribing:
+    """Once the app is described, steps 2 and 3 open from the step bar, and the
+    summary offers to edit the description instead of generating the plan again."""
+
+    @pytest.fixture
+    def client(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("EPIC_COMPLIANCE_DB", str(tmp_path / "runs.db"))
+        monkeypatch.setattr("epic_compliance.api.get_config", lambda: _NoKeyConfig())
+        from fastapi.testclient import TestClient
+
+        from epic_compliance.api import app
+
+        return TestClient(app)
+
+    def _finish(self, client) -> ChatState:
+        from epic_compliance import store
+        state = ChatState.start()
+        for text in ["DermScan, a mobile app clinicians use to save lesion photos to the chart",
+                     "Not sure", "Not sure", "Not sure"]:
+            client.post("/assess/chat", data={"message": text, "state": state.model_dump_json()})
+            state = ChatState.load(store.latest_chat_state())
+            if state.ready:
+                return state
+        pytest.fail("chat never finished")
+
+    def _generate(self, client, state):
+        client.post("/assess/plan", data={**TestAssessmentRoutes.FORM, "state": state.model_dump_json()})
+
+    def test_step_two_opens_once_the_app_is_described(self, client):
+        assert 'href="/assess/plan"' not in client.get("/assess").text
+        self._finish(client)
+        page = client.get("/assess").text
+        assert 'href="/assess/plan"' in page and "Generate test plan" in page
+        assert 'href="/runs/' not in page  # no run yet, so no step 3 link
+
+    def test_step_two_plans_from_the_finished_chat(self, client):
+        from epic_compliance import store
+        store.save_last_intake({**Intake(users="patients", platform="web_browser").model_dump(),
+                                "oauth_client_id": "abc"})
+        self._finish(client)
+        resp = client.get("/assess/plan")
+        assert resp.status_code == 200
+        assert "CLIN-001" in resp.text  # the chat's clinician app, not the old patient app
+        assert 'value="abc"' in resp.text  # where to run still comes from the last run
+
+    def test_after_generating_the_button_edits_and_confirms(self, client):
+        from epic_compliance import store
+        self._generate(client, self._finish(client))
+        assert ChatState.load(store.latest_chat_state()).planned
+        page = client.get("/assess").text
+        assert "Edit app description" in page and "Generate test plan" not in page
+        assert "Generate the test plan again from this description?" in page
+
+    def test_editing_an_answer_keeps_the_edit_button(self, client):
+        from epic_compliance import store
+        self._generate(client, self._finish(client))
+        client.post("/assess/edit", data={"index": 1, "message": "DermScan, a mobile app clinicians use"})
+        assert ChatState.load(store.latest_chat_state()).planned
+
+    def test_step_three_links_to_the_latest_run(self, client, monkeypatch):
+        from epic_compliance import api
+        monkeypatch.setattr(api, "_nav", lambda: {"app_name": "x", "health_system": "", "failing": 0,
+                                                  "review": 0, "latest_run_id": "run123"})
+        self._finish(client)
+        assert 'href="/runs/run123"' in client.get("/assess").text

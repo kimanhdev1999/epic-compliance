@@ -70,11 +70,16 @@
 {% endfor %}
 {% endmacro %}
 
-{% macro stepper(current) %}
+{#- links: {step number: href} for the steps you can open from here. #}
+{% macro stepper(current, links={}) %}
 <ol class="stepper">
   {% for label in ["Describe your app", "Review test plan", "See results"] %}
-  <li class="{{ 'done' if loop.index < current else ('current' if loop.index == current) }}">
-    <span class="dot">{{ '&#10003;'|safe if loop.index < current else loop.index }}</span>{{ label }}
+  {% set href = links.get(loop.index) if loop.index != current else "" %}
+  {% set done = loop.index < current or href %}
+  <li class="{{ 'done' if done else ('current' if loop.index == current) }}">
+    {%- set inner %}<span class="dot">{{ '&#10003;'|safe if done else loop.index }}</span>{{ label }}{% endset %}
+    {%- if href %}<a href="{{ href }}">{{ inner }}</a>
+    {%- else %}<span{{ ' aria-current="step"'|safe if loop.index == current }}>{{ inner }}</span>{% endif %}
   </li>
   {% endfor %}
 </ol>
