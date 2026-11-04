@@ -392,6 +392,9 @@ td.nums { font-family: var(--mono); }
 .stepper li.current { color: var(--text); font-weight: 600; }
 .stepper li.current .dot { background: var(--accent); border-color: var(--accent); color: #fff; }
 .stepper li.done .dot { background: var(--pass); border-color: var(--pass); color: #fff; }
+.stepper li > a, .stepper li > span { display: inline-flex; align-items: center; gap: 0.5rem; color: inherit; text-decoration: none; }
+.stepper li > a { border-radius: 6px; }
+.stepper li > a:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
 
 .sticky-actions { position: sticky; bottom: 0; background: linear-gradient(transparent, var(--bg) 35%); padding: 1.25rem 0 1rem; margin-top: 0.5rem; z-index: 5; }
 .plan-summary { margin-bottom: 1rem; }

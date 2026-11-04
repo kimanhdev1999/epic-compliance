@@ -33,6 +33,8 @@ per item, newest first within each section. Detail belongs in `notes/decisions.m
 | What | PR / ADR |
 |---|---|
 | Intake hears "sends a PDF to the chart" (`writes_pdf`) and later answers correct earlier ones, so a PDF report isn't planned as a photo upload; CLIN-009 sends a real PDF; write results record Epic's refusal reason | #48 |
+| After Epic sign-in, the sign-in tab's button and auto-return go straight to the test plan's Run (`/assess/plan#setup`) instead of Home | #45 |
+| Assess step bar links to step 2 once the app is described and step 3 once there's a run; step 2 plans from the newest description; after a plan, the summary's button is "Edit app description" and confirms before generating again | #47 |
 | After Epic sign-in the app goes back to Home, and Home's Run (header button and checklist) opens the test plan's Run button instead of the chat | #46 |
 | Run report: clicking a test opens its fix screen (how to fix + evidence) instead of expanding details in place; `/tests?open=<id>` opens the drawer again (also fixes Re-check this test) | #42 |
 | A re-check's run page shows just that test, before → after; History marks re-checks; a re-check no longer drops a run saved while it ran | #41 |

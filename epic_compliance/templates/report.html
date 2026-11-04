@@ -4,7 +4,7 @@
 {% set intake = assessment.intake if assessment else none %}
 {% block title %}{{ intake.app_name if intake and intake.app_name else "Report " ~ view.run_id[:8] }} — Epic Readiness{% endblock %}
 {% block content %}
-{% if assessment %}{{ m.stepper(3) }}{% endif %}
+{% if assessment %}{{ m.stepper(3, {1: '/assess', 2: '/assess/plan'}) }}{% endif %}
 <div class="cat-header" style="margin-top:0">
   <h1 style="margin:0">{{ intake.app_name ~ " — " if intake and intake.app_name }}Epic readiness report</h1>
 </div>

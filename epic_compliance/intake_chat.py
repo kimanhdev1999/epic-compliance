@@ -75,6 +75,9 @@ class ChatState(BaseModel):
     suggestions: list[str] = Field(default_factory=list)
     #: The assistant's last reply asks something, so the summary waits for the answer.
     asking: bool = False
+    #: A test plan was generated from this conversation, so the summary offers
+    #: to edit the description (and generate the plan again) instead.
+    planned: bool = False
 
     @property
     def ready(self) -> bool:
