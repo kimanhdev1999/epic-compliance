@@ -72,6 +72,9 @@ class AppConfig(BaseSettings):
     # True when the organization requires photos and notes to be filed
     # against an Encounter; a patient with no encounter then fails CLIN-004.
     encounter_required: bool = Field(default=False, alias="ENCOUNTER_REQUIRED")
+    # What the app files in the chart as its document (CLIN-009): a text note,
+    # or a PDF (e.g. a report with the photo and conclusion).
+    note_format: Literal["text", "pdf"] = Field(default="text", alias="NOTE_FORMAT")
     # How the app under test is registered with Epic, and where Epic sends
     # the clinician back after login. Blank = not attested -> needs_human.
     app_client_type: Literal["", "public", "confidential"] = Field(
@@ -121,6 +124,7 @@ OVERRIDABLE_FIELDS = {
     "test_patient_query",
     "image_write_resource",
     "encounter_required",
+    "note_format",
     "app_client_type",
     "app_redirect_uri",
 }

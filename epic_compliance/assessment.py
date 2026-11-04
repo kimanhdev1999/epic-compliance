@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from .reviewer_questions import TOPICS as REVIEWER_TOPICS, PlannedQuestion, select as select_questions
 from .rules_engine.catalog import Rule, is_reviewer_question, load_rules
@@ -42,6 +42,10 @@ class Intake(BaseModel):
     reads_chart: bool = True
     saves_images: bool = False
     writes_back: bool = False
+    # The app files a PDF (e.g. a report with the photo and conclusion) in the
+    # chart. It's a document write, so it implies writes_back; a photo that only
+    # travels inside the PDF is not saves_images.
+    writes_pdf: bool = False
     third_party_ai: bool = False
 
     # Security posture. "" = don't know -> the rule stays needs_human.
@@ -59,6 +63,12 @@ class Intake(BaseModel):
     app_redirect_uri: str = ""
     test_patient_query: str = ""
     encounter_required: bool = False
+
+    @model_validator(mode="after")
+    def _pdf_is_a_document_write(self) -> "Intake":
+        if self.writes_pdf:
+            self.writes_back = True
+        return self
 
     @classmethod
     def from_form(cls, form: dict[str, Any]) -> "Intake":
@@ -162,6 +172,7 @@ class Plan:
             # Sample runs use the built-in patient; Epic runs default to the sandbox one.
             "test_patient_query": (i.test_patient_query or SANDBOX_TEST_PATIENT) if i.run_mode == "live" else "",
             "encounter_required": "true" if i.encounter_required else "false",
+            "note_format": "pdf" if i.writes_pdf else "text",
             "app_client_type": "confidential" if i.platform == "web_server" else "public",
             "transport_tls_version": i.tls_version,
             "audit_logging_enabled": i.audit_logging,

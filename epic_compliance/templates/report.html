@@ -38,7 +38,7 @@
     {% if intake.description %}<dt>You described it as</dt><dd>“{{ intake.description }}”</dd>{% endif %}
     <dt>Signs in</dt><dd>{{ labels.users[intake.users] }}</dd>
     <dt>App type</dt><dd>{{ labels.platform[intake.platform] }}</dd>
-    <dt>Patient data</dt><dd>{{ [("Reads the chart", intake.reads_chart), ("Saves images", intake.saves_images), ("Writes notes / results", intake.writes_back), ("Sends PHI to a third-party AI / cloud", intake.third_party_ai)]|selectattr(1)|map(attribute=0)|join(", ") or "None selected" }}</dd>
+    <dt>Patient data</dt><dd>{{ [("Reads the chart", intake.reads_chart), ("Saves images", intake.saves_images), ("Sends a PDF document", intake.writes_pdf), ("Writes notes / results", intake.writes_back and not intake.writes_pdf), ("Sends PHI to a third-party AI / cloud", intake.third_party_ai)]|selectattr(1)|map(attribute=0)|join(", ") or "None selected" }}</dd>
     <dt>Checks run</dt><dd>{{ assessment.included|length }}, chosen from your description</dd>
   </dl>
   <div class="actions" style="margin-top:1rem"><a class="btn secondary" href="/assess">Change your answers</a></div>

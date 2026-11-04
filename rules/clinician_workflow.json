@@ -104,8 +104,8 @@
     "severity": "high",
     "evidence_needed": "clinician.note_write",
     "check_type": "automated",
-    "description": "A consult note, as a US Core DocumentReference, must validate and be accepted by Epic and read back by id",
-    "remediation_hint": "Add DocumentReference.Create (Clinical Notes) and DocumentReference.Read (R4) to Incoming APIs. Epic's note create may require context.encounter; if it is rejected without one, set ENCOUNTER_REQUIRED=true."
+    "description": "The document the app files (a consult note, or a PDF report when NOTE_FORMAT is pdf), as a US Core DocumentReference, must validate and be accepted by Epic and read back by id",
+    "remediation_hint": "Add DocumentReference.Create (Clinical Notes) and DocumentReference.Read (R4) to Incoming APIs. Epic's note create may require context.encounter; if it is rejected without one, set ENCOUNTER_REQUIRED=true. If the app sends PDFs, confirm with the organization's Epic team that their build accepts application/pdf attachments through DocumentReference.Create, and which document type to use."
   },
   {
     "id": "CLIN-010",
