@@ -219,8 +219,17 @@ def build_consult_note(
     encounter_id: str = "",
     practitioner_ref: str = "",
     text: str = "Dermatology e-consult: compliance-tool test note. Not clinical content.",
+    pdf: bool = False,
 ) -> dict[str, Any]:
-    """The derm's assessment, as a Clinical Notes DocumentReference."""
+    """The derm's assessment, as a Clinical Notes DocumentReference: a text
+    note, or with ``pdf`` a one-page PDF, the way an app that exports a report
+    files it."""
+    attachment: dict[str, Any] = (
+        {"contentType": "application/pdf", "title": "Compliance-tool test report.pdf",
+         "data": base64.b64encode(minimal_pdf(text)).decode("ascii")}
+        if pdf else
+        {"contentType": "text/plain", "data": base64.b64encode(text.encode()).decode("ascii")}
+    )
     doc: dict[str, Any] = {
         "resourceType": "DocumentReference",
         "status": "current",
@@ -228,13 +237,33 @@ def build_consult_note(
         "type": {"coding": [{"system": "http://loinc.org", "code": "11488-4", "display": "Consult note"}]},
         "category": _CLINICAL_NOTE_CATEGORY,
         "subject": {"reference": f"Patient/{patient_id}"},
-        "content": [{"attachment": {
-            "contentType": "text/plain",
-            "data": base64.b64encode(text.encode()).decode("ascii"),
-        }}],
+        "content": [{"attachment": attachment}],
     }
     if practitioner_ref:
         doc["author"] = [{"reference": practitioner_ref}]
     if encounter_id:
         doc["context"] = _context(encounter_id)
     return doc
+
+
+def minimal_pdf(text: str) -> bytes:
+    """A valid one-page PDF showing ``text`` (ASCII), small enough to POST inline."""
+    safe = text.encode("ascii", "replace").decode().replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+    stream = f"BT /F1 11 Tf 72 720 Td ({safe}) Tj ET".encode()
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+        b"/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream",
+    ]
+    out, offsets = bytearray(b"%PDF-1.4\n"), []
+    for n, body in enumerate(objects, 1):
+        offsets.append(len(out))
+        out += f"{n} 0 obj\n".encode() + body + b"\nendobj\n"
+    xref = len(out)
+    out += f"xref\n0 {len(objects) + 1}\n0000000000 65535 f \n".encode()
+    out += b"".join(f"{o:010d} 00000 n \n".encode() for o in offsets)
+    out += f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode()
+    return bytes(out)

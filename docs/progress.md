@@ -5,7 +5,7 @@ work and updates it before opening a PR** (see `CLAUDE.md`). Keep it short: one 
 per item, newest first within each section. Detail belongs in `notes/decisions.md`
 (ADRs), PR descriptions and `docs/ux-redesign/requirements.md`.
 
-**Last updated:** 2026-11-04 (after Epic sign-in, the tab goes straight to the test plan's Run)
+**Last updated:** 2026-11-04 (intake hears a PDF sent to the chart; CLIN-009 sends a real PDF)
 
 ## How to keep this current
 - **Starting work:** read *Open* and *Next*. If your task is listed, work from that line.
@@ -32,6 +32,7 @@ per item, newest first within each section. Detail belongs in `notes/decisions.m
 ## Done
 | What | PR / ADR |
 |---|---|
+| Intake hears "sends a PDF to the chart" (`writes_pdf`) and later answers correct earlier ones, so a PDF report isn't planned as a photo upload; CLIN-009 sends a real PDF; write results record Epic's refusal reason | #48 |
 | After Epic sign-in, the sign-in tab's button and auto-return go straight to the test plan's Run (`/assess/plan#setup`) instead of Home | #45 |
 | Assess step bar links to step 2 once the app is described and step 3 once there's a run; step 2 plans from the newest description; after a plan, the summary's button is "Edit app description" and confirms before generating again | #47 |
 | After Epic sign-in the app goes back to Home, and Home's Run (header button and checklist) opens the test plan's Run button instead of the chat | #46 |
@@ -56,6 +57,7 @@ the harness. **P0** = misleading or blocking, **P1** = confusing, **P2** = polis
 
 | Pri | Item | Where | Harness marker |
 |---|---|---|---|
+| P1 | Epic's public sandbox answers `POST Media` with 405, so CLIN-005 with `IMAGE_WRITE_RESOURCE=Media` can't pass there; whether an organization's build accepts a PDF through `DocumentReference.Create` (CLIN-009 with `NOTE_FORMAT=pdf`) isn't confirmed by a live run yet | live run 2026-10-30; `pipeline.py` | — |
 | P0 | Readiness % counts Epic-server and tool-login checks (headline says 80%; the app's own checks give ~43%) | `viewmodel.py`, `workspace._progress`; planned in ADR-017 | `test_readiness_counts_only_your_app` |
 | P0 | AUTH-006 always passes on live runs (`state_validated` is hard-coded from the tool's own callback) | `api.py` callback | — |
 | P0 | Green "No failures" while items still need review | `_report_body.html` | `test_no_failures_only_when_nothing_is_open` |

@@ -440,6 +440,83 @@ class TestSavedConversation:
         assert len(store.chat_snapshots()) == 1  # already saved, not duplicated
 
 
+class TestPdfDocument:
+    """An app that files a PDF (photo + conclusion) in the chart is tested as a
+    document write, not a photo upload, even when the first message said photos."""
+
+    def _chat(self, *messages):
+        state = ChatState.start()
+        for m in messages:
+            state = next_turn(state, m, api_key="")
+        return state.intake
+
+    def test_pdf_answer_corrects_an_earlier_photo_answer(self):
+        i = self._chat(
+            "A mobile dermatology app that saves lesion photos to the chart",
+            "No the clinicians just see the photos and conclusion of the app, then the app "
+            "export the photo and conclusion as a pdf then send to the chart",
+        )
+        assert i.writes_pdf and i.writes_back and not i.saves_images
+        ids = _ids(build_plan(i))
+        assert {"CLIN-009", "CLIN-010"} <= ids and not {"CLIN-005", "CLIN-006"} & ids
+        assert build_plan(i).config_overrides()["note_format"] == "pdf"
+
+    def test_photos_also_saved_separately_stay_in_the_plan(self):
+        i = self._chat("A mobile app clinicians use. It sends a PDF report to the chart "
+                       "and also saves the photo separately to the chart")
+        assert i.writes_pdf and i.saves_images
+
+    def test_writes_pdf_implies_a_document_write(self):
+        assert Intake(writes_pdf=True).writes_back
+        assert Intake.from_form({"writes_pdf": "on"}).writes_back
+        assert build_plan(Intake()).config_overrides()["note_format"] == "text"
+
+    def test_summary_names_the_pdf(self):
+        from epic_compliance.intake_chat import summary
+        data = dict(summary(Intake(writes_pdf=True)))["Patient data"]
+        assert "PDF" in data and "notes / results" not in data
+
+    def test_llm_pdf_answer_is_a_document_write(self, monkeypatch):
+        import json
+        from types import SimpleNamespace
+
+        import anthropic
+        out = {"updates": {"saves_images": "no", "writes_pdf": "yes", "writes_back": "no"},
+               "covered": ["data"], "reply": "Who signs in?", "suggestions": [], "done": False}
+
+        class FakeMessages:
+            def create(self, **kw):
+                return SimpleNamespace(stop_reason="end_turn",
+                                       content=[SimpleNamespace(type="text", text=json.dumps(out))])
+
+        monkeypatch.setattr(anthropic, "Anthropic", lambda **kw: SimpleNamespace(messages=FakeMessages()))
+        i = next_turn(ChatState.start(), "It sends a PDF to the chart", api_key="sk-test").intake
+        assert i.writes_pdf and i.writes_back and not i.saves_images
+
+    def test_llm_schema_asks_about_pdfs(self):
+        from epic_compliance.intake_chat import OUTPUT_SCHEMA, SYSTEM_PROMPT
+        assert "writes_pdf" in OUTPUT_SCHEMA["properties"]["updates"]["required"]
+        assert "writes_pdf" in SYSTEM_PROMPT
+
+    def test_note_write_sends_a_real_pdf(self):
+        import base64
+
+        from epic_compliance.fhir.writeback import build_consult_note
+        att = build_consult_note("p1", pdf=True)["content"][0]["attachment"]
+        data = base64.b64decode(att["data"])
+        assert att["contentType"] == "application/pdf"
+        assert data.startswith(b"%PDF-") and data.rstrip().endswith(b"%%EOF")
+        assert build_consult_note("p1")["content"][0]["attachment"]["contentType"] == "text/plain"
+
+    def test_epics_refusal_reason_is_recorded(self):
+        from epic_compliance.pipeline import _outcome_text
+        body = {"resourceType": "OperationOutcome",
+                "issue": [{"code": "forbidden", "diagnostics": "Client not authorized"},
+                          {"code": "not-supported", "details": {"text": "Media create not supported"}}]}
+        assert _outcome_text(body) == "Client not authorized; Media create not supported"
+        assert _outcome_text({"_raw": "Method Not Allowed"}) == "Method Not Allowed"
+        assert _outcome_text({"resourceType": "DocumentReference", "id": "x"}) == ""
+        assert _outcome_text(None) == ""
 class TestStepsAfterDescribing:
     """Once the app is described, steps 2 and 3 open from the step bar, and the
     summary offers to edit the description instead of generating the plan again."""

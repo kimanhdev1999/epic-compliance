@@ -101,7 +101,8 @@ def summary(intake: Intake) -> list[tuple[str, str]]:
     data = [label for label, on in (
         ("reads the chart", intake.reads_chart),
         ("saves photos", intake.saves_images),
-        ("writes notes / results back", intake.writes_back),
+        ("sends a PDF document to the chart", intake.writes_pdf),
+        ("writes notes / results back", intake.writes_back and not intake.writes_pdf),
         ("sends PHI to a third-party AI / cloud", intake.third_party_ai),
     ) if on]
     rows = []
@@ -192,7 +193,11 @@ their own record).
 backend that holds secrets) or "web_server" (web app with its own backend).
 3. data: what the app does with patient data. reads_chart, saves_images (photos \
 filed in the chart), writes_back (notes or results written to the chart), \
-third_party_ai (PHI sent to an outside AI, inference, storage or analytics service).
+writes_pdf (the app files a PDF document, e.g. a report, in the chart; this \
+also means writes_back), third_party_ai (PHI sent to an outside AI, inference, \
+storage or analytics service). saves_images means photos filed in the chart as \
+images of their own: if photos only reach the chart inside a PDF or other \
+document, saves_images is "no" and writes_pdf is "yes".
 4. security: tls_version ("TLS 1.3", "TLS 1.2", "TLS 1.0/1.1 still enabled"), \
 audit_logging ("yes", "partial", "no"), audit_retention_days (digits), \
 baa_status ("all", "health_system_only", "none"). "Not sure" is acceptable: \
@@ -201,7 +206,10 @@ leave those fields empty and still mark the topic covered.
 Each turn:
 - Put only facts the user actually stated or clearly implied into `updates`. \
 Use "" for strings and "unknown" for yes/no fields you have no new information \
-about. A later correction overrides an earlier answer.
+about. A later correction or clarification overrides an earlier answer, \
+including the first message (for example "saves photos to the chart", then \
+"it exports the photo and conclusion as a PDF to the chart" means saves_images \
+"no", writes_pdf "yes").
 - List in `covered` every topic the conversation has now settled.
 - `reply`: if a topic is still open, acknowledge briefly and ask ONE short, \
 specific follow-up about the most important open topic. If the description was \
@@ -230,6 +238,7 @@ OUTPUT_SCHEMA: dict[str, Any] = {
                 "reads_chart": _YES_NO,
                 "saves_images": _YES_NO,
                 "writes_back": _YES_NO,
+                "writes_pdf": _YES_NO,
                 "third_party_ai": _YES_NO,
                 "tls_version": {"type": "string", "enum": ["TLS 1.3", "TLS 1.2", "TLS 1.0/1.1 still enabled", ""]},
                 "audit_logging": {"type": "string", "enum": ["yes", "partial", "no", ""]},
@@ -238,7 +247,7 @@ OUTPUT_SCHEMA: dict[str, Any] = {
             },
             "required": [
                 "app_name", "health_system", "users", "platform", "reads_chart",
-                "saves_images", "writes_back", "third_party_ai", "tls_version",
+                "saves_images", "writes_back", "writes_pdf", "third_party_ai", "tls_version",
                 "audit_logging", "audit_retention_days", "baa_status",
             ],
             "additionalProperties": False,
@@ -279,7 +288,8 @@ def _llm_turn(state: ChatState, api_key: str) -> ChatState:
         if value in ("", "unknown"):
             continue
         updates[key] = (value == "yes") if value in ("yes", "no") else value
-    state.intake = state.intake.model_copy(update=updates)
+    # Validate, so rules between answers hold (a PDF is a document write).
+    state.intake = Intake.model_validate({**state.intake.model_dump(), **updates})
     state.known = [t for t in TOPICS if t in state.known or t in out["covered"]]
     state.asking = not out.get("done", True)
 
@@ -337,6 +347,13 @@ def _parse(state: ChatState, text: str, asked: str | None) -> set[str]:
         elif _has(t, pattern):
             setattr(i, field, True)
             hits += 1
+    # A PDF sent to the chart is a document write; photos inside it aren't
+    # filed as images of their own (unless the user says they are as well).
+    if _has(t, r"\bpdfs?\b") and not _negated(t, r"pdfs?"):
+        i.writes_pdf = i.writes_back = True
+        if not _has(t, r"\b(also|separately|as well)\b[^.]{0,40}(photo|image|picture)"):
+            i.saves_images = False
+        hits += 1
     if hits or (asked == "data" and _has(t, r"\b(nothing|none|no data)\b")):
         settled.add("data")
 

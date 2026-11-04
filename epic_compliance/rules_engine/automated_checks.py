@@ -619,7 +619,8 @@ def _check_clin_004(evidence: dict[str, Any], rule: Rule) -> Finding:
 def _judge_write(rule: Rule, entry: dict[str, Any]) -> Finding:
     """Tri-state write verdict, as WRITE-00x: validation and POST must both run."""
     valid, posted = entry.get("validation_valid"), entry.get("posted")
-    detail = (f"{entry.get('resource_type')}: validation={entry.get('validation_summary', '')}; "
+    sent = f" ({entry['content_type']})" if entry.get("content_type") else ""
+    detail = (f"{entry.get('resource_type')}{sent}: validation={entry.get('validation_summary', '')}; "
               f"POST status={entry.get('status_code')}; id={entry.get('id')!r}; error={entry.get('error', '')}")
     if valid is None or posted is None:
         return _finding(rule, "needs_human", detail,

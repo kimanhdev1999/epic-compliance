@@ -156,6 +156,19 @@ def _encounter_of(resource: dict[str, Any]) -> str:
     return _points_at(resource.get("context") or {}, "encounter", "Encounter")
 
 
+def _outcome_text(body: Any) -> str:
+    """Epic's reason for refusing a write: the OperationOutcome's issue text."""
+    if not isinstance(body, dict):
+        return ""
+    if body.get("resourceType") != "OperationOutcome":
+        return str(body.get("_raw", ""))[:300]
+    parts = [
+        issue.get("diagnostics") or (issue.get("details") or {}).get("text", "") or issue.get("code", "")
+        for issue in body.get("issue", []) if isinstance(issue, dict)
+    ]
+    return "; ".join(p for p in parts if p)[:300]
+
+
 def _write_and_read_back(
     fhir_client: FhirClient, validator: Any, resource: dict[str, Any], profile: str
 ) -> dict[str, Any]:
@@ -176,7 +189,7 @@ def _write_and_read_back(
         "status_code": status_code,
         "posted": (200 <= status_code < 300) if isinstance(status_code, int) else None,
         "id": created_id,
-        "error": post.get("_error", ""),
+        "error": post.get("_error", "") or _outcome_text(post.get("resource")),
     }
     if not entry["posted"] or not created_id:
         entry["read_back"] = {"_unavailable": "write did not succeed or returned no id"}
@@ -301,8 +314,10 @@ def collect_clinician_evidence(
                                   "error": r.get("_error", "")}
 
     # Consult note write + read-back, then find it by search
-    note = build_consult_note(patient_id, encounter_id=encounter_id, practitioner_ref=practitioner_ref)
+    note = build_consult_note(patient_id, encounter_id=encounter_id, practitioner_ref=practitioner_ref,
+                              pdf=config.note_format == "pdf")
     ev["note_write"] = _write_and_read_back(fhir_client, validator, note, US_CORE_DOCREF)
+    ev["note_write"]["content_type"] = note["content"][0]["attachment"]["contentType"]
     docs = fhir_client.search("DocumentReference", {"patient": patient_id})
     ev["note_search"] = {
         "status_code": docs.get("status_code"),
