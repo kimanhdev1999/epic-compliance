@@ -32,6 +32,7 @@ per item, newest first within each section. Detail belongs in `notes/decisions.m
 ## Done
 | What | PR / ADR |
 |---|---|
+| Chat summary has two buttons: "Generate test plan" always, and "Edit description", which opens the first message for editing (replaces #47's "Edit app description" button that generated the plan) | #50 |
 | Intake hears "sends a PDF to the chart" (`writes_pdf`) and later answers correct earlier ones, so a PDF report isn't planned as a photo upload; CLIN-009 sends a real PDF; write results record Epic's refusal reason | #48 |
 | After Epic sign-in, the sign-in tab's button and auto-return go straight to the test plan's Run (`/assess/plan#setup`) instead of Home | #45 |
 | Assess step bar links to step 2 once the app is described and step 3 once there's a run; step 2 plans from the newest description; after a plan, the summary's button is "Edit app description" and confirms before generating again | #47 |
