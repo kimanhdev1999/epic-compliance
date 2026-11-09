@@ -88,7 +88,7 @@
               <span class="answers-label" id="a-epic">Connects to Epic</span>
               <div class="answers-field opts">
                 {% for v, l in options.epic.items() %}<label class="opt"><input type="radio" name="epic_connection" value="{{ v }}"{{ ' checked' if i.epic_connection == v }}><span>{{ l }}</span></label>{% endfor %}
-                <p class="field-hint">If it doesn't connect, the Epic sign-in, chart-read and chart-write tests are left out of the plan.</p>
+                <p class="field-hint">Worked out from your description and patient data each time you change them, which decides whether you need the Epic sandbox. Pick one here to override it. If it doesn't connect, the Epic sign-in, chart-read and chart-write tests are left out.</p>
               </div>
             </div>
             <div class="answers-row">

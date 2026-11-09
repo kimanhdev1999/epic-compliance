@@ -479,6 +479,43 @@ class TestNoEpicConnection:
         assert "sign in" not in str(evidence).lower()
         assert evidence["app_config"]["transport_tls_version"] == "TLS 1.2"
 
+    def test_answer_review_decides_epic_connection(self, monkeypatch):
+        import json
+        from types import SimpleNamespace
+
+        import anthropic
+
+        from epic_compliance.intake_chat import read_app_texts
+        sent = {}
+        out = {"epic_connection": "none", "reads_chart": "no", "saves_images": "no",
+               "writes_back": "no", "writes_pdf": "no", "third_party_ai": "yes"}
+
+        class FakeMessages:
+            def create(self, **kw):
+                sent.update(kw)
+                return SimpleNamespace(content=[SimpleNamespace(type="text", text=json.dumps(out))])
+
+        monkeypatch.setattr(anthropic, "Anthropic", lambda **kw: SimpleNamespace(messages=FakeMessages()))
+        read = read_app_texts(self.SCREEN_APP, "It reads the MRN off the Epic screen.", api_key="sk-test")
+        assert read["epic_connection"] == "none" and read["third_party_ai"] and not read["reads_chart"]
+        assert "epic_connection" in sent["output_config"]["format"]["schema"]["required"]
+        assert self.SCREEN_APP in sent["messages"][0]["content"]
+        out["epic_connection"] = "unknown"
+        assert read_app_texts("An app.", "", api_key="sk-test")["epic_connection"] is None
+
+    @pytest.mark.parametrize("text, expected", [
+        ("Clinicians sign in with Epic and the app reads their medications.", "api"),
+        ("It's a SMART on FHIR app launched from Hyperspace.", "api"),
+        ("A patient app that patients open from MyChart.", "api"),
+        ("The clinician photographs the Epic screen to read the MRN.", "none"),
+        ("It doesn't connect to Epic; OnBase files the PDF.", "none"),
+        ("It doesn't use FHIR.", None),
+        ("A dermatology app for clinicians.", None),
+    ])
+    def test_offline_reading_of_epic_connection(self, text, expected):
+        from epic_compliance.intake_chat import _epic_connection_in
+        assert _epic_connection_in(text.lower()) == expected
+
     def test_chat_hears_the_screen_scan(self):
         state = next_turn(ChatState.start(), self.SCREEN_APP, api_key="")
         assert state.intake.epic_connection == "none"
@@ -679,13 +716,45 @@ class TestStepsAfterDescribing:
         # The untouched starting sentence isn't the user's words and changes nothing.
         assert saved.messages == state.messages and saved.intake == state.intake
 
-    def test_data_description_is_read_only_when_it_changes(self, client, monkeypatch):
+    def test_texts_are_read_only_when_they_change(self, client, monkeypatch):
         from epic_compliance import intake_chat, store
         calls = []
-        monkeypatch.setattr(intake_chat, "read_data_use", lambda text, key="": calls.append(text) or {})
+        monkeypatch.setattr(intake_chat, "read_app_texts", lambda d, u, key="": calls.append(d) or {})
         state = self._finish(client)
         client.post("/assess/answers", data=self._answers(state, app_name="DermScan Pro"))
         assert calls == [] and ChatState.load(store.latest_chat_state()).intake.app_name == "DermScan Pro"
+
+    SCREEN_DESC = ("DermScan is a mobile app clinicians use. The clinician scans the patient header on "
+                   "their Epic screen with the camera. A PDF goes by sFTP to the health system's OnBase folder.")
+    SMART_DESC = ("DermScan is a mobile app clinicians use. They sign in with Epic (SMART on FHIR), pick "
+                  "the patient and save lesion photos to the chart.")
+
+    def test_description_decides_whether_the_epic_sandbox_is_needed(self, client):
+        from epic_compliance import store
+        state = self._finish(client)
+        assert state.intake.epic_connection == "api"
+        resp = client.post("/assess/answers", data=self._answers(state, description=self.SCREEN_DESC))
+        saved = ChatState.load(store.latest_chat_state())
+        assert saved.intake.epic_connection == "none"
+        assert 'class="changed">Connects to Epic<' in resp.text
+        # And back: a description that signs in with Epic needs the sandbox again.
+        client.post("/assess/answers", data=self._answers(saved, description=self.SMART_DESC))
+        assert ChatState.load(store.latest_chat_state()).intake.epic_connection == "api"
+
+    def test_connects_to_epic_picked_by_hand_wins_over_the_reading(self, client):
+        from epic_compliance import store
+        state = self._finish(client)
+        client.post("/assess/answers", data=self._answers(
+            state, description=self.SMART_DESC, epic_connection="none"))
+        assert ChatState.load(store.latest_chat_state()).intake.epic_connection == "none"
+
+    def test_a_description_that_doesnt_say_keeps_the_answer(self, client):
+        from epic_compliance import store
+        state = self._finish(client)
+        client.post("/assess/answers", data=self._answers(state, epic_connection="none"))
+        saved = ChatState.load(store.latest_chat_state())
+        client.post("/assess/answers", data=self._answers(saved, description="DermScan helps dermatologists."))
+        assert ChatState.load(store.latest_chat_state()).intake.epic_connection == "none"
 
     @pytest.mark.parametrize("bad", [{"users": "robots"}, {"audit_retention_days": "ten"},
                                      {"tls_version": "TLS 9"}, {"baa_status": "maybe"},

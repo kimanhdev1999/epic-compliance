@@ -153,62 +153,84 @@ def data_use_text(intake: Intake) -> str:
     return " ".join(parts) or "It doesn't read or write patient data in Epic."
 
 
-DATA_USE_PROMPT = """\
-A developer describes what their app does with patient data, for an Epic \
-integration readiness assessment. Decide each flag from the description only:
-- reads_chart: the app reads patient data from Epic (demographics, MRN, visits, \
-clinical data).
-- saves_images: the app itself files photos in the Epic chart as images of their \
-own. Photos that only travel inside a PDF or other document are "no".
-- writes_back: the app itself writes notes, results or documents into Epic.
-- writes_pdf: the app itself files a PDF document in the Epic chart.
-- third_party_ai: PHI goes to an outside AI, inference, storage or analytics \
-service run by another company.
-Anything another system does for the app (for example a document-management \
-system that files documents it received by sFTP) is not the app writing to Epic. \
-Answer "no" when the description doesn't say so."""
+APP_READ_PROMPT = """\
+A developer describes their app for an Epic integration readiness assessment: \
+a general description and what the app does with patient data. Decide:
 
-_DATA_SCHEMA: dict[str, Any] = {
+- epic_connection: whether the app itself connects to Epic, which decides if it \
+is tested against Epic's sandbox.
+  - "api": it signs in to Epic (SMART on FHIR, a launch from Hyperspace, Haiku \
+or MyChart), or calls Epic's FHIR or other APIs, or reads or writes Epic data \
+through an interface it runs.
+  - "none": it has no technical connection to Epic. For example it reads \
+patient details off the Epic screen with a camera or by hand, gets data as \
+files (sFTP), or another system run by the health system (a document-management \
+system such as OnBase, an interface engine) files its documents.
+  - "unknown": the text doesn't say.
+- From the patient-data text (the description only when that text is empty):
+  - reads_chart: the app reads patient data from Epic through its API. Reading \
+details off a screen is "no".
+  - saves_images: the app itself files photos in the Epic chart as images of \
+their own. Photos that only travel inside a PDF or other document are "no".
+  - writes_back: the app itself writes notes, results or documents into Epic.
+  - writes_pdf: the app itself files a PDF document in the Epic chart.
+  - third_party_ai: PHI goes to an outside AI, inference, storage or analytics \
+service run by another company.
+Anything another system does for the app is not the app writing to Epic. Answer \
+"no" when the text doesn't say so."""
+
+_APP_READ_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "properties": {f: {"type": "string", "enum": ["yes", "no"]} for f in DATA_FLAGS},
-    "required": list(DATA_FLAGS),
+    "properties": {
+        "epic_connection": {"type": "string", "enum": ["api", "none", "unknown"]},
+        **{f: {"type": "string", "enum": ["yes", "no"]} for f in DATA_FLAGS},
+    },
+    "required": ["epic_connection", *DATA_FLAGS],
     "additionalProperties": False,
 }
 
 
-def read_data_use(text: str, api_key: str = "") -> dict[str, bool]:
-    """The five data flags a patient-data description implies. Uses the answer
-    review when there's a key, else (or if that fails) the keyword parser."""
+def read_app_texts(description: str, data_use: str, api_key: str = "") -> dict[str, Any]:
+    """What the description and the patient-data text imply: the five data flags,
+    and ``epic_connection`` ("api", "none", or None when the text doesn't say).
+    Uses the answer review when there's a key, else (or if that fails) the
+    keyword parser."""
     if api_key:
         try:
             import anthropic  # import only when needed
 
             response = anthropic.Anthropic(api_key=api_key).messages.create(
-                model=LLM_MODEL, max_tokens=512, system=DATA_USE_PROMPT,
-                messages=[{"role": "user", "content": text}],
-                output_config={"format": {"type": "json_schema", "schema": _DATA_SCHEMA}},
+                model=LLM_MODEL, max_tokens=512, system=APP_READ_PROMPT,
+                messages=[{"role": "user", "content":
+                           f"Description:\n{description}\n\nWhat it does with patient data:\n{data_use}"}],
+                output_config={"format": {"type": "json_schema", "schema": _APP_READ_SCHEMA}},
             )
             out = json.loads(next(b.text for b in response.content if b.type == "text"))
-            flags = {f: out[f] == "yes" for f in DATA_FLAGS}
-            flags["writes_back"] = flags["writes_back"] or flags["writes_pdf"]
-            return flags
+            read: dict[str, Any] = {f: out[f] == "yes" for f in DATA_FLAGS}
+            read["writes_back"] = read["writes_back"] or read["writes_pdf"]
+            read["epic_connection"] = out["epic_connection"] if out["epic_connection"] != "unknown" else None
+            return read
         except Exception as exc:  # any API trouble -> keyword parser
-            log.warning("patient-data description: review call failed, using keyword parser: %s", exc)
-    t = text.lower()
+            log.warning("app description: review call failed, using keyword parser: %s", exc)
+    t = (data_use or description).lower()
     intake = Intake(**{f: False for f in DATA_FLAGS})
     _parse_data(t, intake)
     # Here the text is only about data, so a photo counts as saved to the chart
     # only when it's said to go there ("takes a photo" alone doesn't).
     if not _has(t, r"\b(photo|image|picture)\w*\b[^.;]{0,40}\b(chart|epic|ehr)\b"):
         intake.saves_images = False
-    return {f: getattr(intake, f) for f in DATA_FLAGS}
+    connection = _epic_connection_in(f"{description}\n{data_use}".lower())
+    if connection == "none":
+        intake.reads_chart = False  # details read off a screen don't come from Epic's API
+    return {**{f: getattr(intake, f) for f in DATA_FLAGS}, "epic_connection": connection}
 
 
 def apply_answers(state: ChatState, form: dict[str, Any], api_key: str = "") -> tuple[ChatState, list[str]]:
     """Set the intake from the summary card's form, keeping every other answer.
 
-    Fields with clear options are set exactly. The patient-data description is
-    read into the data flags when it changed. Returns the new state and the
+    Fields with clear options are set exactly. When the description or the
+    patient-data text changed, they're read again (``read_app_texts``) for the
+    data flags and for whether the app connects to Epic. Returns the new state and the
     summary labels that changed. When something changed, the transcript gets a
     short note of it, so the conversation (and the answer review, if it reads
     the chat later) agrees with the summary. Invalid input leaves the state as it was.
@@ -219,10 +241,19 @@ def apply_answers(state: ChatState, form: dict[str, Any], api_key: str = "") -> 
             data[name] = str(form[name]).strip()[:MAX_MESSAGE_CHARS]
     if not data["description"]:
         data["description"] = state.intake.description
-    if data["data_use"] and data["data_use"] != data_use_text(state.intake):
-        data.update(read_data_use(data["data_use"], api_key))
-    elif data["data_use"] == data_use_text(state.intake) and not state.intake.data_use:
+    data_changed = bool(data["data_use"]) and data["data_use"] != data_use_text(state.intake)
+    if data["data_use"] == data_use_text(state.intake) and not state.intake.data_use:
         data["data_use"] = ""  # the untouched starting sentence isn't the user's words
+    # A changed description or patient-data text is read again: the data flags
+    # come from the patient-data text, and whether the app connects to Epic (so
+    # needs the Epic sandbox) from both. A "Connects to Epic" picked by hand in
+    # the same save wins over the reading.
+    if data_changed or data["description"] != state.intake.description:
+        read = read_app_texts(data["description"], data["data_use"] or data_use_text(state.intake), api_key)
+        if data_changed:
+            data.update({f: read[f] for f in DATA_FLAGS})
+        if read["epic_connection"] and data["epic_connection"] == state.intake.epic_connection:
+            data["epic_connection"] = read["epic_connection"]
     if not re.fullmatch(r"\d{0,5}", data["audit_retention_days"]):
         return state, []
     try:
@@ -469,15 +500,30 @@ def _parse(state: ChatState, text: str, asked: str | None) -> set[str]:
     elif _has(t, r"\b(browser|web ?app|website|spa|single[- ]page|react|angular|vue)\b"):
         i.platform, settled = "web_browser", settled | {"platform"}
 
-    # Reading the patient off the Epic screen, or saying so outright, means no Epic API.
-    if _has(t, r"\b(scan\w*|photo\w*|camera|read\w*|ocr)\b[^.;]{0,40}\b(epic )?screen\b") \
-            or _negated(t, r"\b(connect\w*|integrat\w*)\b[^.;]{0,15}\b(to |with )?epic\b") \
-            or _has(t, r"\bno epic (api|integration|connection)\b"):
-        i.epic_connection = "none"
+    if connection := _epic_connection_in(t):
+        i.epic_connection = connection
     hits = _parse_data(t, i)
     if hits or (asked == "data" and _has(t, r"\b(nothing|none|no data)\b")):
         settled.add("data")
     return _parse_rest(text, t, i, asked, settled)
+
+
+def _epic_connection_in(t: str) -> str | None:
+    """Whether lower-cased ``t`` says the app connects to Epic's API: "api",
+    "none", or None when it doesn't say. Whether the run needs the Epic sandbox
+    (sign-in, FHIR calls) hangs on this."""
+    # Reading the patient off the Epic screen, or saying so outright, means no Epic API.
+    if _has(t, r"\b(scan\w*|photo\w*|camera|read\w*|ocr)\b[^.;]{0,40}\b(epic )?screen\b") \
+            or _negated(t, r"\b(connect\w*|integrat\w*|use|uses|call\w*)\b[^.;]{0,15}\b(to |with )?epic\b") \
+            or _has(t, r"\bno (epic )?(api|integration|connection) (to|with) epic\b|\bno epic (api|integration|connection)\b"):
+        return "none"
+    # Signing in with Epic, launching from it, or calling its APIs means it connects.
+    api = (r"\b(smart on fhir|smart launch|fhir|hl7|epic'?s? api|epic api|"
+           r"(sign|log)s? in (through|with|via) epic|(sign|log)[- ]in with epic|"
+           r"launch\w* (from|inside|in|within) (epic|hyperspace|haiku|canto|mychart)|mychart|hyperspace)\b")
+    if _has(t, api) and not _negated(t, api):
+        return "api"
+    return None
 
 
 _DATA_PATTERNS = {

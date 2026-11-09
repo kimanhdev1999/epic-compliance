@@ -52,7 +52,7 @@ class Intake(BaseModel):
     writes_pdf: bool = False
     third_party_ai: bool = False
     # What the app does with patient data, in the user's own words. The five
-    # flags above are read from it (intake_chat.read_data_use).
+    # flags above are read from it (intake_chat.read_app_texts).
     data_use: str = ""
 
     # Security posture. "" = don't know -> the rule stays needs_human.
