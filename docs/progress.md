@@ -5,7 +5,7 @@ work and updates it before opening a PR** (see `CLAUDE.md`). Keep it short: one 
 per item, newest first within each section. Detail belongs in `notes/decisions.md`
 (ADRs), PR descriptions and `docs/ux-redesign/requirements.md`.
 
-**Last updated:** 2026-11-04 (intake hears a PDF sent to the chart; CLIN-009 sends a real PDF)
+**Last updated:** 2026-11-09 (chat summary: separate "Generate test plan" and "Edit description" buttons)
 
 ## How to keep this current
 - **Starting work:** read *Open* and *Next*. If your task is listed, work from that line.

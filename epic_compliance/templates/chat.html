@@ -57,9 +57,13 @@
     }
   });
   document.addEventListener('click', function (e) {
-    var edit = e.target.closest('#chat [data-edit]');
+    // "Edit description" on the summary opens the first message (the description) for editing.
+    var describe = e.target.closest('#chat [data-edit-description]');
+    var edit = describe ? document.querySelector('#chat .user-turn [data-edit]')
+                        : e.target.closest('#chat [data-edit]');
     if (edit) {
       var turn = edit.closest('.user-turn');
+      if (describe) turn.scrollIntoView({ block: 'center', behavior: 'smooth' });
       turn.classList.add('editing');
       turn.querySelector('.edit-form').hidden = false;
       var area = turn.querySelector('.edit-form textarea');

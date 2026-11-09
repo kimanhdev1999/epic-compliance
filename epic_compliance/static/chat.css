@@ -60,6 +60,12 @@ main.chat-main .stepper { max-width: 768px; width: 100%; margin: 0 auto 0.5rem; 
   padding: 0.6rem 1.15rem; font-weight: 500; font-size: 0.9rem; cursor: pointer;
 }
 .primary-btn:hover { opacity: 0.88; }
+.understood-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.secondary-btn {
+  background: none; color: inherit; border: 1px solid var(--c-border); border-radius: 999px;
+  padding: 0.6rem 1.15rem; font: inherit; font-weight: 500; font-size: 0.9rem; cursor: pointer;
+}
+.secondary-btn:hover { background: var(--c-border); }
 
 .quick-replies { display: flex; flex-wrap: wrap; gap: 0.5rem; padding-left: calc(30px + 0.85rem); }
 .quick-replies button {
