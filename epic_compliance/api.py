@@ -45,7 +45,7 @@ from fastapi.templating import Jinja2Templates
 from . import evidence as dev_evidence
 from . import pipeline, store
 from .assessment import BAA_LABELS, PLATFORM_LABELS, RUN_FIELDS, SANDBOX_TEST_PATIENT, USERS_LABELS, Intake, build_plan
-from .intake_chat import ChatState, next_turn, rewind, summary
+from .intake_chat import AUDIT_LABELS, TLS_OPTIONS, ChatState, apply_answers, next_turn, rewind, summary
 from .config import OVERRIDABLE_FIELDS, config_with_overrides, get_config
 from .fix_where import FIX_WHERE
 from .models import Report
@@ -202,8 +202,11 @@ def _intake_labels() -> dict[str, Any]:
     return {"users": USERS_LABELS, "platform": PLATFORM_LABELS, "baa": BAA_LABELS}
 
 
-def _render_chat(request: Request, state: ChatState, partial: bool = False) -> HTMLResponse:
-    ctx = {"state": state, "summary": summary(state.intake) if state.ready else []}
+def _render_chat(request: Request, state: ChatState, partial: bool = False,
+                 changed: list[str] | None = None) -> HTMLResponse:
+    ctx = {"state": state, "summary": summary(state.intake) if state.ready else [],
+           "changed": changed or [],
+           "options": {**_intake_labels(), "tls": TLS_OPTIONS, "audit": AUDIT_LABELS}}
     if partial:
         return render(request, "_chat.html", **ctx)
     return render(request, "chat.html", active="assess", **ctx)
@@ -478,6 +481,19 @@ def assess_edit(request: Request, index: int = Form(...), message: str = Form(""
     base.planned = current.planned
     return _render_chat(request, _save_chat(
         next_turn(base, message, api_key=get_config().anthropic_api_key)), partial=True)
+
+
+@app.post("/assess/answers", response_class=HTMLResponse)
+async def assess_answers(request: Request) -> Any:
+    """Save the summary card's "Edit answers" form: the values are set exactly,
+    other answers are kept, and the changed rows are highlighted."""
+    current = _saved_chat()
+    if not current.ready:
+        return _render_chat(request, current, partial=True)
+    state, changed = apply_answers(current, dict(await request.form()))
+    if changed:
+        _save_chat(state)
+    return _render_chat(request, state, partial=True, changed=changed)
 
 
 @app.post("/assess/new")

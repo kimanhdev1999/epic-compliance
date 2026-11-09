@@ -115,10 +115,70 @@ def summary(intake: Intake) -> list[tuple[str, str]]:
         ("App type", PLATFORM_LABELS[intake.platform]),
         ("Patient data", (lambda d: d[:1].upper() + d[1:])(", ".join(data)) or "None"),
         ("TLS", intake.tls_version or "Not sure"),
-        ("Audit logging", intake.audit_logging or "Not sure"),
-        ("BAA", BAA_LABELS.get(intake.baa_status, "Not sure")),
+        ("Audit logging", AUDIT_LABELS.get(intake.audit_logging, "Not sure")),
     ]
+    if intake.audit_retention_days:
+        rows.append(("Audit log retention", f"{intake.audit_retention_days} days"))
+    rows.append(("BAA", BAA_LABELS.get(intake.baa_status, "Not sure")))
     return rows
+
+
+AUDIT_LABELS = {"yes": "Every PHI access is logged", "partial": "Partly logged", "no": "Not logged"}
+TLS_OPTIONS = ("TLS 1.3", "TLS 1.2", "TLS 1.0/1.1 still enabled")
+
+#: What the summary card's "Edit answers" form sets, exactly as entered (no parsing).
+ANSWER_FIELDS = (
+    "description", "app_name", "health_system", "users", "platform",
+    "reads_chart", "saves_images", "writes_back", "writes_pdf", "third_party_ai",
+    "tls_version", "audit_logging", "audit_retention_days", "baa_status",
+)
+ANSWERS_UPDATED_REPLY = "Updated. Check the summary below, then generate your test plan."
+
+
+def apply_answers(state: ChatState, form: dict[str, Any]) -> tuple[ChatState, list[str]]:
+    """Set the intake from the summary card's form, keeping every other answer.
+
+    Returns the new state and the summary labels that changed. When something
+    changed, the transcript gets a short note of it, so the conversation (and the
+    answer review, if it reads the chat later) agrees with the summary. Invalid
+    input leaves the state as it was.
+    """
+    data = state.intake.model_dump()
+    for name in ANSWER_FIELDS:
+        if Intake.model_fields[name].annotation is bool:
+            data[name] = str(form.get(name, "")).lower() in ("1", "true", "on", "yes")
+        elif name in form:
+            data[name] = str(form[name]).strip()[:MAX_MESSAGE_CHARS]
+    if not data["description"]:
+        data["description"] = state.intake.description
+    if not re.fullmatch(r"\d{0,5}", data["audit_retention_days"]):
+        return state, []
+    try:
+        new = Intake.model_validate(data)
+    except ValueError:
+        return state, []
+    if new.tls_version not in ("", *TLS_OPTIONS) or new.audit_logging not in ("", *AUDIT_LABELS) \
+            or new.baa_status not in ("", *BAA_LABELS):
+        return state, []
+
+    before, after = dict(summary(state.intake)), summary(new)
+    changed = [(label, value) for label, value in after if before.get(label) != value]
+    changed += [(label, "removed") for label in before if label not in dict(after)]
+    if new.description != state.intake.description:
+        changed.append(("Description", "updated"))
+    if not changed:
+        return state, []
+
+    state = state.model_copy(deep=True)
+    state.intake = new
+    note = "; ".join(f"{label}: {value}" for label, value in changed)
+    state.messages += [
+        {"role": "user", "content": f"I changed my answers. {note}.", "kind": "answers"},
+        {"role": "assistant", "content": ANSWERS_UPDATED_REPLY},
+    ]
+    state.messages = state.messages[-MAX_TURNS:]
+    state.suggestions, state.asking = [], False
+    return state, [label for label, _ in changed]
 
 
 def next_turn(state: ChatState, message: str, api_key: str = "") -> ChatState:
@@ -268,7 +328,8 @@ def _llm_turn(state: ChatState, api_key: str) -> ChatState:
     client = anthropic.Anthropic(api_key=api_key)
     known = state.intake.model_dump(exclude={"description", *RUN_FIELDS})
     # The API wants the first message from the user: drop the canned opener.
-    messages = [m for m in state.messages if m["content"] != OPENING]
+    messages = [{"role": m["role"], "content": m["content"]}
+                for m in state.messages if m["content"] != OPENING]
     messages.append({"role": "user", "content":
                      f"[Intake so far: {json.dumps(known)}; topics covered: {state.known}]"})
 
@@ -306,7 +367,8 @@ def _has(text: str, pattern: str) -> bool:
 
 
 def _negated(text: str, pattern: str) -> bool:
-    return _has(text, rf"\b(no|not|never|without|doesn't|does not|don't|do not|won't)\b[^.]{{0,40}}{pattern}")
+    # Within one clause: "never writes to Epic; it only reads" doesn't negate "reads".
+    return _has(text, rf"\b(no|not|never|without|doesn't|does not|don't|do not|won't)\b[^.;]{{0,40}}{pattern}")
 
 
 def _parse(state: ChatState, text: str, asked: str | None) -> set[str]:
@@ -349,7 +411,14 @@ def _parse(state: ChatState, text: str, asked: str | None) -> set[str]:
             hits += 1
     # A PDF sent to the chart is a document write; photos inside it aren't
     # filed as images of their own (unless the user says they are as well).
-    if _has(t, r"\bpdfs?\b") and not _negated(t, r"pdfs?"):
+    # "...never writes to Epic" or "OnBase files it" means the PDF reaches the
+    # chart some other way, so the app itself makes no document write.
+    if _has(t, r"\bpdfs?\b") and (
+            _negated(t, r"\b(writes?|writing|files?|sends?|posts?)\b[^.;]{0,20}\b(epic|chart|ehr)\b")
+            or _has(t, r"\b(onbase|sftp|drop[- ]off folder)\b")):
+        i.writes_pdf = i.writes_back = False
+        hits += 1
+    elif _has(t, r"\bpdfs?\b") and not _negated(t, r"pdfs?"):
         i.writes_pdf = i.writes_back = True
         if not _has(t, r"\b(also|separately|as well)\b[^.]{0,40}(photo|image|picture)"):
             i.saves_images = False

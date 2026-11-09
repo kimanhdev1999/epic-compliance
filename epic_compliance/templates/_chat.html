@@ -16,7 +16,7 @@
         {% else %}
         <div class="user-turn">
           <div class="bubble">{{ msg.content }}</div>
-          <button type="button" class="edit-msg" data-edit aria-label="Edit this message">Edit</button>
+          {% if msg.kind != "answers" %}<button type="button" class="edit-msg" data-edit aria-label="Edit this message">Edit</button>{% endif %}
           <form class="edit-form" hidden hx-post="/assess/edit" hx-target="#chat" hx-swap="outerHTML">
             <input type="hidden" name="index" value="{{ loop.index0 }}">
             <textarea name="message" rows="3" maxlength="2000" aria-label="Edit message">{{ msg.content }}</textarea>
@@ -34,19 +34,97 @@
       {% if state.ready %}
       <div class="msg assistant">
         <div class="avatar ghost" aria-hidden="true"></div>
-        <div class="understood">
-          <div class="understood-head">Here's what I understood</div>
-          <dl>
-            {% for label, value in summary %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}
-          </dl>
-          <form method="post" action="/assess/plan" class="understood-actions">
-            {% for k, v in state.intake.model_dump().items() if k not in ("run_mode", "fhir_base_url", "oauth_client_id", "app_redirect_uri", "test_patient_query", "encounter_required") %}
-              {% if v is sameas true %}<input type="hidden" name="{{ k }}" value="on">
-              {% elif v is not sameas false %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}
-            {% endfor %}
-            <input type="hidden" name="state" value="{{ state.model_dump_json() }}">
-            <button type="submit" class="primary-btn">Generate test plan &rarr;</button>
-            <button type="button" class="secondary-btn" data-edit-description>Edit description</button>
+        {% set i = state.intake %}
+        <div class="understood" data-understood>
+          <div class="understood-head">
+            <span class="understood-title">Here's what I understood</span>
+            <span class="understood-mode">Editing</span>
+          </div>
+          <div class="understood-view">
+            <dl>
+              {% for label, value in summary %}{% set c = ' class="changed"' if label in changed else '' %}<dt{{ c|safe }}>{{ label }}</dt><dd{{ c|safe }}>{{ value }}</dd>{% endfor %}
+            </dl>
+            {% if changed %}<p class="saved-note" role="status">Saved. Changed: {{ changed|join(", ") }}.</p>{% endif %}
+            <form method="post" action="/assess/plan" class="understood-actions">
+              {% for k, v in i.model_dump().items() if k not in ("run_mode", "fhir_base_url", "oauth_client_id", "app_redirect_uri", "test_patient_query", "encounter_required") %}
+                {% if v is sameas true %}<input type="hidden" name="{{ k }}" value="on">
+                {% elif v is not sameas false %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}
+              {% endfor %}
+              <input type="hidden" name="state" value="{{ state.model_dump_json() }}">
+              <button type="submit" class="primary-btn">Generate test plan</button>
+              <button type="button" class="secondary-btn" data-edit-answers>Edit answers</button>
+            </form>
+          </div>
+
+          <form class="answers-form" hidden hx-post="/assess/answers" hx-target="#chat" hx-swap="outerHTML">
+            <div class="answers-row">
+              <label class="answers-label" for="a-description">Description</label>
+              <div class="answers-field">
+                <textarea id="a-description" name="description" rows="3" maxlength="2000" data-autogrow>{{ i.description }}</textarea>
+                <p class="field-hint">Quoted on the test plan and the report.</p>
+              </div>
+            </div>
+            <div class="answers-row">
+              <label class="answers-label" for="a-app">App</label>
+              <div class="answers-field"><input type="text" id="a-app" name="app_name" value="{{ i.app_name }}" maxlength="120" placeholder="DermScan"></div>
+            </div>
+            <div class="answers-row">
+              <label class="answers-label" for="a-hs">Health system</label>
+              <div class="answers-field"><input type="text" id="a-hs" name="health_system" value="{{ i.health_system }}" maxlength="120" placeholder="Example Health"></div>
+            </div>
+            <div class="answers-row" role="radiogroup" aria-labelledby="a-users">
+              <span class="answers-label" id="a-users">Signs in</span>
+              <div class="answers-field opts">
+                {% for v, l in options.users.items() %}<label class="opt"><input type="radio" name="users" value="{{ v }}"{{ ' checked' if i.users == v }}><span>{{ l }}</span></label>{% endfor %}
+              </div>
+            </div>
+            <div class="answers-row" role="radiogroup" aria-labelledby="a-platform">
+              <span class="answers-label" id="a-platform">App type</span>
+              <div class="answers-field opts">
+                {% for v, l in options.platform.items() %}<label class="opt"><input type="radio" name="platform" value="{{ v }}"{{ ' checked' if i.platform == v }}><span>{{ l }}</span></label>{% endfor %}
+              </div>
+            </div>
+            <div class="answers-row" role="group" aria-labelledby="a-data">
+              <span class="answers-label" id="a-data">Patient data</span>
+              <div class="answers-field opts">
+                {% for name, l in [
+                  ("reads_chart", "Reads the chart (patient details, visits, clinical data)"),
+                  ("saves_images", "Saves photos to the chart as images"),
+                  ("writes_pdf", "Files a PDF document in the chart"),
+                  ("writes_back", "Writes notes or results back to the chart"),
+                  ("third_party_ai", "Sends PHI to a third-party AI or cloud service"),
+                ] %}<label class="opt"><input type="checkbox" name="{{ name }}"{{ ' checked' if i[name] }}><span>{{ l }}</span></label>{% endfor %}
+                <p class="field-hint">Only what your app does through Epic itself. If another system files documents in the chart for you, leave those unchecked.</p>
+              </div>
+            </div>
+            <div class="answers-row">
+              <label class="answers-label" for="a-tls">TLS</label>
+              <div class="answers-field"><select id="a-tls" name="tls_version">
+                <option value="">Not sure</option>
+                {% for v in options.tls %}<option{{ ' selected' if i.tls_version == v }}>{{ v }}</option>{% endfor %}
+              </select></div>
+            </div>
+            <div class="answers-row">
+              <label class="answers-label" for="a-audit">Audit logging</label>
+              <div class="answers-field inline-fields">
+                <select id="a-audit" name="audit_logging">
+                  <option value="">Not sure</option>
+                  {% for v, l in options.audit.items() %}<option value="{{ v }}"{{ ' selected' if i.audit_logging == v }}>{{ l }}</option>{% endfor %}
+                </select>
+                <label class="days">Kept for <input type="text" name="audit_retention_days" value="{{ i.audit_retention_days }}" inputmode="numeric" pattern="[0-9]{0,5}" size="5" aria-label="Audit log retention in days"> days</label>
+              </div>
+            </div>
+            <div class="answers-row">
+              <label class="answers-label" for="a-baa">BAA</label>
+              <div class="answers-field"><select id="a-baa" name="baa_status">
+                <option value="">Not sure</option>
+                {% for v, l in options.baa.items() %}<option value="{{ v }}"{{ ' selected' if i.baa_status == v }}>{{ l }}</option>{% endfor %}
+              </select></div>
+            </div>
+            <div class="understood-actions">
+              <button type="submit" class="primary-btn">Save answers</button>
+              <button type="button" class="secondary-btn" data-edit-answers-cancel>Cancel</button>
+            </div>
           </form>
         </div>
       </div>

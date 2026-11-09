@@ -16,16 +16,32 @@
     if (log) log.scrollTop = log.scrollHeight;
   }
   function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-  function grow(box) {
+  function grow(box, max) {
     box.style.height = 'auto';
-    box.style.height = Math.min(box.scrollHeight, 200) + 'px';
+    box.style.height = Math.min(box.scrollHeight + 2, max || 200) + 'px';
+  }
+  // The summary card's "Edit answers" mode: the same card turns into a form in place.
+  function setAnswersEditing(card, on) {
+    var form = card.querySelector('.answers-form');
+    card.classList.toggle('editing', on);
+    card.querySelector('.understood-view').hidden = on;
+    form.hidden = !on;
+    if (on) {
+      var box = form.querySelector('[data-autogrow]');
+      grow(box, 360);
+      card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      box.focus();
+    } else {
+      form.reset();
+      card.querySelector('[data-edit-answers]').focus();
+    }
   }
   var AVATAR = document.querySelector('#avatar-tpl').innerHTML;
 
   // Show the user's message and a typing indicator while the assistant answers.
   document.addEventListener('htmx:beforeRequest', function (e) {
     var form = e.detail.elt;
-    if (form.classList.contains('edit-form')) { form.classList.add('busy'); return; }
+    if (form.classList.contains('edit-form') || form.classList.contains('answers-form')) { form.classList.add('busy'); return; }
     if (form.id !== 'chat-form') return;
     var box = form.querySelector('textarea');
     var text = box.value.trim();
@@ -49,24 +65,33 @@
   });
   document.addEventListener('input', function (e) {
     if (e.target.matches('#chat-form textarea')) grow(e.target);
+    else if (e.target.matches('#chat [data-autogrow], #chat .edit-form textarea')) grow(e.target, 360);
   });
   document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      var editingCard = e.target.closest && e.target.closest('#chat .understood.editing');
+      if (editingCard) { setAnswersEditing(editingCard, false); return; }
+      var editingTurn = e.target.closest && e.target.closest('#chat .user-turn.editing');
+      if (editingTurn) { editingTurn.querySelector('[data-edit-cancel]').click(); return; }
+    }
     if (e.target.matches('#chat-form textarea') && e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
       e.preventDefault();
       e.target.form.requestSubmit();
     }
   });
   document.addEventListener('click', function (e) {
-    // "Edit description" on the summary opens the first message (the description) for editing.
-    var describe = e.target.closest('#chat [data-edit-description]');
-    var edit = describe ? document.querySelector('#chat .user-turn [data-edit]')
-                        : e.target.closest('#chat [data-edit]');
+    var answers = e.target.closest('#chat [data-edit-answers], #chat [data-edit-answers-cancel]');
+    if (answers) {
+      setAnswersEditing(answers.closest('[data-understood]'), answers.hasAttribute('data-edit-answers'));
+      return;
+    }
+    var edit = e.target.closest('#chat [data-edit]');
     if (edit) {
       var turn = edit.closest('.user-turn');
-      if (describe) turn.scrollIntoView({ block: 'center', behavior: 'smooth' });
       turn.classList.add('editing');
       turn.querySelector('.edit-form').hidden = false;
       var area = turn.querySelector('.edit-form textarea');
+      grow(area, 360);
       area.focus(); area.setSelectionRange(area.value.length, area.value.length);
       return;
     }

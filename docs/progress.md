@@ -5,7 +5,7 @@ work and updates it before opening a PR** (see `CLAUDE.md`). Keep it short: one 
 per item, newest first within each section. Detail belongs in `notes/decisions.md`
 (ADRs), PR descriptions and `docs/ux-redesign/requirements.md`.
 
-**Last updated:** 2026-11-09 (chat summary: separate "Generate test plan" and "Edit description" buttons)
+**Last updated:** 2026-11-09 (chat summary: "Edit answers" edits the card in place)
 
 ## How to keep this current
 - **Starting work:** read *Open* and *Next*. If your task is listed, work from that line.
@@ -76,6 +76,8 @@ the harness. **P0** = misleading or blocking, **P1** = confusing, **P2** = polis
 | P1 | Attested and AI-judged passes count toward readiness like verified ones | scoring | — |
 | P1 | Home doesn't move the user forward after the chat; there's no "ready to submit" end state | `home.html`, `workspace.py` | — |
 | P1 | Sign-in step gives no sandbox credentials link | `plan.html` | — |
+| P1 | A correction typed in the chat (not via Edit answers) gets the canned "that's everything I need" reply instead of saying what changed, and doesn't update the quoted description | `intake_chat.py` `READY_REPLY`, `next_turn` | — |
+| P1 | No answer for "documents reach the chart through another system (OnBase, sFTP)"; the summary can't show it | `assessment.Intake` | — |
 | P2 | Export page scrolls sideways 2px on phones | `export.html` | `KNOWN[("/runs/{run}/print", "phone")]` |
 | P2 | A sample run ticks Connect / Run / Fix on Home (harness only now; sample runs are hidden in the app) | `workspace.py` checklist | `test_checklist_ignores_sample_runs` |
 | P2 | ONC test kit shows "Configured" without checking it's reachable | `api._integrations` | — |

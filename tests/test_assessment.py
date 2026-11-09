@@ -4,7 +4,7 @@ from __future__ import annotations
 import pytest
 
 from epic_compliance.assessment import SELECTORS, Intake, build_plan
-from epic_compliance.intake_chat import ChatState, next_turn
+from epic_compliance.intake_chat import ANSWER_FIELDS, ChatState, next_turn
 from epic_compliance.rules_engine.catalog import is_reviewer_question, load_rules
 
 
@@ -466,6 +466,17 @@ class TestPdfDocument:
                        "and also saves the photo separately to the chart")
         assert i.writes_pdf and i.saves_images
 
+    def test_pdf_filed_by_another_system_is_not_a_write(self):
+        i = self._chat("BelleOne, a native mobile app clinicians use. It builds a visit summary PDF. "
+                       "The PDF goes by sFTP to the health system's OnBase drop-off folder and "
+                       "OnBase files it; BelleOne never writes to Epic.")
+        assert not (i.writes_pdf or i.writes_back)
+
+    def test_negation_stays_in_its_clause(self):
+        i = self._chat("A mobile app clinicians use. It never writes to Epic; it only reads "
+                       "the MRN, visit number, name and date of birth.")
+        assert i.reads_chart and not i.writes_back
+
     def test_writes_pdf_implies_a_document_write(self):
         assert Intake(writes_pdf=True).writes_back
         assert Intake.from_form({"writes_pdf": "on"}).writes_back
@@ -571,8 +582,52 @@ class TestStepsAfterDescribing:
                 assert ChatState.load(store.latest_chat_state()).planned
             page = client.get("/assess").text
             assert "Generate test plan" in page
-            assert "data-edit-description" in page and ">Edit description<" in page
+            assert "data-edit-answers" in page and ">Edit answers<" in page
+            assert 'hx-post="/assess/answers"' in page
             assert "Edit app description" not in page and "confirm(" not in page.split("understood")[1].split("</form>")[0]
+
+    def _answers(self, state: ChatState, **changes) -> dict[str, str]:
+        """The Edit answers form as the browser posts it: checked boxes only."""
+        data = {**state.intake.model_dump(), **changes}
+        return {k: ("on" if v is True else v) for k, v in data.items()
+                if k in ANSWER_FIELDS and v is not False}
+
+    def test_edit_answers_sets_fields_exactly_and_keeps_the_rest(self, client):
+        from epic_compliance import store
+        state = self._finish(client)
+        before = len(state.messages)
+        desc = ("DermScan reads the patient's MRN and visit. The PDF goes by sFTP to the "
+                "health system's OnBase folder; DermScan never writes to Epic.")
+        resp = client.post("/assess/answers", data=self._answers(
+            state, description=desc, saves_images=False, writes_pdf=False, writes_back=False,
+            reads_chart=True, health_system="Example Health"))
+        saved = ChatState.load(store.latest_chat_state())
+        i = saved.intake
+        assert i.description == desc and i.health_system == "Example Health"
+        assert i.reads_chart and not (i.saves_images or i.writes_back or i.writes_pdf)
+        assert (i.users, i.platform) == (state.intake.users, state.intake.platform)
+        assert saved.ready and saved.known == state.known  # nothing is asked again
+        # One note in the chat saying what changed, and no Edit link on it.
+        assert len(saved.messages) == before + 2 and saved.messages[-2]["kind"] == "answers"
+        assert "Patient data: Reads the chart" in saved.messages[-2]["content"]
+        assert 'class="changed">Patient data<' in resp.text and "Saved. Changed:" in resp.text
+        ids = _ids(build_plan(i))
+        assert not {"WRITE-001", "WRITE-002", "CLIN-005", "CLIN-009"} & ids
+        assert "OnBase folder; DermScan never writes to Epic." in client.get("/assess/plan").text  # the plan quotes the new description
+
+    def test_edit_answers_with_nothing_changed_adds_no_note(self, client):
+        from epic_compliance import store
+        state = self._finish(client)
+        client.post("/assess/answers", data=self._answers(state))
+        assert ChatState.load(store.latest_chat_state()).messages == state.messages
+
+    @pytest.mark.parametrize("bad", [{"users": "robots"}, {"audit_retention_days": "ten"},
+                                     {"tls_version": "TLS 9"}, {"baa_status": "maybe"}])
+    def test_edit_answers_rejects_invalid_values(self, client, bad):
+        from epic_compliance import store
+        state = self._finish(client)
+        client.post("/assess/answers", data=self._answers(state, **bad))
+        assert ChatState.load(store.latest_chat_state()).intake == state.intake
 
     def test_editing_an_answer_keeps_the_edit_button(self, client):
         from epic_compliance import store
