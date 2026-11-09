@@ -126,31 +126,102 @@ def summary(intake: Intake) -> list[tuple[str, str]]:
 AUDIT_LABELS = {"yes": "Every PHI access is logged", "partial": "Partly logged", "no": "Not logged"}
 TLS_OPTIONS = ("TLS 1.3", "TLS 1.2", "TLS 1.0/1.1 still enabled")
 
-#: What the summary card's "Edit answers" form sets, exactly as entered (no parsing).
+#: What the summary card's "Edit answers" form sets. Fields with clear options
+#: are set exactly; patient data is a description (``data_use``) that is read
+#: into the data flags.
 ANSWER_FIELDS = (
-    "description", "app_name", "health_system", "users", "platform",
-    "reads_chart", "saves_images", "writes_back", "writes_pdf", "third_party_ai",
+    "description", "app_name", "health_system", "users", "platform", "data_use",
     "tls_version", "audit_logging", "audit_retention_days", "baa_status",
 )
+DATA_FLAGS = ("reads_chart", "saves_images", "writes_back", "writes_pdf", "third_party_ai")
 ANSWERS_UPDATED_REPLY = "Updated. Check the summary below, then generate your test plan."
 
 
-def apply_answers(state: ChatState, form: dict[str, Any]) -> tuple[ChatState, list[str]]:
+def data_use_text(intake: Intake) -> str:
+    """The patient-data description: the user's own words, or (before they've
+    written any) a starting sentence built from what the chat understood."""
+    if intake.data_use:
+        return intake.data_use
+    parts = [text for text, on in (
+        ("It reads the chart.", intake.reads_chart),
+        ("It saves photos to the chart as images.", intake.saves_images),
+        ("It files a PDF document in the chart.", intake.writes_pdf),
+        ("It writes notes or results back to the chart.", intake.writes_back and not intake.writes_pdf),
+        ("It sends PHI to a third-party AI or cloud service.", intake.third_party_ai),
+    ) if on]
+    return " ".join(parts) or "It doesn't read or write patient data in Epic."
+
+
+DATA_USE_PROMPT = """\
+A developer describes what their app does with patient data, for an Epic \
+integration readiness assessment. Decide each flag from the description only:
+- reads_chart: the app reads patient data from Epic (demographics, MRN, visits, \
+clinical data).
+- saves_images: the app itself files photos in the Epic chart as images of their \
+own. Photos that only travel inside a PDF or other document are "no".
+- writes_back: the app itself writes notes, results or documents into Epic.
+- writes_pdf: the app itself files a PDF document in the Epic chart.
+- third_party_ai: PHI goes to an outside AI, inference, storage or analytics \
+service run by another company.
+Anything another system does for the app (for example a document-management \
+system that files documents it received by sFTP) is not the app writing to Epic. \
+Answer "no" when the description doesn't say so."""
+
+_DATA_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {f: {"type": "string", "enum": ["yes", "no"]} for f in DATA_FLAGS},
+    "required": list(DATA_FLAGS),
+    "additionalProperties": False,
+}
+
+
+def read_data_use(text: str, api_key: str = "") -> dict[str, bool]:
+    """The five data flags a patient-data description implies. Uses the answer
+    review when there's a key, else (or if that fails) the keyword parser."""
+    if api_key:
+        try:
+            import anthropic  # import only when needed
+
+            response = anthropic.Anthropic(api_key=api_key).messages.create(
+                model=LLM_MODEL, max_tokens=512, system=DATA_USE_PROMPT,
+                messages=[{"role": "user", "content": text}],
+                output_config={"format": {"type": "json_schema", "schema": _DATA_SCHEMA}},
+            )
+            out = json.loads(next(b.text for b in response.content if b.type == "text"))
+            flags = {f: out[f] == "yes" for f in DATA_FLAGS}
+            flags["writes_back"] = flags["writes_back"] or flags["writes_pdf"]
+            return flags
+        except Exception as exc:  # any API trouble -> keyword parser
+            log.warning("patient-data description: review call failed, using keyword parser: %s", exc)
+    t = text.lower()
+    intake = Intake(**{f: False for f in DATA_FLAGS})
+    _parse_data(t, intake)
+    # Here the text is only about data, so a photo counts as saved to the chart
+    # only when it's said to go there ("takes a photo" alone doesn't).
+    if not _has(t, r"\b(photo|image|picture)\w*\b[^.;]{0,40}\b(chart|epic|ehr)\b"):
+        intake.saves_images = False
+    return {f: getattr(intake, f) for f in DATA_FLAGS}
+
+
+def apply_answers(state: ChatState, form: dict[str, Any], api_key: str = "") -> tuple[ChatState, list[str]]:
     """Set the intake from the summary card's form, keeping every other answer.
 
-    Returns the new state and the summary labels that changed. When something
-    changed, the transcript gets a short note of it, so the conversation (and the
-    answer review, if it reads the chat later) agrees with the summary. Invalid
-    input leaves the state as it was.
+    Fields with clear options are set exactly. The patient-data description is
+    read into the data flags when it changed. Returns the new state and the
+    summary labels that changed. When something changed, the transcript gets a
+    short note of it, so the conversation (and the answer review, if it reads
+    the chat later) agrees with the summary. Invalid input leaves the state as it was.
     """
     data = state.intake.model_dump()
     for name in ANSWER_FIELDS:
-        if Intake.model_fields[name].annotation is bool:
-            data[name] = str(form.get(name, "")).lower() in ("1", "true", "on", "yes")
-        elif name in form:
+        if name in form:
             data[name] = str(form[name]).strip()[:MAX_MESSAGE_CHARS]
     if not data["description"]:
         data["description"] = state.intake.description
+    if data["data_use"] and data["data_use"] != data_use_text(state.intake):
+        data.update(read_data_use(data["data_use"], api_key))
+    elif data["data_use"] == data_use_text(state.intake) and not state.intake.data_use:
+        data["data_use"] = ""  # the untouched starting sentence isn't the user's words
     if not re.fullmatch(r"\d{0,5}", data["audit_retention_days"]):
         return state, []
     try:
@@ -166,6 +237,8 @@ def apply_answers(state: ChatState, form: dict[str, Any]) -> tuple[ChatState, li
     changed += [(label, "removed") for label in before if label not in dict(after)]
     if new.description != state.intake.description:
         changed.append(("Description", "updated"))
+    if new.data_use != state.intake.data_use and not any(label == "Patient data" for label, _ in changed):
+        changed.append(("Patient data", "description updated"))
     if not changed:
         return state, []
 
@@ -391,18 +464,29 @@ def _parse(state: ChatState, text: str, asked: str | None) -> set[str]:
     elif _has(t, r"\b(browser|web ?app|website|spa|single[- ]page|react|angular|vue)\b"):
         i.platform, settled = "web_browser", settled | {"platform"}
 
-    data_patterns = {
-        "reads_chart": r"\b((?<!ai )(?<!a )read|reads|reading|view|views|pull|pulls|fetch|look up|history|problem list|"
-                       r"problems|medications?|meds|allerg\w*|labs?|vitals|observations?|demographics|"
-                       r"chart data|patient data)\b",
-        "saves_images": r"\b(photo\w*|images?|pictures?|camera|imaging|snapshots?)\b",
-        "writes_back": r"\b(write|writes|writing|written|notes?|results? back|post|file[sd]? (it|them)?\s*"
-                       r"(back|in|into|to)|document(s|ation)?|report back)\b",
-        "third_party_ai": r"\b(ai|a\.i\.|ml|machine learning|model|inference|llm|gpt|openai|claude|"
-                          r"vendor|cloud|aws|azure|gcp|third[- ]party)\b",
-    }
+    hits = _parse_data(t, i)
+    if hits or (asked == "data" and _has(t, r"\b(nothing|none|no data)\b")):
+        settled.add("data")
+    return _parse_rest(text, t, i, asked, settled)
+
+
+_DATA_PATTERNS = {
+    "reads_chart": r"\b((?<!ai )(?<!a )read|reads|reading|view|views|pull|pulls|fetch|look up|history|problem list|"
+                   r"problems|medications?|meds|allerg\w*|labs?|vitals|observations?|demographics|"
+                   r"chart data|patient data|mrn)\b",
+    "saves_images": r"\b(photo\w*|images?|pictures?|camera|imaging|snapshots?)\b",
+    "writes_back": r"\b(write|writes|writing|written|notes?|results? back|post|file[sd]? (it|them)?\s*"
+                   r"(back|in|into|to)|document(s|ation)?|report back)\b",
+    "third_party_ai": r"\b(ai|a\.i\.|ml|machine learning|model|inference|llm|gpt|openai|claude|"
+                      r"vendor|cloud|aws|azure|gcp|third[- ]party)\b",
+}
+
+
+def _parse_data(t: str, i: Intake) -> int:
+    """Apply what lower-cased ``t`` says about patient data to ``i``; return how
+    many data facts it mentioned."""
     hits = 0
-    for field, pattern in data_patterns.items():
+    for field, pattern in _DATA_PATTERNS.items():
         if _negated(t, pattern):
             setattr(i, field, False)
             hits += 1
@@ -423,8 +507,11 @@ def _parse(state: ChatState, text: str, asked: str | None) -> set[str]:
         if not _has(t, r"\b(also|separately|as well)\b[^.]{0,40}(photo|image|picture)"):
             i.saves_images = False
         hits += 1
-    if hits or (asked == "data" and _has(t, r"\b(nothing|none|no data)\b")):
-        settled.add("data")
+    return hits
+
+
+def _parse_rest(text: str, t: str, i: Intake, asked: str | None, settled: set[str]) -> set[str]:
+    """Security, health system and app name from ``text`` (``t`` lower-cased)."""
 
     sec = 0
     if m := re.search(r"tls\s*v?(1\.[0-3])", t):

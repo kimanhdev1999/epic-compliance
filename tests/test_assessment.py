@@ -4,7 +4,7 @@ from __future__ import annotations
 import pytest
 
 from epic_compliance.assessment import SELECTORS, Intake, build_plan
-from epic_compliance.intake_chat import ANSWER_FIELDS, ChatState, next_turn
+from epic_compliance.intake_chat import ANSWER_FIELDS, ChatState, data_use_text, next_turn
 from epic_compliance.rules_engine.catalog import is_reviewer_question, load_rules
 
 
@@ -587,24 +587,31 @@ class TestStepsAfterDescribing:
             assert "Edit app description" not in page and "confirm(" not in page.split("understood")[1].split("</form>")[0]
 
     def _answers(self, state: ChatState, **changes) -> dict[str, str]:
-        """The Edit answers form as the browser posts it: checked boxes only."""
-        data = {**state.intake.model_dump(), **changes}
-        return {k: ("on" if v is True else v) for k, v in data.items()
-                if k in ANSWER_FIELDS and v is not False}
+        """The Edit answers form as the browser posts it, with the patient-data
+        box prefilled the way the page fills it."""
+        data = {**state.intake.model_dump(), "data_use": data_use_text(state.intake), **changes}
+        return {k: v for k, v in data.items() if k in ANSWER_FIELDS}
 
-    def test_edit_answers_sets_fields_exactly_and_keeps_the_rest(self, client):
+    def test_edit_answers_sets_fields_and_reads_the_data_description(self, client):
         from epic_compliance import store
         state = self._finish(client)
+        assert state.intake.saves_images  # the chat heard "save lesion photos to the chart"
         before = len(state.messages)
         desc = ("DermScan reads the patient's MRN and visit. The PDF goes by sFTP to the "
                 "health system's OnBase folder; DermScan never writes to Epic.")
+        data_use = ("It reads the patient's MRN, visit number, name and date of birth from Epic. "
+                    "The clinician takes a lesion photo. The app builds a PDF and sends it by sFTP "
+                    "to the health system's OnBase folder, and OnBase files it; the app never "
+                    "writes to Epic.")
+        page = client.get("/assess").text
+        assert 'name="data_use"' in page and "It saves photos to the chart as images." in page
         resp = client.post("/assess/answers", data=self._answers(
-            state, description=desc, saves_images=False, writes_pdf=False, writes_back=False,
-            reads_chart=True, health_system="Example Health"))
+            state, description=desc, data_use=data_use, health_system="Example Health"))
         saved = ChatState.load(store.latest_chat_state())
         i = saved.intake
-        assert i.description == desc and i.health_system == "Example Health"
+        assert i.description == desc and i.health_system == "Example Health" and i.data_use == data_use
         assert i.reads_chart and not (i.saves_images or i.writes_back or i.writes_pdf)
+        assert "Currently read as</span> Reads the chart" in resp.text
         assert (i.users, i.platform) == (state.intake.users, state.intake.platform)
         assert saved.ready and saved.known == state.known  # nothing is asked again
         # One note in the chat saying what changed, and no Edit link on it.
@@ -619,7 +626,17 @@ class TestStepsAfterDescribing:
         from epic_compliance import store
         state = self._finish(client)
         client.post("/assess/answers", data=self._answers(state))
-        assert ChatState.load(store.latest_chat_state()).messages == state.messages
+        saved = ChatState.load(store.latest_chat_state())
+        # The untouched starting sentence isn't the user's words and changes nothing.
+        assert saved.messages == state.messages and saved.intake == state.intake
+
+    def test_data_description_is_read_only_when_it_changes(self, client, monkeypatch):
+        from epic_compliance import intake_chat, store
+        calls = []
+        monkeypatch.setattr(intake_chat, "read_data_use", lambda text, key="": calls.append(text) or {})
+        state = self._finish(client)
+        client.post("/assess/answers", data=self._answers(state, app_name="DermScan Pro"))
+        assert calls == [] and ChatState.load(store.latest_chat_state()).intake.app_name == "DermScan Pro"
 
     @pytest.mark.parametrize("bad", [{"users": "robots"}, {"audit_retention_days": "ten"},
                                      {"tls_version": "TLS 9"}, {"baa_status": "maybe"}])

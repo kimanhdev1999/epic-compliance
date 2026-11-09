@@ -109,9 +109,12 @@ def test_edit_answers_in_place_on_the_summary(visit, server, sample_run, viewpor
     assert card.locator(".understood-view").is_visible()
 
     card.locator("[data-edit-answers]").click()
-    ai = card.locator(".answers-form input[name=third_party_ai]")
-    was = ai.is_checked()
-    ai.set_checked(not was)
+    data = card.locator("textarea[name=data_use]")
+    assert data.input_value() and card.locator(".read-as").is_visible()
+    data.scroll_into_view_if_needed()
+    page.screenshot(path=str(v.shot("assess-answers-data").with_name(f"assess-answers-data-{viewport}.png")))
+    note = " It also sends PHI to a third-party AI service."
+    data.fill(data.input_value().replace(note, "") if note.strip() in data.input_value() else data.input_value() + note)
     with page.expect_response("**/assess/answers"):
         card.locator("button[type=submit]", has_text="Save answers").click()
     page.wait_for_selector("[data-understood] .saved-note")

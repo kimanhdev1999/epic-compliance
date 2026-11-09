@@ -32,7 +32,7 @@ per item, newest first within each section. Detail belongs in `notes/decisions.m
 ## Done
 | What | PR / ADR |
 |---|---|
-| Chat summary's "Edit answers" turns the card into a form in place: answers are set exactly, the rest are kept, and the chat notes what changed (replaces #50's "Edit description"); a PDF filed by another system (OnBase, sFTP) isn't a document write | #51 |
+| Chat summary's "Edit answers" turns the card into a form in place: options (who signs in, app type, security) are set exactly; patient data is described in words (`data_use`) and read into the data flags, shown as "Currently read as"; the rest are kept, and the chat notes what changed (replaces #50's "Edit description"); a PDF filed by another system (OnBase, sFTP) isn't a document write | #51 |
 | Chat summary has two buttons: "Generate test plan" always, and "Edit description", which opens the first message for editing (replaces #47's "Edit app description" button that generated the plan) | #50 |
 | Intake hears "sends a PDF to the chart" (`writes_pdf`) and later answers correct earlier ones, so a PDF report isn't planned as a photo upload; CLIN-009 sends a real PDF; write results record Epic's refusal reason | #48 |
 | After Epic sign-in, the sign-in tab's button and auto-return go straight to the test plan's Run (`/assess/plan#setup`) instead of Home | #45 |

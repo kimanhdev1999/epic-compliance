@@ -84,17 +84,13 @@
                 {% for v, l in options.platform.items() %}<label class="opt"><input type="radio" name="platform" value="{{ v }}"{{ ' checked' if i.platform == v }}><span>{{ l }}</span></label>{% endfor %}
               </div>
             </div>
-            <div class="answers-row" role="group" aria-labelledby="a-data">
-              <span class="answers-label" id="a-data">Patient data</span>
-              <div class="answers-field opts">
-                {% for name, l in [
-                  ("reads_chart", "Reads the chart (patient details, visits, clinical data)"),
-                  ("saves_images", "Saves photos to the chart as images"),
-                  ("writes_pdf", "Files a PDF document in the chart"),
-                  ("writes_back", "Writes notes or results back to the chart"),
-                  ("third_party_ai", "Sends PHI to a third-party AI or cloud service"),
-                ] %}<label class="opt"><input type="checkbox" name="{{ name }}"{{ ' checked' if i[name] }}><span>{{ l }}</span></label>{% endfor %}
-                <p class="field-hint">Only what your app does through Epic itself. If another system files documents in the chart for you, leave those unchecked.</p>
+            <div class="answers-row">
+              <label class="answers-label" for="a-data">Patient data</label>
+              <div class="answers-field">
+                <textarea id="a-data" name="data_use" rows="3" maxlength="2000" data-autogrow
+                          aria-describedby="a-data-hint a-data-read">{{ data_use }}</textarea>
+                <p class="field-hint" id="a-data-hint">In your own words: what the app reads from Epic, anything it writes or files in the chart itself, and where patient data goes outside Epic.</p>
+                <p class="read-as" id="a-data-read"><span>Currently read as</span> {{ (summary|selectattr(0, "equalto", "Patient data")|first)[1] }}</p>
               </div>
             </div>
             <div class="answers-row">

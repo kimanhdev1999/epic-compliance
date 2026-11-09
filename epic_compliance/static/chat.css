@@ -107,6 +107,9 @@ main.chat-main .stepper { max-width: 768px; width: 100%; margin: 0 auto 0.5rem; 
 .opt:has(input:focus-visible) { outline: 2px solid var(--c-primary); outline-offset: -2px; }
 .field-hint { margin: 0.3rem 0 0; font-size: 0.78rem; line-height: 1.45; color: var(--c-muted); }
 .opts .field-hint { padding: 0 0.5rem; }
+/* How the tool read the patient-data description: what picks the tests. */
+.read-as { margin: 0.45rem 0 0; padding: 0.45rem 0.65rem; border-radius: 8px; background: var(--c-soft); font-size: 0.84rem; line-height: 1.45; }
+.read-as span { color: var(--c-muted); margin-right: 0.35rem; }
 .answers-form .understood-actions { padding-top: 0.85rem; border-top: 1px solid var(--c-border); }
 
 .quick-replies { display: flex; flex-wrap: wrap; gap: 0.5rem; padding-left: calc(30px + 0.85rem); }
