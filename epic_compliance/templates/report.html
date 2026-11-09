@@ -38,6 +38,8 @@
     {% if intake.description %}<dt>You described it as</dt><dd>“{{ intake.description }}”</dd>{% endif %}
     <dt>Signs in</dt><dd>{{ labels.users[intake.users] }}</dd>
     <dt>App type</dt><dd>{{ labels.platform[intake.platform] }}</dd>
+    <dt>Connects to Epic</dt><dd>{{ labels.epic[intake.epic_connection or "api"] }}</dd>
+    {% if intake.data_use %}<dt>Patient data, in your words</dt><dd>“{{ intake.data_use }}”</dd>{% endif %}
     <dt>Patient data</dt><dd>{{ [("Reads the chart", intake.reads_chart), ("Saves images", intake.saves_images), ("Sends a PDF document", intake.writes_pdf), ("Writes notes / results", intake.writes_back and not intake.writes_pdf), ("Sends PHI to a third-party AI / cloud", intake.third_party_ai)]|selectattr(1)|map(attribute=0)|join(", ") or "None selected" }}</dd>
     <dt>Checks run</dt><dd>{{ assessment.included|length }}, chosen from your description</dd>
   </dl>

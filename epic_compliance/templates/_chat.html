@@ -84,6 +84,13 @@
                 {% for v, l in options.platform.items() %}<label class="opt"><input type="radio" name="platform" value="{{ v }}"{{ ' checked' if i.platform == v }}><span>{{ l }}</span></label>{% endfor %}
               </div>
             </div>
+            <div class="answers-row" role="radiogroup" aria-labelledby="a-epic">
+              <span class="answers-label" id="a-epic">Connects to Epic</span>
+              <div class="answers-field opts">
+                {% for v, l in options.epic.items() %}<label class="opt"><input type="radio" name="epic_connection" value="{{ v }}"{{ ' checked' if i.epic_connection == v }}><span>{{ l }}</span></label>{% endfor %}
+                <p class="field-hint">If it doesn't connect, the Epic sign-in, chart-read and chart-write tests are left out of the plan.</p>
+              </div>
+            </div>
             <div class="answers-row">
               <label class="answers-label" for="a-data">Patient data</label>
               <div class="answers-field">

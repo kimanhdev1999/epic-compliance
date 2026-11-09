@@ -39,6 +39,10 @@ class Intake(BaseModel):
     # Who signs in: clinicians pick the patient after login, patients are the patient.
     users: Literal["clinicians", "patients"] = "clinicians"
     platform: Literal["mobile", "web_browser", "web_server"] = "mobile"
+    # How the app gets to Epic: through Epic's API (SMART on FHIR sign-in, FHIR
+    # calls), or not at all (e.g. it reads the patient from the Epic screen and
+    # another system files its documents). "none" drops the Epic API tests.
+    epic_connection: Literal["api", "none"] = "api"
     reads_chart: bool = True
     saves_images: bool = False
     writes_back: bool = False
@@ -92,6 +96,13 @@ PLATFORM_LABELS = {
     "web_browser": "Browser-only web app (no backend holds secrets)",
     "web_server": "Web app with its own backend server",
 }
+EPIC_CONNECTION_LABELS = {
+    "api": "Through Epic's API (signs in with SMART on FHIR)",
+    "none": "Doesn't connect (e.g. reads the Epic screen; another system files documents)",
+}
+#: Test sections that only exist for an app that signs in to Epic and calls its API.
+EPIC_API_CATEGORIES = ("auth", "clinician_workflow", "fhir_conformance", "write_back")
+NO_EPIC_API = "Doesn't apply: the app doesn't connect to Epic's API."
 BAA_LABELS = {
     "all": "Signed with the health system and every vendor that touches PHI",
     "health_system_only": "Signed with the health system, not yet with every vendor",
@@ -296,8 +307,10 @@ def build_plan(intake: Intake) -> Plan:
             included, reason = True, "General requirement for every Epic app."
         else:
             included, reason = selector(intake)
+        if intake.epic_connection == "none" and rule.category in EPIC_API_CATEGORIES:
+            included, reason = False, NO_EPIC_API
         # The engine only runs rules for the launch profile; keep the plan honest.
-        if included and not rule.applies_to(launch_profile):
+        elif included and not rule.applies_to(launch_profile):
             included, reason = False, "Doesn't apply to this kind of app."
         plan.checks.append(PlannedCheck(rule=rule, included=included, reason=reason))
     # Reviewer questions (ADR-019): included by the library's tags, run as tests.

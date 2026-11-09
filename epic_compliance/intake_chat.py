@@ -23,7 +23,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from .assessment import BAA_LABELS, PLATFORM_LABELS, RUN_FIELDS, USERS_LABELS, Intake
+from .assessment import BAA_LABELS, EPIC_CONNECTION_LABELS, PLATFORM_LABELS, RUN_FIELDS, USERS_LABELS, Intake
 from .rules_engine.llm_evaluator import LLM_MODEL
 
 log = logging.getLogger(__name__)
@@ -113,6 +113,7 @@ def summary(intake: Intake) -> list[tuple[str, str]]:
     rows += [
         ("Signs in", USERS_LABELS[intake.users]),
         ("App type", PLATFORM_LABELS[intake.platform]),
+        ("Connects to Epic", EPIC_CONNECTION_LABELS[intake.epic_connection]),
         ("Patient data", (lambda d: d[:1].upper() + d[1:])(", ".join(data)) or "None"),
         ("TLS", intake.tls_version or "Not sure"),
         ("Audit logging", AUDIT_LABELS.get(intake.audit_logging, "Not sure")),
@@ -130,7 +131,7 @@ TLS_OPTIONS = ("TLS 1.3", "TLS 1.2", "TLS 1.0/1.1 still enabled")
 #: are set exactly; patient data is a description (``data_use``) that is read
 #: into the data flags.
 ANSWER_FIELDS = (
-    "description", "app_name", "health_system", "users", "platform", "data_use",
+    "description", "app_name", "health_system", "users", "platform", "epic_connection", "data_use",
     "tls_version", "audit_logging", "audit_retention_days", "baa_status",
 )
 DATA_FLAGS = ("reads_chart", "saves_images", "writes_back", "writes_pdf", "third_party_ai")
@@ -323,7 +324,10 @@ work out four things so the tool can choose which compliance checks to run:
 patient) or "patients" (the patient signs in, e.g. via MyChart, and sees only \
 their own record).
 2. platform: "mobile" (native iOS/Android), "web_browser" (browser-only app, no \
-backend that holds secrets) or "web_server" (web app with its own backend).
+backend that holds secrets) or "web_server" (web app with its own backend). Also \
+epic_connection: "api" if the app signs in to Epic and calls its API (the usual \
+case), "none" if it doesn't connect to Epic at all (e.g. it reads the patient \
+from the Epic screen with a camera, and another system files its documents).
 3. data: what the app does with patient data. reads_chart, saves_images (photos \
 filed in the chart), writes_back (notes or results written to the chart), \
 writes_pdf (the app files a PDF document, e.g. a report, in the chart; this \
@@ -368,6 +372,7 @@ OUTPUT_SCHEMA: dict[str, Any] = {
                 "health_system": _STR,
                 "users": {"type": "string", "enum": ["clinicians", "patients", ""]},
                 "platform": {"type": "string", "enum": ["mobile", "web_browser", "web_server", ""]},
+                "epic_connection": {"type": "string", "enum": ["api", "none", ""]},
                 "reads_chart": _YES_NO,
                 "saves_images": _YES_NO,
                 "writes_back": _YES_NO,
@@ -379,7 +384,7 @@ OUTPUT_SCHEMA: dict[str, Any] = {
                 "baa_status": {"type": "string", "enum": ["all", "health_system_only", "none", ""]},
             },
             "required": [
-                "app_name", "health_system", "users", "platform", "reads_chart",
+                "app_name", "health_system", "users", "platform", "epic_connection", "reads_chart",
                 "saves_images", "writes_back", "writes_pdf", "third_party_ai", "tls_version",
                 "audit_logging", "audit_retention_days", "baa_status",
             ],
@@ -464,6 +469,11 @@ def _parse(state: ChatState, text: str, asked: str | None) -> set[str]:
     elif _has(t, r"\b(browser|web ?app|website|spa|single[- ]page|react|angular|vue)\b"):
         i.platform, settled = "web_browser", settled | {"platform"}
 
+    # Reading the patient off the Epic screen, or saying so outright, means no Epic API.
+    if _has(t, r"\b(scan\w*|photo\w*|camera|read\w*|ocr)\b[^.;]{0,40}\b(epic )?screen\b") \
+            or _negated(t, r"\b(connect\w*|integrat\w*)\b[^.;]{0,15}\b(to |with )?epic\b") \
+            or _has(t, r"\bno epic (api|integration|connection)\b"):
+        i.epic_connection = "none"
     hits = _parse_data(t, i)
     if hits or (asked == "data" and _has(t, r"\b(nothing|none|no data)\b")):
         settled.add("data")

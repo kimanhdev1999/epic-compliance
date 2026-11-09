@@ -440,6 +440,40 @@ class TestSavedConversation:
         assert len(store.chat_snapshots()) == 1  # already saved, not duplicated
 
 
+class TestNoEpicConnection:
+    """An app that reads the patient off the Epic screen and has another system
+    file its documents doesn't connect to Epic: no sign-in, read or write tests."""
+
+    SCREEN_APP = ("BelleOne is a native mobile app clinicians use. The clinician scans the patient "
+                  "header on their Epic screen with the app's camera to capture the name, MRN and "
+                  "CSN. The app sends a PDF by sFTP to the health system's OnBase folder.")
+
+    def test_plan_drops_epic_api_tests_and_keeps_security(self):
+        plan = build_plan(Intake(users="clinicians", platform="mobile", epic_connection="none",
+                                 third_party_ai=True))
+        ids = _ids(plan)
+        assert not {i for i in ids if i.split("-")[0] in ("AUTH", "CLIN", "FHIR", "WRITE")}
+        assert {"SEC-001", "SEC-002", "SEC-003"} <= ids
+        auth = next(c for c in plan.checks if c.rule.id == "AUTH-001")
+        assert not auth.included and "doesn't connect to Epic" in auth.reason
+
+    def test_screen_scraping_question_is_asked_and_api_questions_are_not(self):
+        plan = build_plan(Intake(users="clinicians", platform="mobile", epic_connection="none"))
+        qs = {q.question.id: q for q in plan.questions}
+        assert qs["EPIC-EXCHANGE-METHOD"].included and "Epic screen" in qs["EPIC-EXCHANGE-METHOD"].reason
+        assert not qs["EPIC-NATIVE-PKCE"].included and not qs["EPIC-SCOPE-MIN"].included
+        assert not build_plan(Intake(users="clinicians", platform="mobile")).checks[0].reason.startswith("Doesn't apply")
+
+    def test_chat_hears_the_screen_scan(self):
+        state = next_turn(ChatState.start(), self.SCREEN_APP, api_key="")
+        assert state.intake.epic_connection == "none"
+
+    def test_apps_that_sign_in_still_connect(self):
+        state = next_turn(ChatState.start(), "DermScan, a mobile app clinicians use to read the "
+                          "chart and save lesion photos to the chart", api_key="")
+        assert state.intake.epic_connection == "api"
+
+
 class TestPdfDocument:
     """An app that files a PDF (photo + conclusion) in the chart is tested as a
     document write, not a photo upload, even when the first message said photos."""
@@ -639,12 +673,26 @@ class TestStepsAfterDescribing:
         assert calls == [] and ChatState.load(store.latest_chat_state()).intake.app_name == "DermScan Pro"
 
     @pytest.mark.parametrize("bad", [{"users": "robots"}, {"audit_retention_days": "ten"},
-                                     {"tls_version": "TLS 9"}, {"baa_status": "maybe"}])
+                                     {"tls_version": "TLS 9"}, {"baa_status": "maybe"},
+                                     {"epic_connection": "maybe"}])
     def test_edit_answers_rejects_invalid_values(self, client, bad):
         from epic_compliance import store
         state = self._finish(client)
         client.post("/assess/answers", data=self._answers(state, **bad))
         assert ChatState.load(store.latest_chat_state()).intake == state.intake
+
+    def test_app_that_doesnt_connect_runs_without_epic_sign_in(self, client):
+        from epic_compliance import store
+        state = self._finish(client)
+        assert 'name="epic_connection" value="api" checked' in client.get("/assess").text
+        resp = client.post("/assess/answers", data=self._answers(state, epic_connection="none"))
+        assert 'class="changed">Connects to Epic<' in resp.text
+        assert ChatState.load(store.latest_chat_state()).intake.epic_connection == "none"
+        plan_page = client.get("/assess/plan").text
+        assert "No Epic sign-in needed" in plan_page and "Sign in to Epic sandbox" not in plan_page
+        assert 'id="run-btn" class="btn big">Run' in plan_page  # not disabled
+        from epic_compliance.api import _not_ready_to_run
+        assert _not_ready_to_run(Intake(run_mode="live", epic_connection="none")) == ""
 
     def test_editing_an_answer_keeps_the_edit_button(self, client):
         from epic_compliance import store

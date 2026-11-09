@@ -44,7 +44,8 @@ from fastapi.templating import Jinja2Templates
 
 from . import evidence as dev_evidence
 from . import pipeline, store
-from .assessment import BAA_LABELS, PLATFORM_LABELS, RUN_FIELDS, SANDBOX_TEST_PATIENT, USERS_LABELS, Intake, build_plan
+from .assessment import (BAA_LABELS, EPIC_CONNECTION_LABELS, PLATFORM_LABELS, RUN_FIELDS, SANDBOX_TEST_PATIENT,
+                         USERS_LABELS, Intake, build_plan)
 from .intake_chat import AUDIT_LABELS, TLS_OPTIONS, ChatState, apply_answers, data_use_text, next_turn, rewind, summary
 from .config import OVERRIDABLE_FIELDS, config_with_overrides, get_config
 from .fix_where import FIX_WHERE
@@ -199,7 +200,7 @@ def _load_run_or_404(run_id: str) -> dict[str, Any]:
 # Pages
 # --------------------------------------------------------------------------- #
 def _intake_labels() -> dict[str, Any]:
-    return {"users": USERS_LABELS, "platform": PLATFORM_LABELS, "baa": BAA_LABELS}
+    return {"users": USERS_LABELS, "platform": PLATFORM_LABELS, "epic": EPIC_CONNECTION_LABELS, "baa": BAA_LABELS}
 
 
 def _render_chat(request: Request, state: ChatState, partial: bool = False,
@@ -576,8 +577,8 @@ def _not_ready_to_run(intake: Intake) -> str:
     """Why a live run can't start yet ("" when it can): the key of a notice.
     A sample run needs nothing; an Epic run needs a sign-in (the test patient
     defaults to Epic's sandbox patient)."""
-    if intake.run_mode != "live":
-        return ""
+    if intake.run_mode != "live" or intake.epic_connection == "none":
+        return ""  # an app that doesn't connect to Epic has nothing to sign in to
     if pipeline.get_live_token() is None:
         return "signin"
     return ""
