@@ -50,8 +50,13 @@ main.chat-main .stepper { max-width: 768px; width: 100%; margin: 0 auto 0.5rem; 
 .msg.typing .bubble span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes chat-blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
 
-.understood { flex: 1; background: var(--c-card); border: 1px solid var(--c-border); border-radius: 16px; padding: 1rem 1.1rem; box-shadow: var(--c-shadow); }
-.understood-head { font-weight: 600; margin-bottom: 0.75rem; }
+.understood { flex: 1; min-width: 0; background: var(--c-card); border: 1px solid var(--c-border); border-radius: 16px; padding: 1rem 1.1rem; box-shadow: var(--c-shadow); transition: border-color 0.15s; }
+.understood-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; font-weight: 600; margin-bottom: 0.75rem; }
+.understood-mode { display: none; font-weight: 500; font-size: 0.78rem; color: var(--c-primary); }
+.understood.editing { border-color: var(--c-primary); }
+.understood.editing .understood-mode { display: inline; }
+/* While the card is a form, the composer steps aside: one way to correct at a time. */
+.chat:has(.understood.editing) .dock { display: none; }
 .understood dl { display: grid; grid-template-columns: 140px 1fr; gap: 0.45rem 1rem; margin: 0 0 1rem; font-size: 0.9rem; }
 .understood dt { color: var(--c-muted); }
 .understood dd { margin: 0; }
@@ -65,7 +70,47 @@ main.chat-main .stepper { max-width: 768px; width: 100%; margin: 0 auto 0.5rem; 
   background: none; color: inherit; border: 1px solid var(--c-border); border-radius: 999px;
   padding: 0.6rem 1.15rem; font: inherit; font-weight: 500; font-size: 0.9rem; cursor: pointer;
 }
-.secondary-btn:hover { background: var(--c-border); }
+.secondary-btn:hover { background: var(--c-hover); }
+.primary-btn:focus-visible, .secondary-btn:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+
+/* Rows that a saved edit changed: a brief tint that fades, so the eye finds them. */
+.understood dt.changed, .understood dd.changed { animation: answer-changed 2.4s ease-out both; }
+.understood dd.changed { font-weight: 500; }
+@keyframes answer-changed { from { background: color-mix(in srgb, var(--c-primary) 16%, transparent); } to { background: transparent; } }
+.understood dt.changed, .understood dd.changed { border-radius: 4px; margin-left: -0.3rem; padding-left: 0.3rem; }
+.saved-note { margin: -0.4rem 0 0.9rem; font-size: 0.82rem; color: var(--c-ok); }
+@media (prefers-reduced-motion: reduce) {
+  .understood dt.changed, .understood dd.changed { animation: none; background: color-mix(in srgb, var(--c-primary) 10%, transparent); }
+}
+
+/* "Edit answers": the card's rows become fields, on the same label column as the summary. */
+.answers-form { font-size: 0.9rem; }
+.answers-form.busy { opacity: 0.6; pointer-events: none; }
+.answers-row { display: grid; grid-template-columns: 140px 1fr; gap: 0.3rem 1rem; padding: 0.55rem 0; border-top: 1px solid var(--c-border); }
+.answers-row:first-child { border-top: none; padding-top: 0; }
+.answers-label { margin: 0; padding-top: 0.45rem; font-size: 0.9rem; color: var(--c-muted); }
+.answers-field { min-width: 0; }
+.answers-form input[type=text], .answers-form select, .answers-form textarea {
+  width: 100%; box-sizing: border-box; padding: 0.45rem 0.65rem; border: 1px solid var(--c-border-strong);
+  border-radius: 8px; background: var(--c-bg); color: var(--c-fg); font: inherit; font-size: 0.9rem;
+}
+.answers-form textarea { line-height: 1.5; resize: vertical; min-height: 4.6rem; }
+.answers-form textarea:focus { outline: none; border-color: var(--c-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 18%, transparent); }
+.answers-form .inline-fields { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+.answers-form .inline-fields select { flex: 1 1 14rem; width: auto; }
+.answers-form .days { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0; font-size: 0.85rem; color: var(--c-muted); white-space: nowrap; }
+.answers-form .days input[type=text] { width: 5.5rem; }
+.opts { display: flex; flex-direction: column; gap: 0.1rem; }
+.opt { display: flex; gap: 0.6rem; align-items: flex-start; margin: 0; padding: 0.35rem 0.5rem; border-radius: 8px; color: var(--c-fg); font-size: 0.9rem; cursor: pointer; }
+.opt:hover { background: var(--c-hover); }
+.opt input { margin: 0.2rem 0 0; flex: none; accent-color: var(--c-primary); width: 15px; height: 15px; }
+.opt:has(input:focus-visible) { outline: 2px solid var(--c-primary); outline-offset: -2px; }
+.field-hint { margin: 0.3rem 0 0; font-size: 0.78rem; line-height: 1.45; color: var(--c-muted); }
+.opts .field-hint { padding: 0 0.5rem; }
+/* How the tool read the patient-data description: what picks the tests. */
+.read-as { margin: 0.45rem 0 0; padding: 0.45rem 0.65rem; border-radius: 8px; background: var(--c-soft); font-size: 0.84rem; line-height: 1.45; }
+.read-as span { color: var(--c-muted); margin-right: 0.35rem; }
+.answers-form .understood-actions { padding-top: 0.85rem; border-top: 1px solid var(--c-border); }
 
 .quick-replies { display: flex; flex-wrap: wrap; gap: 0.5rem; padding-left: calc(30px + 0.85rem); }
 .quick-replies button {
@@ -116,6 +161,8 @@ main.chat-main .stepper { max-width: 768px; width: 100%; margin: 0 auto 0.5rem; 
   .suggestions { grid-template-columns: 1fr; }
   .suggestions button:nth-child(n+3) { display: none; }
   .understood dl { grid-template-columns: 1fr; }
+  .answers-row { grid-template-columns: 1fr; }
+  .answers-label { padding-top: 0; font-weight: 500; color: var(--c-fg); }
   .greeting h1 { font-size: 1.6rem; }
 }
 .chat:not(.fresh) .greeting { display: none; }

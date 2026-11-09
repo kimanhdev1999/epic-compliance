@@ -39,6 +39,10 @@ class Intake(BaseModel):
     # Who signs in: clinicians pick the patient after login, patients are the patient.
     users: Literal["clinicians", "patients"] = "clinicians"
     platform: Literal["mobile", "web_browser", "web_server"] = "mobile"
+    # How the app gets to Epic: through Epic's API (SMART on FHIR sign-in, FHIR
+    # calls), or not at all (e.g. it reads the patient from the Epic screen and
+    # another system files its documents). "none" drops the Epic API tests.
+    epic_connection: Literal["api", "none"] = "api"
     reads_chart: bool = True
     saves_images: bool = False
     writes_back: bool = False
@@ -47,6 +51,9 @@ class Intake(BaseModel):
     # travels inside the PDF is not saves_images.
     writes_pdf: bool = False
     third_party_ai: bool = False
+    # What the app does with patient data, in the user's own words. The five
+    # flags above are read from it (intake_chat.read_app_texts).
+    data_use: str = ""
 
     # Security posture. "" = don't know -> the rule stays needs_human.
     tls_version: str = ""
@@ -89,6 +96,13 @@ PLATFORM_LABELS = {
     "web_browser": "Browser-only web app (no backend holds secrets)",
     "web_server": "Web app with its own backend server",
 }
+EPIC_CONNECTION_LABELS = {
+    "api": "Through Epic's API (signs in with SMART on FHIR)",
+    "none": "Doesn't connect (e.g. reads the Epic screen; another system files documents)",
+}
+#: Test sections that only exist for an app that signs in to Epic and calls its API.
+EPIC_API_CATEGORIES = ("auth", "clinician_workflow", "fhir_conformance", "write_back")
+NO_EPIC_API = "Doesn't apply: the app doesn't connect to Epic's API."
 BAA_LABELS = {
     "all": "Signed with the health system and every vendor that touches PHI",
     "health_system_only": "Signed with the health system, not yet with every vendor",
@@ -173,6 +187,7 @@ class Plan:
             "test_patient_query": (i.test_patient_query or SANDBOX_TEST_PATIENT) if i.run_mode == "live" else "",
             "encounter_required": "true" if i.encounter_required else "false",
             "note_format": "pdf" if i.writes_pdf else "text",
+            "epic_connection": i.epic_connection,
             "app_client_type": "confidential" if i.platform == "web_server" else "public",
             "transport_tls_version": i.tls_version,
             "audit_logging_enabled": i.audit_logging,
@@ -293,8 +308,10 @@ def build_plan(intake: Intake) -> Plan:
             included, reason = True, "General requirement for every Epic app."
         else:
             included, reason = selector(intake)
+        if intake.epic_connection == "none" and rule.category in EPIC_API_CATEGORIES:
+            included, reason = False, NO_EPIC_API
         # The engine only runs rules for the launch profile; keep the plan honest.
-        if included and not rule.applies_to(launch_profile):
+        elif included and not rule.applies_to(launch_profile):
             included, reason = False, "Doesn't apply to this kind of app."
         plan.checks.append(PlannedCheck(rule=rule, included=included, reason=reason))
     # Reviewer questions (ADR-019): included by the library's tags, run as tests.

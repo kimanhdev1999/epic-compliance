@@ -199,4 +199,19 @@ def select(intake: "Intake", covered: set[str] = frozenset()) -> list[PlannedQue
     """Every library question, included or not, each with the reason.
     ``covered`` is the automated tests already in the plan."""
     facts = app_facts(intake)
-    return [PlannedQuestion(q, *decide(q, facts, covered)) for q in load_library()]
+    no_api = getattr(intake, "epic_connection", "api") == "none"
+    out = []
+    for q in load_library():
+        if no_api and q.id == SCREEN_SCRAPING_QUESTION:
+            # The one Epic-integration question that matters most for this design.
+            out.append(PlannedQuestion(q, True, "The app gets patient details from the Epic screen "
+                                                "instead of Epic's API, so reviewers ask about it."))
+        elif no_api and q.topic == "epic_app":
+            out.append(PlannedQuestion(q, False, "Doesn't apply: the app doesn't connect to Epic's API."))
+        else:
+            out.append(PlannedQuestion(q, *decide(q, facts, covered)))
+    return out
+
+
+#: Asks whether reads and writes use Epic's APIs, "with no screen scraping".
+SCREEN_SCRAPING_QUESTION = "EPIC-EXCHANGE-METHOD"

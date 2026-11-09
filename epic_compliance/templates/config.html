@@ -11,6 +11,11 @@
 
 <div class="card">
   <form method="post" action="/config">
+    {% if not uses_epic %}
+    <p class="muted">Your app doesn't connect to Epic's API, so runs don't use these settings. They're kept here in case that changes.</p>
+    <details class="more-settings">
+      <summary>Epic connection settings</summary>
+    {% endif %}
     <div class="grid cols-2">
       <div class="row">
         <label for="oauth_client_id">OAuth client ID</label>
@@ -39,6 +44,7 @@
         <input type="url" id="onc_test_kit_url" name="onc_test_kit_url" value="{{ cfg.onc_test_kit_url or '' }}">
       </div>
     </div>
+    {% if not uses_epic %}</details>{% endif %}
     <div class="actions">
       <button type="submit" class="btn">Save defaults</button>
     </div>

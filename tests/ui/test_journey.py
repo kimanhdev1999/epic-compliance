@@ -83,19 +83,44 @@ def test_no_dead_links(visit, server, sample_run, a_rule):
     assert not dead, f"dead links: {dead}"
 
 
-def test_summary_buttons_generate_and_edit_separately(visit, server, sample_run):
-    """After a plan, the summary still offers "Generate test plan", and a separate
-    "Edit description" opens the first message (the description) for editing
-    without generating anything."""
-    v = visit(server)
-    v.page.goto("/assess")
-    v.page.wait_for_load_state("networkidle")
-    assert v.page.locator(".understood button[type=submit]", has_text="Generate test plan").count() == 1
+@pytest.mark.parametrize("viewport", VIEWPORTS)
+def test_edit_answers_in_place_on_the_summary(visit, server, sample_run, viewport):
+    """The summary card's "Edit answers" turns the same card into a form; saving
+    sets the answer, keeps the rest, highlights what changed, and asks nothing again."""
+    v = visit(server, viewport)
+    page = v.page
+    page.goto("/assess")
+    page.wait_for_load_state("networkidle")
+    card = page.locator("[data-understood]")
+    assert card.locator("button[type=submit]", has_text="Generate test plan").count() == 1
     dialogs: list[str] = []
-    v.page.on("dialog", lambda d: (dialogs.append(d.message), d.dismiss()))
-    v.page.click(".understood [data-edit-description]")
-    first = v.page.locator("#chat .user-turn").first
-    assert "editing" in (first.get_attribute("class") or "")
-    assert first.locator(".edit-form textarea").evaluate("el => el === document.activeElement")
-    assert v.page.url.endswith("/assess") and not dialogs
-    assert not v.console_errors
+    page.on("dialog", lambda d: (dialogs.append(d.message), d.dismiss()))
+
+    card.locator("[data-edit-answers]").click()
+    assert "editing" in (card.get_attribute("class") or "")
+    assert card.locator("textarea[name=description]").evaluate("el => el === document.activeElement")
+    assert not card.locator(".understood-view").is_visible()
+    page.screenshot(path=str(v.shot("assess-answers-editing").with_name(f"assess-answers-form-{viewport}.png")))
+    if viewport == "phone":
+        assert v.overflow_px() <= 1, f"edit form scrolls sideways by {v.overflow_px()}px"
+
+    # Esc cancels without saving.
+    page.keyboard.press("Escape")
+    assert card.locator(".understood-view").is_visible()
+
+    card.locator("[data-edit-answers]").click()
+    data = card.locator("textarea[name=data_use]")
+    assert data.input_value() and card.locator(".read-as").is_visible()
+    data.scroll_into_view_if_needed()
+    page.screenshot(path=str(v.shot("assess-answers-data").with_name(f"assess-answers-data-{viewport}.png")))
+    note = " It also sends PHI to a third-party AI service."
+    data.fill(data.input_value().replace(note, "") if note.strip() in data.input_value() else data.input_value() + note)
+    with page.expect_response("**/assess/answers"):
+        card.locator("button[type=submit]", has_text="Save answers").click()
+    page.wait_for_selector("[data-understood] .saved-note")
+    card = page.locator("[data-understood]")
+    assert card.locator("dd.changed").count() == 1 and card.locator(".saved-note").is_visible()
+    assert page.locator(".quick-replies").count() == 0  # nothing is asked again
+    page.screenshot(path=str(v.shot("assess-answers-saved").with_name(f"assess-answers-saved-{viewport}.png")))
+    assert page.url.endswith("/assess") and not dialogs
+    assert not v.console_errors and not v.bad_responses

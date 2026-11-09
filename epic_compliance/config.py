@@ -75,6 +75,9 @@ class AppConfig(BaseSettings):
     # What the app files in the chart as its document (CLIN-009): a text note,
     # or a PDF (e.g. a report with the photo and conclusion).
     note_format: Literal["text", "pdf"] = Field(default="text", alias="NOTE_FORMAT")
+    # "none" when the app doesn't connect to Epic's API at all (e.g. it reads the
+    # Epic screen): the run then makes no Epic calls.
+    epic_connection: Literal["api", "none"] = Field(default="api", alias="EPIC_CONNECTION")
     # How the app under test is registered with Epic, and where Epic sends
     # the clinician back after login. Blank = not attested -> needs_human.
     app_client_type: Literal["", "public", "confidential"] = Field(
@@ -125,6 +128,7 @@ OVERRIDABLE_FIELDS = {
     "image_write_resource",
     "encounter_required",
     "note_format",
+    "epic_connection",
     "app_client_type",
     "app_redirect_uri",
 }

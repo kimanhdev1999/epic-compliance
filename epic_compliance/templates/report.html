@@ -10,7 +10,7 @@
 </div>
 <p class="subtitle">
   {% if intake %}{{ labels.users[intake.users] }} &middot; {{ labels.platform[intake.platform] }}{% if intake.health_system %} &middot; {{ intake.health_system }}{% endif %} &middot; {% endif %}
-  Epic sandbox: {{ run.fhir_base_url }} &middot; {{ run.created_at[:16].replace('T',' ') }} UTC
+  {% if run_uses_epic(run) %}Epic sandbox: {{ run.fhir_base_url }}{% else %}Doesn't connect to Epic{% endif %} &middot; {{ run.created_at[:16].replace('T',' ') }} UTC
 </p>
 {% if recheck and not show_all %}
 <h2>Re-check of {{ recheck["items"]|map(attribute="rule_id")|join(", ") }}</h2>
@@ -38,6 +38,8 @@
     {% if intake.description %}<dt>You described it as</dt><dd>“{{ intake.description }}”</dd>{% endif %}
     <dt>Signs in</dt><dd>{{ labels.users[intake.users] }}</dd>
     <dt>App type</dt><dd>{{ labels.platform[intake.platform] }}</dd>
+    <dt>Connects to Epic</dt><dd>{{ labels.epic[intake.epic_connection or "api"] }}</dd>
+    {% if intake.data_use %}<dt>Patient data, in your words</dt><dd>“{{ intake.data_use }}”</dd>{% endif %}
     <dt>Patient data</dt><dd>{{ [("Reads the chart", intake.reads_chart), ("Saves images", intake.saves_images), ("Sends a PDF document", intake.writes_pdf), ("Writes notes / results", intake.writes_back and not intake.writes_pdf), ("Sends PHI to a third-party AI / cloud", intake.third_party_ai)]|selectattr(1)|map(attribute=0)|join(", ") or "None selected" }}</dd>
     <dt>Checks run</dt><dd>{{ assessment.included|length }}, chosen from your description</dd>
   </dl>

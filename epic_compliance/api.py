@@ -44,8 +44,9 @@ from fastapi.templating import Jinja2Templates
 
 from . import evidence as dev_evidence
 from . import pipeline, store
-from .assessment import BAA_LABELS, PLATFORM_LABELS, RUN_FIELDS, SANDBOX_TEST_PATIENT, USERS_LABELS, Intake, build_plan
-from .intake_chat import ChatState, next_turn, rewind, summary
+from .assessment import (BAA_LABELS, EPIC_CONNECTION_LABELS, PLATFORM_LABELS, RUN_FIELDS, SANDBOX_TEST_PATIENT,
+                         USERS_LABELS, Intake, build_plan)
+from .intake_chat import AUDIT_LABELS, TLS_OPTIONS, ChatState, apply_answers, data_use_text, next_turn, rewind, summary
 from .config import OVERRIDABLE_FIELDS, config_with_overrides, get_config
 from .fix_where import FIX_WHERE
 from .models import Report
@@ -112,6 +113,20 @@ def _current_intake() -> dict[str, Any]:
         return last
     chat = _saved_chat()
     return chat.intake.model_dump() if len(chat.messages) > 1 else {}
+
+
+def _intake_uses_epic(intake: dict[str, Any] | None) -> bool:
+    """False when the app said it doesn't connect to Epic's API (``epic_connection``)."""
+    return (intake or {}).get("epic_connection", "api") != "none"
+
+
+def _run_uses_epic(run: dict[str, Any] | None) -> bool:
+    """Whether a saved run tested an app that connects to Epic (older runs did)."""
+    assessment = ((run or {}).get("config") or {}).get("assessment") or {}
+    return _intake_uses_epic(assessment.get("intake"))
+
+
+templates.env.globals["run_uses_epic"] = _run_uses_epic
 
 
 def _nav() -> dict[str, Any]:
@@ -199,11 +214,14 @@ def _load_run_or_404(run_id: str) -> dict[str, Any]:
 # Pages
 # --------------------------------------------------------------------------- #
 def _intake_labels() -> dict[str, Any]:
-    return {"users": USERS_LABELS, "platform": PLATFORM_LABELS, "baa": BAA_LABELS}
+    return {"users": USERS_LABELS, "platform": PLATFORM_LABELS, "epic": EPIC_CONNECTION_LABELS, "baa": BAA_LABELS}
 
 
-def _render_chat(request: Request, state: ChatState, partial: bool = False) -> HTMLResponse:
-    ctx = {"state": state, "summary": summary(state.intake) if state.ready else []}
+def _render_chat(request: Request, state: ChatState, partial: bool = False,
+                 changed: list[str] | None = None) -> HTMLResponse:
+    ctx = {"state": state, "summary": summary(state.intake) if state.ready else [],
+           "changed": changed or [], "data_use": data_use_text(state.intake),
+           "options": {**_intake_labels(), "tls": TLS_OPTIONS, "audit": AUDIT_LABELS}}
     if partial:
         return render(request, "_chat.html", **ctx)
     return render(request, "chat.html", active="assess", **ctx)
@@ -247,7 +265,7 @@ def _integrations() -> dict[str, dict[str, Any]]:
         validator, validator_detail = "configured", "Starting with the app — loading US Core…"
     elif autostart["state"] == "unavailable":
         validator_detail = f"Could not start: {autostart['detail']}"
-    return {
+    services = {
         "epic": {
             "name": "Epic sandbox", "vendor": "fhir.epic.com", "status": epic,
             "what": "Real SMART sign-in and real FHIR calls with your non-production client ID.",
@@ -279,6 +297,13 @@ def _integrations() -> dict[str, dict[str, Any]]:
             "actions": [("Open test kit", cfg.onc_test_kit_url)] if cfg.onc_test_kit_url else [],
         },
     }
+    if not _intake_uses_epic(_current_intake()):
+        # Nothing in this app's plan talks to Epic, so these services don't apply: say so, last.
+        for key in ("epic", "validator", "onc"):
+            services[key].update(status="not_needed", unlocks=[], actions=[],
+                                 detail="Not needed: your app doesn't connect to Epic's API.")
+        services = dict(sorted(services.items(), key=lambda kv: kv[1]["status"] == "not_needed"))
+    return services
 
 
 def _workspace() -> dict[str, Any]:
@@ -480,6 +505,19 @@ def assess_edit(request: Request, index: int = Form(...), message: str = Form(""
         next_turn(base, message, api_key=get_config().anthropic_api_key)), partial=True)
 
 
+@app.post("/assess/answers", response_class=HTMLResponse)
+async def assess_answers(request: Request) -> Any:
+    """Save the summary card's "Edit answers" form: the values are set exactly,
+    other answers are kept, and the changed rows are highlighted."""
+    current = _saved_chat()
+    if not current.ready:
+        return _render_chat(request, current, partial=True)
+    state, changed = apply_answers(current, dict(await request.form()), api_key=get_config().anthropic_api_key)
+    if changed:
+        _save_chat(state)
+    return _render_chat(request, state, partial=True, changed=changed)
+
+
 @app.post("/assess/new")
 def assess_new() -> RedirectResponse:
     """Start a new conversation. Earlier ones stay in the local database."""
@@ -560,8 +598,8 @@ def _not_ready_to_run(intake: Intake) -> str:
     """Why a live run can't start yet ("" when it can): the key of a notice.
     A sample run needs nothing; an Epic run needs a sign-in (the test patient
     defaults to Epic's sandbox patient)."""
-    if intake.run_mode != "live":
-        return ""
+    if intake.run_mode != "live" or intake.epic_connection == "none":
+        return ""  # an app that doesn't connect to Epic has nothing to sign in to
     if pipeline.get_live_token() is None:
         return "signin"
     return ""
@@ -677,7 +715,8 @@ def config_page(request: Request, saved: bool = False) -> Any:
     defaults = store.get_config_defaults()
     cfg.update({k: v for k, v in defaults.items() if v})
     cfg.pop("anthropic_api_key", None)  # never sent to the page
-    return render(request, "config.html", active="config", cfg=cfg, saved=saved)
+    return render(request, "config.html", active="config", cfg=cfg, saved=saved,
+                  uses_epic=_intake_uses_epic(_current_intake()))
 
 
 @app.post("/config")

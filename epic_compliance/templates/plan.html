@@ -21,10 +21,21 @@
     {% if v is sameas true %}<input type="hidden" name="{{ k }}" value="on">
     {% elif v is not sameas false %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}
   {% endfor %}
+  {% if intake.epic_connection == "none" %}
+    <section class="card setup-card" aria-labelledby="opt-noapi">
+      <h3 id="opt-noapi">No Epic sign-in needed</h3>
+      <p class="muted">From your description, the app doesn't connect to Epic's API, so nothing is tested against Epic. The run checks your
+        security answers and turns the reviewer questions into tests you answer with proof.</p>
+      <p class="hint">Not right? Change <strong>Connects to Epic</strong> under <a href="/assess">Edit answers</a>.</p>
+      <button type="submit" name="run_mode" value="live" id="run-btn" class="btn big">Run {{ plan.included|length }} checks</button>
+    </section>
+  {% else %}
     <section class="card setup-card" aria-labelledby="opt-epic">
       <h3 id="opt-epic">Epic sandbox</h3>
       <p class="muted">Signs in to Epic's non-production sandbox (fhir.epic.com) as your app and makes real FHIR calls
         {%- if needs_patient %} for Epic's test patient{% if intake.test_patient_query == sandbox_patient %} Camila Lopez{% endif %}. Test photos and notes are written to that patient only{% endif %}.</p>
+      <p class="hint">Needed because, from your description, the app signs in to Epic and calls its API. If it doesn't
+        (for example it reads the Epic screen), change <strong>Connects to Epic</strong> under <a href="/assess">Edit answers</a>.</p>
       <ol class="setup-steps">
         <li id="step-client" class="{{ 'done' if intake.oauth_client_id }}">
           <span class="step-mark" aria-hidden="true"></span>
@@ -65,6 +76,7 @@
     </div>
     <label class="inline-check"><input type="checkbox" name="encounter_required" {{ 'checked' if intake.encounter_required }}> {{ intake.health_system or "The health system" }} files photos and notes against a visit (Encounter)</label>
   </details>
+  {% endif %}
 </form>
 
 <h2>What will be checked</h2>
@@ -107,6 +119,7 @@
 (function () {
   var signedIn = {{ 'true' if live_token else 'false' }};
   var clientId = document.getElementById('oauth_client_id');
+  if (!clientId) return;  // the app doesn't connect to Epic: no sign-in steps
   var runBtn = document.getElementById('run-btn');
   var locked = document.getElementById('run-locked');
 

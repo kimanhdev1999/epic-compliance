@@ -5,7 +5,7 @@ work and updates it before opening a PR** (see `CLAUDE.md`). Keep it short: one 
 per item, newest first within each section. Detail belongs in `notes/decisions.md`
 (ADRs), PR descriptions and `docs/ux-redesign/requirements.md`.
 
-**Last updated:** 2026-11-09 (chat summary: separate "Generate test plan" and "Edit description" buttons)
+**Last updated:** 2026-11-09 (chat summary: "Edit answers" edits the card in place)
 
 ## How to keep this current
 - **Starting work:** read *Open* and *Next*. If your task is listed, work from that line.
@@ -32,6 +32,7 @@ per item, newest first within each section. Detail belongs in `notes/decisions.m
 ## Done
 | What | PR / ADR |
 |---|---|
+| Chat summary's "Edit answers" turns the card into a form in place: options (who signs in, app type, security) are set exactly; patient data is described in words (`data_use`) and read into the data flags, shown as "Currently read as"; the rest are kept, and the chat notes what changed (replaces #50's "Edit description"); a PDF filed by another system (OnBase, sFTP) isn't a document write. New answer "Connects to Epic" (`epic_connection`): an app that doesn't (e.g. reads the patient off the Epic screen) drops the sign-in, workflow, FHIR-read and write tests and the Epic-API reviewer questions, keeps the screen-scraping question, and runs without an Epic sign-in or any Epic call; Home drops the "Connect the Epic sandbox" step, Integrations marks Epic, the FHIR validator and the ONC test kit "Not needed", Settings folds the Epic fields away, and run pages stop saying "on the Epic sandbox". Whether the app connects (so needs the Epic sandbox) is worked out from the description and patient-data text, by the answer review (`read_app_texts`) or offline (`_epic_connection_in`), whenever they change; a "Connects to Epic" picked by hand wins | #51 |
 | Chat summary has two buttons: "Generate test plan" always, and "Edit description", which opens the first message for editing (replaces #47's "Edit app description" button that generated the plan) | #50 |
 | Intake hears "sends a PDF to the chart" (`writes_pdf`) and later answers correct earlier ones, so a PDF report isn't planned as a photo upload; CLIN-009 sends a real PDF; write results record Epic's refusal reason | #48 |
 | After Epic sign-in, the sign-in tab's button and auto-return go straight to the test plan's Run (`/assess/plan#setup`) instead of Home | #45 |
@@ -76,6 +77,8 @@ the harness. **P0** = misleading or blocking, **P1** = confusing, **P2** = polis
 | P1 | Attested and AI-judged passes count toward readiness like verified ones | scoring | — |
 | P1 | Home doesn't move the user forward after the chat; there's no "ready to submit" end state | `home.html`, `workspace.py` | — |
 | P1 | Sign-in step gives no sandbox credentials link | `plan.html` | — |
+| P1 | A correction typed in the chat (not via Edit answers) gets the canned "that's everything I need" reply instead of saying what changed, and doesn't update the quoted description | `intake_chat.py` `READY_REPLY`, `next_turn` | — |
+| P1 | An app that reads the patient off the Epic screen gets no questions specific to that design (text-recognition misreads, extra PHI in the screen image, where the image is kept) | `rules/reviewer/questions.json` | — |
 | P2 | Export page scrolls sideways 2px on phones | `export.html` | `KNOWN[("/runs/{run}/print", "phone")]` |
 | P2 | A sample run ticks Connect / Run / Fix on Home (harness only now; sample runs are hidden in the app) | `workspace.py` checklist | `test_checklist_ignores_sample_runs` |
 | P2 | ONC test kit shows "Configured" without checking it's reachable | `api._integrations` | — |
