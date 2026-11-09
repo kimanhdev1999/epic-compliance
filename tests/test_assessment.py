@@ -562,13 +562,17 @@ class TestStepsAfterDescribing:
         assert "CLIN-001" in resp.text  # the chat's clinician app, not the old patient app
         assert 'value="abc"' in resp.text  # where to run still comes from the last run
 
-    def test_after_generating_the_button_edits_and_confirms(self, client):
+    def test_summary_has_separate_generate_and_edit_buttons(self, client):
         from epic_compliance import store
-        self._generate(client, self._finish(client))
-        assert ChatState.load(store.latest_chat_state()).planned
-        page = client.get("/assess").text
-        assert "Edit app description" in page and "Generate test plan" not in page
-        assert "Generate the test plan again from this description?" in page
+        state = self._finish(client)
+        for planned in (False, True):
+            if planned:
+                self._generate(client, state)
+                assert ChatState.load(store.latest_chat_state()).planned
+            page = client.get("/assess").text
+            assert "Generate test plan" in page
+            assert "data-edit-description" in page and ">Edit description<" in page
+            assert "Edit app description" not in page and "confirm(" not in page.split("understood")[1].split("</form>")[0]
 
     def test_editing_an_answer_keeps_the_edit_button(self, client):
         from epic_compliance import store

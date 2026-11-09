@@ -81,3 +81,21 @@ def test_no_dead_links(visit, server, sample_run, a_rule):
             if status >= 400:
                 dead.append(f"{status} {href}")
     assert not dead, f"dead links: {dead}"
+
+
+def test_summary_buttons_generate_and_edit_separately(visit, server, sample_run):
+    """After a plan, the summary still offers "Generate test plan", and a separate
+    "Edit description" opens the first message (the description) for editing
+    without generating anything."""
+    v = visit(server)
+    v.page.goto("/assess")
+    v.page.wait_for_load_state("networkidle")
+    assert v.page.locator(".understood button[type=submit]", has_text="Generate test plan").count() == 1
+    dialogs: list[str] = []
+    v.page.on("dialog", lambda d: (dialogs.append(d.message), d.dismiss()))
+    v.page.click(".understood [data-edit-description]")
+    first = v.page.locator("#chat .user-turn").first
+    assert "editing" in (first.get_attribute("class") or "")
+    assert first.locator(".edit-form textarea").evaluate("el => el === document.activeElement")
+    assert v.page.url.endswith("/assess") and not dialogs
+    assert not v.console_errors

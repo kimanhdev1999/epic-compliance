@@ -39,18 +39,14 @@
           <dl>
             {% for label, value in summary %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}
           </dl>
-          <form method="post" action="/assess/plan">
+          <form method="post" action="/assess/plan" class="understood-actions">
             {% for k, v in state.intake.model_dump().items() if k not in ("run_mode", "fhir_base_url", "oauth_client_id", "app_redirect_uri", "test_patient_query", "encounter_required") %}
               {% if v is sameas true %}<input type="hidden" name="{{ k }}" value="on">
               {% elif v is not sameas false %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}
             {% endfor %}
             <input type="hidden" name="state" value="{{ state.model_dump_json() }}">
-            {% if state.planned %}
-            <button type="submit" class="primary-btn"
-                    onclick="return confirm('Generate the test plan again from this description?')">Edit app description</button>
-            {% else %}
             <button type="submit" class="primary-btn">Generate test plan &rarr;</button>
-            {% endif %}
+            <button type="button" class="secondary-btn" data-edit-description>Edit description</button>
           </form>
         </div>
       </div>
