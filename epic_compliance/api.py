@@ -115,6 +115,20 @@ def _current_intake() -> dict[str, Any]:
     return chat.intake.model_dump() if len(chat.messages) > 1 else {}
 
 
+def _intake_uses_epic(intake: dict[str, Any] | None) -> bool:
+    """False when the app said it doesn't connect to Epic's API (``epic_connection``)."""
+    return (intake or {}).get("epic_connection", "api") != "none"
+
+
+def _run_uses_epic(run: dict[str, Any] | None) -> bool:
+    """Whether a saved run tested an app that connects to Epic (older runs did)."""
+    assessment = ((run or {}).get("config") or {}).get("assessment") or {}
+    return _intake_uses_epic(assessment.get("intake"))
+
+
+templates.env.globals["run_uses_epic"] = _run_uses_epic
+
+
 def _nav() -> dict[str, Any]:
     """Sidebar context on every page: which app this workspace is, and its open counts."""
     intake = _current_intake()
@@ -251,7 +265,7 @@ def _integrations() -> dict[str, dict[str, Any]]:
         validator, validator_detail = "configured", "Starting with the app — loading US Core…"
     elif autostart["state"] == "unavailable":
         validator_detail = f"Could not start: {autostart['detail']}"
-    return {
+    services = {
         "epic": {
             "name": "Epic sandbox", "vendor": "fhir.epic.com", "status": epic,
             "what": "Real SMART sign-in and real FHIR calls with your non-production client ID.",
@@ -283,6 +297,13 @@ def _integrations() -> dict[str, dict[str, Any]]:
             "actions": [("Open test kit", cfg.onc_test_kit_url)] if cfg.onc_test_kit_url else [],
         },
     }
+    if not _intake_uses_epic(_current_intake()):
+        # Nothing in this app's plan talks to Epic, so these services don't apply: say so, last.
+        for key in ("epic", "validator", "onc"):
+            services[key].update(status="not_needed", unlocks=[], actions=[],
+                                 detail="Not needed: your app doesn't connect to Epic's API.")
+        services = dict(sorted(services.items(), key=lambda kv: kv[1]["status"] == "not_needed"))
+    return services
 
 
 def _workspace() -> dict[str, Any]:
@@ -694,7 +715,8 @@ def config_page(request: Request, saved: bool = False) -> Any:
     defaults = store.get_config_defaults()
     cfg.update({k: v for k, v in defaults.items() if v})
     cfg.pop("anthropic_api_key", None)  # never sent to the page
-    return render(request, "config.html", active="config", cfg=cfg, saved=saved)
+    return render(request, "config.html", active="config", cfg=cfg, saved=saved,
+                  uses_epic=_intake_uses_epic(_current_intake()))
 
 
 @app.post("/config")

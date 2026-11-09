@@ -14,7 +14,7 @@
     <div class="int-top">
       <span class="int-logo" aria-hidden="true">{{ i.name[:1] }}</span>
       <div><strong>{{ i.name }}</strong><div class="muted small">{{ i.vendor }}</div></div>
-      {{ m.status_pill("int-" ~ i.status, {"connected": "Connected", "configured": "Configured", "not_connected": "Not connected"}[i.status]) }}
+      {{ m.status_pill("int-" ~ i.status, {"connected": "Connected", "configured": "Configured", "not_connected": "Not connected", "not_needed": "Not needed"}[i.status]) }}
     </div>
     <p>{{ i.what }}</p>
     <p class="muted small"><code class="inline">{{ i.detail }}</code></p>

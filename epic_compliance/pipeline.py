@@ -334,6 +334,26 @@ def collect_clinician_evidence(
     return ev
 
 
+NO_EPIC_CONNECTION_REASON = "Not checked: the app doesn't connect to Epic's API."
+
+
+def _app_config_evidence(config: AppConfig) -> dict[str, Any]:
+    """What the user attested about TLS, audit logging and BAAs (the SEC-* evidence)."""
+    app_config_fields = {
+        "transport_tls_version": config.transport_tls_version,
+        "audit_logging_enabled": config.audit_logging_enabled,
+        "audit_log_retention_days": config.audit_log_retention_days,
+        "baa_in_place": config.baa_in_place,
+        "covered_entity_relationship": config.covered_entity_relationship,
+    }
+    attested = {k: v for k, v in app_config_fields.items() if v}
+    return attested if attested else {
+        "_unavailable": "No app_config fields attested — set TRANSPORT_TLS_VERSION, "
+        "AUDIT_LOGGING_ENABLED, AUDIT_LOG_RETENTION_DAYS, BAA_IN_PLACE, "
+        "COVERED_ENTITY_RELATIONSHIP in .env or the dashboard form."
+    }
+
+
 def collect_evidence(config: AppConfig) -> dict[str, Any]:
     """Stage 1-3: discovery, auth probe, FHIR fetch, write-back. Returns evidence dict.
 
@@ -346,6 +366,17 @@ def collect_evidence(config: AppConfig) -> dict[str, Any]:
     """
     mock = config.run_mode == "mock"
     clinician = config.launch_profile == "clinician_standalone"
+    app_config = _app_config_evidence(config)
+    if config.epic_connection == "none":
+        # The app doesn't connect to Epic's API, so nothing here talks to Epic:
+        # no discovery, sign-in, reads or writes, and no "sign in" advice.
+        skipped = {"_unavailable": NO_EPIC_CONNECTION_REASON}
+        return {
+            "smart_configuration": skipped, "token_response": skipped, "auth_probe": skipped,
+            "fhir_resources": skipped, "write_back": skipped, "clinician": skipped,
+            "app_registration": skipped, "app_config": app_config,
+            "run_mode": config.run_mode, "launch_profile": config.launch_profile,
+        }
 
     # A failed discovery is itself the AUTH-001 finding, not a crashed run —
     # a wrong FHIR_BASE_URL must surface as a fail with a fix hint.
@@ -419,20 +450,6 @@ def collect_evidence(config: AppConfig) -> dict[str, Any]:
         write_back = {"_unavailable": "patient_launch write-back not run under clinician_standalone"}
     else:
         write_back = {"_unavailable": TOKEN_UNAVAILABLE_REASON}
-
-    app_config_fields = {
-        "transport_tls_version": config.transport_tls_version,
-        "audit_logging_enabled": config.audit_logging_enabled,
-        "audit_log_retention_days": config.audit_log_retention_days,
-        "baa_in_place": config.baa_in_place,
-        "covered_entity_relationship": config.covered_entity_relationship,
-    }
-    attested = {k: v for k, v in app_config_fields.items() if v}
-    app_config = attested if attested else {
-        "_unavailable": "No app_config fields attested — set TRANSPORT_TLS_VERSION, "
-        "AUDIT_LOGGING_ENABLED, AUDIT_LOG_RETENTION_DAYS, BAA_IN_PLACE, "
-        "COVERED_ENTITY_RELATIONSHIP in .env or the dashboard form."
-    }
 
     return {
         "smart_configuration": smart_evidence,

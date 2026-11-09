@@ -191,7 +191,7 @@ main { max-width: 1160px; margin: 0 auto; padding: 2rem 2rem 4rem; }
 .s-passing, .s-int-connected { color: var(--pass); background: color-mix(in srgb, var(--pass) 11%, transparent); }
 .s-failing { color: var(--fail); background: color-mix(in srgb, var(--fail) 11%, transparent); }
 .s-needs_review, .s-int-configured { color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
-.s-not_applicable, .s-not_run, .s-int-not_connected { color: var(--muted); background: var(--surface-2); }
+.s-not_applicable, .s-not_run, .s-int-not_connected, .s-int-not_needed { color: var(--muted); background: var(--surface-2); }
 .t-pass { color: var(--pass); }
 .t-fail { color: var(--fail); }
 .t-warn { color: var(--warn); }

@@ -187,6 +187,7 @@ class Plan:
             "test_patient_query": (i.test_patient_query or SANDBOX_TEST_PATIENT) if i.run_mode == "live" else "",
             "encounter_required": "true" if i.encounter_required else "false",
             "note_format": "pdf" if i.writes_pdf else "text",
+            "epic_connection": i.epic_connection,
             "app_client_type": "confidential" if i.platform == "web_server" else "public",
             "transport_tls_version": i.tls_version,
             "audit_logging_enabled": i.audit_logging,

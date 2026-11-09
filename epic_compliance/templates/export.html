@@ -33,8 +33,8 @@
   <div class="toolbar">Use your browser's <strong>Print &rarr; Save as PDF</strong> to export this report. <button onclick="window.print()">Print now</button></div>
   <h1>Epic FHIR ONC (g)(10) Compliance Report</h1>
   <div class="meta">
-    Run {{ view.run_id }} &middot; {{ run.created_at[:19].replace('T',' ') }} UTC &middot; Epic sandbox<br>
-    Target: {{ run.fhir_base_url }}
+    Run {{ view.run_id }} &middot; {{ run.created_at[:19].replace('T',' ') }} UTC &middot; {% if run_uses_epic(run) %}Epic sandbox<br>
+    Target: {{ run.fhir_base_url }}{% else %}The app doesn't connect to Epic{% endif %}
   </div>
   <div class="summary">
     {% if view.score is not none %}<div class="stat"><div class="n score">{{ view.score }}%</div><div class="l">Readiness</div></div>{% endif %}

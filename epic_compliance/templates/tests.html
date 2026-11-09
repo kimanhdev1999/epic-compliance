@@ -6,7 +6,7 @@
   <div>
     <h1>Tests</h1>
     <p class="subtitle">
-      {% if w.run %}Results from {{ w.run.created_at[:16].replace('T', ' ') }} UTC on the Epic sandbox. Select a test to see the evidence and how to fix it.
+      {% if w.run %}Results from {{ w.run.created_at[:16].replace('T', ' ') }} UTC{{ ' on the Epic sandbox' if run_uses_epic(w.run) }}. Select a test to see the evidence and how to fix it.
       {% else %}Nothing has run yet. <a href="/assess">Describe your app</a> to build a test plan.{% endif %}
     </p>
   </div>

@@ -10,7 +10,7 @@
 </div>
 <p class="subtitle">
   {% if intake %}{{ labels.users[intake.users] }} &middot; {{ labels.platform[intake.platform] }}{% if intake.health_system %} &middot; {{ intake.health_system }}{% endif %} &middot; {% endif %}
-  Epic sandbox: {{ run.fhir_base_url }} &middot; {{ run.created_at[:16].replace('T',' ') }} UTC
+  {% if run_uses_epic(run) %}Epic sandbox: {{ run.fhir_base_url }}{% else %}Doesn't connect to Epic{% endif %} &middot; {{ run.created_at[:16].replace('T',' ') }} UTC
 </p>
 {% if recheck and not show_all %}
 <h2>Re-check of {{ recheck["items"]|map(attribute="rule_id")|join(", ") }}</h2>

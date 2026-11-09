@@ -209,15 +209,19 @@ def build_workspace(
     # What the user can act on first; Epic's own failures and sample data last.
     attention.sort(key=lambda t: t["fix_where"] in fw.NOT_ACTIONABLE)
 
+    # An app that doesn't connect to Epic's API has no Epic sandbox to set up.
+    uses_epic = intake.get("epic_connection", "api") != "none"
     checklist = [
         {"title": "Describe your app",
          "detail": "Tell the assistant what you're building. It works out which tests apply.",
          "done": bool(intake), "href": "/assess", "cta": "Start"},
-        {"title": "Connect the Epic sandbox",
-         "detail": "Add your non-production client ID from fhir.epic.com to test real sign-in and data.",
-         "done": integrations["epic"]["status"] != "not_connected", "href": "/integrations", "cta": "Connect"},
+        *([{"title": "Connect the Epic sandbox",
+            "detail": "Add your non-production client ID from fhir.epic.com to test real sign-in and data.",
+            "done": integrations["epic"]["status"] != "not_connected", "href": "/integrations", "cta": "Connect"}]
+          if uses_epic else []),
         {"title": "Run your first assessment",
-         "detail": "Sign in to the Epic sandbox and run your test plan against it.",
+         "detail": "Sign in to the Epic sandbox and run your test plan against it." if uses_epic
+                   else "Run your test plan. Your app doesn't connect to Epic, so there's nothing to sign in to.",
          # The test plan has the Run button; the chat is only for describing the app.
          "done": run is not None, "href": "/assess/plan#setup" if intake else "/assess", "cta": "Run"},
         {"title": "Fix failing tests",

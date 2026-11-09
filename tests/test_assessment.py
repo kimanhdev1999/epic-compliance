@@ -464,6 +464,21 @@ class TestNoEpicConnection:
         assert not qs["EPIC-NATIVE-PKCE"].included and not qs["EPIC-SCOPE-MIN"].included
         assert not build_plan(Intake(users="clinicians", platform="mobile")).checks[0].reason.startswith("Doesn't apply")
 
+    def test_run_makes_no_epic_calls(self, monkeypatch):
+        from epic_compliance import pipeline
+        from epic_compliance.config import config_with_overrides
+
+        def no_epic(*a, **k):
+            raise AssertionError("the run called Epic")
+        monkeypatch.setattr(pipeline, "fetch_smart_configuration", no_epic)
+        monkeypatch.setattr(pipeline, "get_live_token", no_epic)
+        plan = build_plan(Intake(users="clinicians", platform="mobile", epic_connection="none",
+                                 tls_version="TLS 1.2", run_mode="live"))
+        evidence = pipeline.collect_evidence(config_with_overrides(plan.config_overrides()))
+        assert evidence["token_response"] == {"_unavailable": pipeline.NO_EPIC_CONNECTION_REASON}
+        assert "sign in" not in str(evidence).lower()
+        assert evidence["app_config"]["transport_tls_version"] == "TLS 1.2"
+
     def test_chat_hears_the_screen_scan(self):
         state = next_turn(ChatState.start(), self.SCREEN_APP, api_key="")
         assert state.intake.epic_connection == "none"
@@ -693,6 +708,30 @@ class TestStepsAfterDescribing:
         assert 'id="run-btn" class="btn big">Run' in plan_page  # not disabled
         from epic_compliance.api import _not_ready_to_run
         assert _not_ready_to_run(Intake(run_mode="live", epic_connection="none")) == ""
+
+    def test_epic_setup_is_hidden_when_the_app_doesnt_connect(self, client, monkeypatch):
+        from epic_compliance.config import get_config
+        cfg = get_config().model_copy(update={"anthropic_api_key": "", "oauth_client_id": ""})
+        monkeypatch.setattr("epic_compliance.api.get_config", lambda: cfg)  # Integrations reads every field
+        state = self._finish(client)
+        # Before: the app connects, so Epic setup is asked for everywhere.
+        assert "Connect the Epic sandbox" in client.get("/").text
+        assert "Not needed" not in client.get("/integrations").text
+        client.post("/assess/answers", data=self._answers(state, epic_connection="none"))
+        home = client.get("/").text
+        assert "Connect the Epic sandbox" not in home and "nothing to sign in to" in home
+        integrations = client.get("/integrations").text
+        assert integrations.count(">Not needed<") == 3  # Epic sandbox, FHIR validator, ONC test kit
+        assert "Sign in with SMART" not in integrations
+        assert integrations.index("Answer review") < integrations.index("Epic sandbox")  # not-needed last
+        settings = client.get("/config").text
+        assert "doesn't connect to Epic's API" in settings and "<summary>Epic connection settings</summary>" in settings
+
+    def test_run_pages_dont_say_epic_sandbox_for_an_app_that_doesnt_connect(self, monkeypatch):
+        from epic_compliance.api import _run_uses_epic
+        assert _run_uses_epic({"config": {"assessment": {"intake": {"epic_connection": "none"}}}}) is False
+        assert _run_uses_epic({"config": {"assessment": {"intake": {}}}}) is True  # older runs
+        assert _run_uses_epic({"config": {}}) is True and _run_uses_epic(None) is True
 
     def test_editing_an_answer_keeps_the_edit_button(self, client):
         from epic_compliance import store
