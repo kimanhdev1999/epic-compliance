@@ -29,3 +29,11 @@ Nothing get done today, missing a clear timeline to start thing, is this product
 Day 7
 
 Nothing get done today, missing a clear timeline to start thing, is this product good enough to start a Epic check
+
+Day 8
+
+Review edit flow, add logic for check if need EPIC integration to the app or not
+
+Day 9
+
+MVP finished, start the test process.
