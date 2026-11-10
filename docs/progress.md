@@ -5,7 +5,7 @@ work and updates it before opening a PR** (see `CLAUDE.md`). Keep it short: one 
 per item, newest first within each section. Detail belongs in `notes/decisions.md`
 (ADRs), PR descriptions and `docs/ux-redesign/requirements.md`.
 
-**Last updated:** 2026-11-09 (chat summary: "Edit answers" edits the card in place)
+**Last updated:** 2026-11-09 (BelleOne audit-logging watch for SEC-002)
 
 ## How to keep this current
 - **Starting work:** read *Open* and *Next*. If your task is listed, work from that line.
