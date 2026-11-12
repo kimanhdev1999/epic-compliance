@@ -37,3 +37,7 @@ Review edit flow, add logic for check if need EPIC integration to the app or not
 Day 9
 
 MVP finished, start the test process.
+
+Day 10
+
+Nothing get done today, there is too many urgent task.
