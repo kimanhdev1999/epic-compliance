@@ -5,7 +5,7 @@ work and updates it before opening a PR** (see `CLAUDE.md`). Keep it short: one 
 per item, newest first within each section. Detail belongs in `notes/decisions.md`
 (ADRs), PR descriptions and `docs/ux-redesign/requirements.md`.
 
-**Last updated:** 2026-11-10 (removed the BelleOne audit-logging watch: it checks other repos, not this tool)
+**Last updated:** 2026-11-13 (removed the daily progress check-in notes)
 
 ## How to keep this current
 - **Starting work:** read *Open* and *Next*. If your task is listed, work from that line.
@@ -32,6 +32,7 @@ per item, newest first within each section. Detail belongs in `notes/decisions.m
 ## Done
 | What | PR / ADR |
 |---|---|
+| Removed `notes/consiously-checking-progress.md` (daily progress check-ins); this file stays the record of progress | #56 |
 | Chat summary's "Edit answers" turns the card into a form in place: options (who signs in, app type, security) are set exactly; patient data is described in words (`data_use`) and read into the data flags, shown as "Currently read as"; the rest are kept, and the chat notes what changed (replaces #50's "Edit description"); a PDF filed by another system (OnBase, sFTP) isn't a document write. New answer "Connects to Epic" (`epic_connection`): an app that doesn't (e.g. reads the patient off the Epic screen) drops the sign-in, workflow, FHIR-read and write tests and the Epic-API reviewer questions, keeps the screen-scraping question, and runs without an Epic sign-in or any Epic call; Home drops the "Connect the Epic sandbox" step, Integrations marks Epic, the FHIR validator and the ONC test kit "Not needed", Settings folds the Epic fields away, and run pages stop saying "on the Epic sandbox". Whether the app connects (so needs the Epic sandbox) is worked out from the description and patient-data text, by the answer review (`read_app_texts`) or offline (`_epic_connection_in`), whenever they change; a "Connects to Epic" picked by hand wins | #51 |
 | Chat summary has two buttons: "Generate test plan" always, and "Edit description", which opens the first message for editing (replaces #47's "Edit app description" button that generated the plan) | #50 |
 | Intake hears "sends a PDF to the chart" (`writes_pdf`) and later answers correct earlier ones, so a PDF report isn't planned as a photo upload; CLIN-009 sends a real PDF; write results record Epic's refusal reason | #48 |
