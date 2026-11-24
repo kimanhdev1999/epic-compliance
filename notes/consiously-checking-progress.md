@@ -29,3 +29,11 @@ Nothing get done today, missing a clear timeline to start thing, is this product
 Day 7
 
 Nothing get done today, missing a clear timeline to start thing, is this product good enough to start a Epic check
+
+Day 8
+
+Nothing get done today, i believe in continously working progress, so i will keep adding
+
+Day 9
+
+Nothing get done today, i believe in continously working progress, so i will keep adding
